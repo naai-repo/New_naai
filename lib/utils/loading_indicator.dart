@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:naai/utils/colors_constant.dart';
 import 'package:naai/utils/routing/named_routes.dart';
+import 'package:provider/provider.dart';
+import 'package:sizer/sizer.dart';
 
 class Loader {
   static late Timer _timer;
@@ -26,94 +28,114 @@ class Loader {
   static hideLoader(BuildContext context) {
     Navigator.pop(context);
   }
-  static void showWeakInternetPopup(BuildContext context) {
-    showModalBottomSheet(
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(35),
-          topRight: Radius.circular(35),
-        ),
+
+}
+class AppState extends ChangeNotifier {
+  int _keywordState = 1;
+
+  int get keywordState => _keywordState;
+
+  setKeywordState(int newState) {
+    _keywordState = newState;
+    notifyListeners();
+  }
+}
+
+class AnimatedSearch extends StatefulWidget {
+  // final Function(bool) onSearchExpanded;
+  final double width;
+  final TextEditingController? textEditingController;
+  final IconData? startIcon;
+  final IconData? closeIcon;
+  final Color? iconColor;
+  final Color? cursorColor;
+  final Function(String,bool) onChanged; // Add the onChanged callback here
+  final InputDecoration? decoration;
+  const AnimatedSearch({
+    Key? key,
+    this.width = 0.7,
+    this.textEditingController,
+    this.startIcon = Icons.abc,
+    this.closeIcon = Icons.close,
+    this.iconColor = Colors.white,
+    this.cursorColor = Colors.white,
+    required this.onChanged,
+    this.decoration,
+  }) : super(key: key);
+  @override
+  State<AnimatedSearch> createState() => _AnimatedSearchState();
+}
+
+class _AnimatedSearchState extends State<AnimatedSearch> {
+  bool isFolded = true;
+  int keywordState = 0; // Added keywordState variable
+
+  @override
+  Widget build(BuildContext context) {
+    var size = MediaQuery.of(context).size;
+    var width = size.width;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      height: 7.h,
+      width: isFolded ? width / 7 : width * widget.width,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(50.0),
+        color: Colors.white,
+        boxShadow: kElevationToShadow[6],
       ),
-      context: context,
-      builder: (BuildContext context) {
-        return Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Container(
-            color: Colors.white,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Center(
-                  child:  SvgPicture.asset(
-                    "assets/images/salon_location_marker.svg",
-                    height: 80,
-                    width: 80,
-                  ),
-                ),
-                const SizedBox(height: 8.0),
-                const Align(
-                  alignment: Alignment.center,
-                  child: Text(
-                    "Finding Your Perfect Salon Match...",
-                    style: TextStyle(
-                      fontSize: 18.0,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8.0),
-                const Text(
-                  "We're currently pinpointing your location to connect you with the best salon experiences nearby. This may take a moment, but we promise it's worth the wait!",
-                  style: TextStyle(
-                    fontSize: 16.0,
-                  ),
-                ),
-                const SizedBox(height: 8.0),
-                const Text(
-                  "Thank you for your patience. Sit back, relax, and get ready to discover your next favorite salon! ✨",
-                  style: TextStyle(
-                    fontSize: 16.0,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    Expanded(
-                      child: ElevatedButton(
-                        child: const Text("Continue", style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        )),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: ColorsConstant.appColor, // Change the button's background color
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10), // Adjust the radius as needed
-                          ),
-                        ),
-                        onPressed: () {
-                          Navigator.pushNamed(
-                            context,
-                            NamedRoutes.bottomNavigationRoute,
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+      child: Row(
+        children: [
+          Expanded(
+            child: Container(
+              padding: EdgeInsets.only(left:3.w),
+              child: !isFolded
+                  ? TextField(
+                controller: widget.textEditingController,
+                autofocus: true,
+                cursorColor: widget.cursorColor,
+                decoration: widget.decoration ??
+                    InputDecoration(
+                        hintText: 'Searchbbbbbbbbbbbbb',
+                        hintStyle: TextStyle(color: Colors.grey[300]),
+                        filled: true,
+                        fillColor: ColorsConstant.graphicFillDark,
+                        border: InputBorder.none),
+                onChanged: (String value) {
+                  setState(() {
+                    print("Typed text: $value");
+                  //  widget.textEditingController?.text = value;
+                    isFolded = value.isEmpty;
+                    context.read<AppState>().setKeywordState(isFolded ? 1 : 0);
+                  });
+                  widget.onChanged(value,isFolded);
+
+                },
+              )
+                  : null,
             ),
           ),
-        );
-      },
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            child: InkWell(
+                onTap: () {
+                  setState(() {
+                    isFolded = !isFolded;
+                    context.read<AppState>().setKeywordState(isFolded ? 1 : 0);
+                  });
+                },
+                child: Padding(
+                  padding:  EdgeInsets.symmetric(horizontal: 3.5.w),
+                  child: Icon(
+                    isFolded ? widget.startIcon : widget.closeIcon,
+                    color: widget.iconColor,
+                    size: 26,
+                  ),
+                )),
+          )
+        ],
+      ),
     );
   }
 }
-//Weak Internet Connection
-//Your internet connection seems to be weak or experiencing issues, '
-//               'which may cause delays in loading. Please wait a moment and try again.',
-//
-
 

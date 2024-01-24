@@ -1,4 +1,5 @@
 import 'package:carousel_slider/carousel_slider.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
@@ -20,6 +21,14 @@ import 'package:naai/view_model/post_auth/home/home_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:sizer/sizer.dart';
 
+import '../../../models/artist_detail.dart';
+import '../../../models/artist_model.dart';
+import '../../../models/salon_detail.dart';
+import '../../../models/salon_model.dart';
+import '../../../models/service_response.dart';
+import '../../../utils/loading_indicator.dart';
+import '../../../view_model/post_auth/salon_details/salon_details_provider.dart';
+
 class ExploreScreen extends StatefulWidget {
   const ExploreScreen({Key? key}) : super(key: key);
 
@@ -35,7 +44,7 @@ class _ExploreScreenState extends State<ExploreScreen>
   void initState() {
     homeScreenController = TabController(length: 1, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-      context.read<ExploreProvider>().initExploreScreen(context);
+      context.read<ExploreProvider>().initHome(context);
     });
     super.initState();
   }
@@ -52,7 +61,7 @@ class _ExploreScreenState extends State<ExploreScreen>
               slivers: <Widget>[
                 ReusableWidgets.transparentFlexibleSpace(),
                 titleSearchBarWithLocation(),
-                provider.filteredSalonData.length == 0
+                provider.salonData2.length == 0
                     ? SliverFillRemaining(
                         child: Container(
                           color: Colors.white,
@@ -101,10 +110,13 @@ class _ExploreScreenState extends State<ExploreScreen>
                                         ),
                                       ),
                                       GestureDetector(
-                                        onTap: () => Navigator.pushNamed(
-                                          context,
-                                          NamedRoutes.exploreStylistRoute,
-                                        ),
+                                        onTap: () async{
+                                       await provider.OnlyArtist(context);
+                                          Navigator.pushNamed(
+                                            context,
+                                            NamedRoutes.exploreStylistRoute,
+                                          );
+                                        },
                                         child: Text(
                                           'more>>',
                                           style: TextStyle(
@@ -123,11 +135,11 @@ class _ExploreScreenState extends State<ExploreScreen>
                                     child: ListView.builder(
                                       shrinkWrap: true,
                                       scrollDirection: Axis.horizontal,
-                                      itemCount: provider.artistList.length,
+                                      itemCount: provider.artistList2.length,
                                       physics: BouncingScrollPhysics(),
                                       itemBuilder: (context, index) {
-                                        Artist artist =
-                                            provider.artistList[index];
+                                        ArtistData artist =
+                                            provider.artistList2[index];
                                         return artistCard(
                                           artist,
                                           index,
@@ -251,11 +263,14 @@ class _ExploreScreenState extends State<ExploreScreen>
                                                         : ColorsConstant
                                                             .lightAppColor,
                                                     borderRadius: 3.h,
-                                                    onTap: () {
-                                                      provider
-                                                          .setSelectedFilter(
-                                                              FilterType
-                                                                  .Rating);
+                                                    onTap: () async{
+                                                      if (provider.selectedFilterTypeList.contains(FilterType.Rating)) {
+                                                        provider.selectedFilterTypeList.remove(FilterType.Rating);
+                                                        await provider.initHome(context);
+                                                      } else {
+                                                        provider.selectedFilterTypeList.add(FilterType.Rating);
+                                                        await provider.Filter(context);
+                                                      }
                                                       Navigator.pop(context);
                                                     },
                                                     shouldShowBoxShadow: false,
@@ -289,7 +304,7 @@ class _ExploreScreenState extends State<ExploreScreen>
                                     itemBuilder: (context, index) =>
                                         salonCard(index),
                                     itemCount:
-                                        provider.filteredSalonData.length,
+                                        provider.salonData2.length
                                   )
                                 ],
                               ),
@@ -306,7 +321,7 @@ class _ExploreScreenState extends State<ExploreScreen>
   }
 
   Widget artistCard(
-    Artist artist,
+    ArtistData artist,
     int index,
   ) {
     return Consumer<ExploreProvider>(builder: (context, provider, child) {
@@ -320,14 +335,83 @@ class _ExploreScreenState extends State<ExploreScreen>
               constraints: BoxConstraints(maxWidth: 45.w),
               width: 45.w,
               child: GestureDetector(
-                onTap: () {
-                  context.read<BarberProvider>().setArtistDataFromHome(
-                    artist,
-                  );
-                  Navigator.pushNamed(
-                    context,
-                    NamedRoutes.barberProfileRoute,
-                  );
+                onTap: () async {
+                  SalonDetailsProvider salonDetailsProvider = context.read<SalonDetailsProvider>();
+                  String artistId = artist.id;
+                  String salonId = artist.salonId;
+                  List<Service> services = artist.services;
+
+                  BarberProvider barberDetailsProvider = context.read<BarberProvider>();
+
+                  try {
+                    Loader.showLoader(context);
+
+                    // Prepare a list of Futures for all API calls
+                    List<Future<Response<dynamic>>> apiCalls = [
+                      Dio().get('http://13.235.49.214:8800/partner/artist/single/$artistId'),
+                      Dio().get('http://13.235.49.214:8800/partner/salon/single/$salonId'),
+                      // You may want to modify this part based on how you want to handle multiple services
+                      if (services.isNotEmpty) ...services.map((service) =>
+                          Dio().get('http://13.235.49.214:8800/partner/service/single/${service.serviceId}'))
+                    ];
+
+                    // Use Future.wait to run multiple async operations concurrently
+                    List<Response<dynamic>> responses = await Future.wait(apiCalls);
+
+                    Loader.hideLoader(context);
+
+                    // Check the responses for each API call
+                    for (var response in responses) {
+                      if (response.data != null && response.data is Map<String, dynamic>) {
+                        if (response.requestOptions.uri.pathSegments.contains('artist')) {
+                          // Process artist API response
+                          ArtistResponse apiResponse = ArtistResponse.fromJson(response.data);
+                          if (apiResponse != null && apiResponse.data != null) {
+                            barberDetailsProvider.setArtistDetails(apiResponse.data);
+                          } else {
+                            print('Failed to fetch artist details: Invalid response format');
+                          }
+                        } else if (response.requestOptions.uri.pathSegments.contains('salon')) {
+                          // Process salon API response
+                          ApiResponse apiResponse = ApiResponse.fromJson(response.data);
+                          ApiResponse salonDetails = ApiResponse(
+                            status: apiResponse.status,
+                            message: apiResponse.message,
+                            data: ApiResponseData(
+                              data: apiResponse.data.data,
+                              artists: apiResponse.data.artists,
+                              services: apiResponse.data.services,
+                            ),
+                          );
+                          salonDetailsProvider.setSalonDetails(salonDetails);
+                          barberDetailsProvider.setSalonDetails(salonDetails);
+                        } else if (response.requestOptions.uri.pathSegments.contains('service')) {
+                          ServiceResponse serviceResponse = ServiceResponse.fromJson(response.data);
+                          ServiceResponse serviceresponse = ServiceResponse(
+                              status: serviceResponse.status,
+                              message: serviceResponse.message,
+                              data:    serviceResponse.data);
+                          salonDetailsProvider.setServiceDetails(serviceresponse);
+                          if (serviceResponse != null && serviceResponse.data != null) {
+                            // Handle service response
+                          } else {
+                            print('Failed to fetch service details: Invalid response format');
+                          }
+                        }
+                      } else {
+                        print('Failed to fetch details: Invalid response format');
+                      }
+                    }
+
+                    // If the API calls are successful, navigate to the next screen
+                    Navigator.pushNamed(context, NamedRoutes.barberProfileRoute, arguments: artistId);
+                  } catch (error) {
+                    Loader.hideLoader(context);
+                    // Handle the case where the API call was not successful
+                    // You can show an error message or take appropriate action
+                    Navigator.pushNamed(context, NamedRoutes.bottomNavigationRoute);
+                    print('Failed to fetch details: $error');
+                  }
                 },
                 child: Stack(
                   children: <Widget>[
@@ -343,7 +427,7 @@ class _ExploreScreenState extends State<ExploreScreen>
                                 child: CircleAvatar(
                                   radius: 5.h,
                                   backgroundImage: NetworkImage(
-                                    artist.imagePath!,
+                                    artist.imageUrl,
                                   ),
                                 ),
                               ),
@@ -359,7 +443,7 @@ class _ExploreScreenState extends State<ExploreScreen>
                                 ),
                               ),
                               Text(
-                                artist.salonName ?? '',
+                                artist.salonId ?? '',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   color: ColorsConstant.textLight,
@@ -382,7 +466,7 @@ class _ExploreScreenState extends State<ExploreScreen>
                                       child: SizedBox(width: 1.w),
                                     ),
                                     TextSpan(
-                                      text: artist.rating.toString(),
+                                      text: artist.rating.toStringAsFixed(1),
                                       style: TextStyle(
                                         fontWeight: FontWeight.w600,
                                         fontSize: 10.sp,
@@ -416,12 +500,7 @@ class _ExploreScreenState extends State<ExploreScreen>
                                         child: SizedBox(width: 1.w),
                                       ),
                                       TextSpan(
-                                        text: provider.filteredSalonData
-                                            .firstWhere(
-                                              (element) =>
-                                                  element.id == artist.salonId,
-                                            )
-                                            .distanceFromUserAsString,
+                                      text: '',
                                         style: TextStyle(
                                           fontWeight: FontWeight.w600,
                                           fontSize: 10.sp,
@@ -446,7 +525,7 @@ class _ExploreScreenState extends State<ExploreScreen>
                                         child: SizedBox(width: 1.w),
                                       ),
                                       TextSpan(
-                                        text: artist.rating.toString(),
+                                        text: artist.rating.toStringAsFixed(1),
                                         style: TextStyle(
                                           fontWeight: FontWeight.w600,
                                           fontSize: 10.sp,
@@ -468,8 +547,7 @@ class _ExploreScreenState extends State<ExploreScreen>
                         onTap: () {
                           if (context
                               .read<HomeProvider>()
-                              .userData
-                              .preferredArtist!
+                              .artistList2
                               .contains(artist.id)) {
                             provider.removePreferedArtist(
                               context,
@@ -485,15 +563,13 @@ class _ExploreScreenState extends State<ExploreScreen>
                         child: SvgPicture.asset(
                           context
                                   .read<HomeProvider>()
-                                  .userData
-                                  .preferredArtist!
+                          .artistList2
                                   .contains(artist.id)
                               ? ImagePathConstant.saveIconFill
                               : ImagePathConstant.saveIcon,
                           color: context
                                   .read<HomeProvider>()
-                                  .userData
-                                  .preferredArtist!
+                                  .artistList2
                                   .contains(artist.id)
                               ? ColorsConstant.appColor
                               : index.isOdd
@@ -532,9 +608,16 @@ class _ExploreScreenState extends State<ExploreScreen>
           onTap: () => FocusManager.instance.primaryFocus!.unfocus(),
           child: Container(
             padding: EdgeInsets.only(top: 3.h),
-            child: Text(
-              StringConstant.exploreSalons,
-              style: StyleConstant.headingTextStyle,
+            child: Row(
+              children:[
+                IconButton(onPressed: (){
+                  Navigator.pushNamed(context, NamedRoutes.bottomNavigationRoute);
+                }, icon: Icon(Icons.arrow_back_ios,color: Colors.black,)),
+              Text(
+                StringConstant.exploreSalons,
+                style: StyleConstant.headingTextStyle,
+              ),
+            ],
             ),
           ),
         ),
@@ -557,7 +640,7 @@ class _ExploreScreenState extends State<ExploreScreen>
                       style: StyleConstant.searchTextStyle,
                       textInputAction: TextInputAction.done,
                       onChanged: (searchText) =>
-                          provider.filterSalonList(searchText),
+                          provider.filterArtistList(searchText),
                       decoration: StyleConstant.searchBoxInputDecoration(
                         context,
                         hintText: StringConstant.search,
@@ -574,15 +657,46 @@ class _ExploreScreenState extends State<ExploreScreen>
   }
 
   Widget salonCard(int index) {
-    return Consumer<ExploreProvider>(
-      builder: (context, provider, child) {
+    return Consumer2<ExploreProvider,HomeProvider>(
+      builder: (context, provider,homeprovider, child) {
+
         return Container(
           color: Colors.white,
           child: GestureDetector(
-            onTap: () {
-              FocusManager.instance.primaryFocus!.unfocus();
-              provider.setSelectedSalonIndex(context, index: index);
-              Navigator.pushNamed(context, NamedRoutes.salonDetailsRoute);
+            onTap: () async {
+              String salonId =  provider.salonData2[index].id ?? '';
+              SalonDetailsProvider salonDetailsProvider = context.read<SalonDetailsProvider>();
+
+              try {
+                Loader.showLoader(context);
+                final response = await Dio().get(
+                  'http://13.235.49.214:8800/partner/salon/single/$salonId',
+                );
+                Loader.hideLoader(context);
+
+                ApiResponse apiResponse = ApiResponse.fromJson(response.data);
+                ApiResponse salonDetails = ApiResponse(
+                  status: apiResponse.status,
+                  message: apiResponse.message,
+                  data: ApiResponseData(
+                    data: apiResponse.data.data,
+                    artists: apiResponse.data.artists,
+                    services: apiResponse.data.services,
+                  ),
+                );
+
+                // Pass the salonDetails to SalonDetailsProvider
+                salonDetailsProvider.setSalonDetails(salonDetails);
+
+                // If the API call is successful, navigate to the SalonDetailsScreen
+                Navigator.pushNamed(context, NamedRoutes.salonDetailsRoute, arguments: salonId);
+              } catch (error) {
+                Loader.hideLoader(context);
+                // Handle the case where the API call was not successful
+                // You can show an error message or take appropriate action
+                Navigator.pushNamed(context, NamedRoutes.bottomNavigationRoute);
+                print('Failed to fetch salon details: $error');
+              }
             },
             child: Container(
               decoration: BoxDecoration(borderRadius: BorderRadius.circular(5)),
@@ -596,8 +710,8 @@ class _ExploreScreenState extends State<ExploreScreen>
                         autoPlayInterval: Duration(seconds: 3),
                         autoPlayAnimationDuration: Duration(milliseconds: 800),
                         autoPlayCurve: Curves.fastOutSlowIn),
-                    items: provider.filteredSalonData[index].imageList!
-                        .map((imageUrl) {
+                    items: (provider.salonData2[index].images ?? <ImageData>[]) // Use an empty list if images is null
+                        .map((ImageData imageUrl) {
                       return Builder(
                         builder: (BuildContext context) {
                           return Stack(
@@ -605,7 +719,7 @@ class _ExploreScreenState extends State<ExploreScreen>
                               ClipRRect(
                                 borderRadius: BorderRadius.circular(5),
                                 child: Image.network(
-                                  imageUrl,
+                                  imageUrl.url as String, // Cast imageUrl to String
                                   height: 35.h,
                                   width: SizerUtil.width,
                                   fit: BoxFit.fill,
@@ -618,12 +732,12 @@ class _ExploreScreenState extends State<ExploreScreen>
                                     return Center(
                                       child: CircularProgressIndicator(
                                         value: loadingProgress
-                                                    .expectedTotalBytes !=
-                                                null
+                                            .expectedTotalBytes !=
+                                            null
                                             ? loadingProgress
-                                                    .cumulativeBytesLoaded /
-                                                loadingProgress
-                                                    .expectedTotalBytes!
+                                            .cumulativeBytesLoaded /
+                                            loadingProgress
+                                                .expectedTotalBytes!
                                             : null,
                                       ),
                                     );
@@ -637,15 +751,14 @@ class _ExploreScreenState extends State<ExploreScreen>
                                   onTap: () {
                                     if (!context
                                         .read<HomeProvider>()
-                                        .userData
-                                        .preferredSalon!
+                                        .salonList2
                                         .contains(provider
-                                            .filteredSalonData[index].id)) {
+                                        .salonData2[index].id)) {
                                       provider.addPreferedSalon(context,
-                                          provider.filteredSalonData[index].id);
+                                          provider.salonData2[index].id);
                                     } else {
                                       provider.removePreferedSalon(context,
-                                          provider.filteredSalonData[index].id);
+                                          provider.salonData2[index].id);
                                     }
                                   },
                                   child: Container(
@@ -655,14 +768,13 @@ class _ExploreScreenState extends State<ExploreScreen>
                                       shape: BoxShape.circle,
                                     ),
                                     child: Icon(
-                                    context
-                                              .read<HomeProvider>()
-                                              .userData
-                                              .preferredSalon!
-                                              .contains(provider
-                                                  .filteredSalonData[index].id)
+                                      context
+                                          .read<HomeProvider>()
+                                          .salonList2
+                                          .contains(provider
+                                          .salonData2[index].id)
 
-                                         ?  CupertinoIcons.heart_fill
+                                          ?  CupertinoIcons.heart_fill
                                           : CupertinoIcons.heart,
                                       size: 2.5.h,
                                       color: ColorsConstant.appColor,
@@ -676,63 +788,11 @@ class _ExploreScreenState extends State<ExploreScreen>
                       );
                     }).toList(),
                   ),
-                  // Stack(
-                  //   children: <Widget>[
-                  //     ClipRRect(
-                  //       borderRadius: BorderRadius.circular(5),
-                  //       child: Image.network(
-                  //         provider.filteredSalonData[index].imageList![0],
-                  //         height: 35.h,
-                  //         fit: BoxFit.cover,
-                  //       ),
-                  //     ),
-                  //     Positioned(
-                  //       top: 1.h,
-                  //       right: 1.h,
-                  //       child: InkWell(
-                  //         onTap: () {
-                  //           if (!context
-                  //               .read<HomeProvider>()
-                  //               .userData
-                  //               .preferredSalon!
-                  //               .contains(
-                  //               provider.filteredSalonData[index].id)) {
-                  //             provider.addPreferedSalon(context,
-                  //                 provider.filteredSalonData[index].id);
-                  //           } else {
-                  //             provider.removePreferedSalon(context,
-                  //                 provider.filteredSalonData[index].id);
-                  //           }
-                  //         },
-                  //         child: Container(
-                  //           padding: EdgeInsets.all(1.w),
-                  //           decoration: BoxDecoration(
-                  //             color: Colors.white,
-                  //             shape: BoxShape.circle,
-                  //           ),
-                  //           child: Icon(
-                  //             context
-                  //                 .read<HomeProvider>()
-                  //                 .userData
-                  //                 .preferredSalon!
-                  //                 .contains(
-                  //                 provider.filteredSalonData[index].id)
-                  //                 ? CupertinoIcons.heart_fill
-                  //                 : CupertinoIcons.heart,
-                  //             size: 2.5.h,
-                  //             color: ColorsConstant.appColor,
-                  //           ),
-                  //         ),
-                  //       ),
-                  //     ),
-                  //   ],
-                  // ),
-                  SizedBox(height: 1.4.h),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
                       Text(
-                        provider.filteredSalonData[index].name ?? '',
+                        provider.salonData2[index].name ?? '',
                         style: TextStyle(
                           color: ColorsConstant.textDark,
                           fontSize: 15.sp,
@@ -740,7 +800,7 @@ class _ExploreScreenState extends State<ExploreScreen>
                         ),
                       ),
                       Text(
-                        '${provider.filteredSalonData[index].address?.addressString}',
+                        '${provider.salonData2[index].address}',
                         style: TextStyle(
                           color: ColorsConstant.greySalonAddress,
                           fontSize: 11.sp,
@@ -753,17 +813,17 @@ class _ExploreScreenState extends State<ExploreScreen>
                           ColorfulInformationCard(
                             imagePath: ImagePathConstant.locationIconAlt,
                             text:
-                                '${provider.filteredSalonData[index].distanceFromUserAsString}',
+                                '${provider.salonData2[index].distance.toStringAsFixed(2)}',
                             color: ColorsConstant.purpleDistance,
                           ),
                           SizedBox(width: 3.w),
                           ColorfulInformationCard(
                             imagePath: ImagePathConstant.starIcon,
-                            text: '${provider.filteredSalonData[index].rating}',
+                            text: '${provider.salonData2[index].rating.toStringAsFixed(1)}',
                             color: ColorsConstant.greenRating,
                           ),
                           SizedBox(width: 3.w),
-                          provider.filteredSalonData[index].discountPercentage==0||provider.filteredSalonData[index].discountPercentage==null?SizedBox():Container(
+                          provider.salonData2[index].discount == 0 ||provider.salonData2[index].discount==null?SizedBox():Container(
                             constraints: BoxConstraints(minWidth: 13.w),
                             padding: EdgeInsets.symmetric(
                               vertical: 0.3.h,
@@ -784,7 +844,7 @@ class _ExploreScreenState extends State<ExploreScreen>
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: <Widget>[
                                 Text(
-                                  '${provider.filteredSalonData[index].discountPercentage} %off',
+                                  '${provider.salonData2[index].discount} %off',
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontSize: 10.sp,
@@ -823,8 +883,7 @@ class _ExploreScreenState extends State<ExploreScreen>
                                 ),
                               ),
                               TextSpan(
-                                text:
-                                    "${provider.formatTime(provider.filteredSalonData[index].timing!.opening ?? 0)} - ${provider.formatTime(provider.filteredSalonData[index].timing!.closing ?? 0)}",
+                                text: '${provider.salonData2[index].timing.opening} - ${provider.salonData2[index].timing.closing}',
                                 style: TextStyle(
                                   color: ColorsConstant.textDark,
                                   fontSize: 10.sp,
@@ -858,7 +917,7 @@ class _ExploreScreenState extends State<ExploreScreen>
                               ),
                               TextSpan(
                                 text: provider
-                                    .filteredSalonData[index].closingDay,
+                                    .salonData2[index].closedOn,
                                 style: TextStyle(
                                   color: ColorsConstant.textDark,
                                   fontSize: 10.sp,
@@ -872,7 +931,7 @@ class _ExploreScreenState extends State<ExploreScreen>
                     ],
                   ),
                   SizedBox(height: 1.2.h),
-                  index == (provider.filteredSalonData.length - 1)
+                  index == (provider.salonData2.length - 1)
                       ? SizedBox(height: 10.h)
                       : Divider(
                           thickness: 1,
@@ -915,7 +974,7 @@ class _ExploreScreen2State extends State<ExploreScreen2>
   void initState() {
     homeScreenController = TabController(length: 1, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-      context.read<ExploreProvider>().initExploreScreen(context);
+      context.read<ExploreProvider>().initHome2(context);
     });
     super.initState();
   }
@@ -932,7 +991,7 @@ class _ExploreScreen2State extends State<ExploreScreen2>
               slivers: <Widget>[
                 ReusableWidgets.transparentFlexibleSpace(),
                 titleSearchBarWithLocation(),
-                provider.filteredSalonData.length == 0
+                provider.salonData2.length == 0
                     ? SliverFillRemaining(
                   child: Container(
                     color: Colors.white,
@@ -981,10 +1040,13 @@ class _ExploreScreen2State extends State<ExploreScreen2>
                                   ),
                                 ),
                                 GestureDetector(
-                                  onTap: () => Navigator.pushNamed(
-                                    context,
-                                    NamedRoutes.exploreStylistRoute2,
-                                  ),
+                                  onTap: () async{
+                                    await provider.OnlyArtist(context);
+                                    Navigator.pushNamed(
+                                      context,
+                                      NamedRoutes.exploreStylistRoute2,
+                                    );
+                                  },
                                   child: Text(
                                     'more>>',
                                     style: TextStyle(
@@ -1003,11 +1065,11 @@ class _ExploreScreen2State extends State<ExploreScreen2>
                               child: ListView.builder(
                                 shrinkWrap: true,
                                 scrollDirection: Axis.horizontal,
-                                itemCount: provider.artistList.length,
+                                itemCount: provider.artistList2.length,
                                 physics: BouncingScrollPhysics(),
                                 itemBuilder: (context, index) {
-                                  Artist artist =
-                                  provider.artistList[index];
+                                  ArtistData artist =
+                                  provider.artistList2[index];
                                   return artistCard(
                                     artist,
                                     index,
@@ -1131,11 +1193,14 @@ class _ExploreScreen2State extends State<ExploreScreen2>
                                                   : ColorsConstant
                                                   .lightAppColor,
                                               borderRadius: 3.h,
-                                              onTap: () {
-                                                provider
-                                                    .setSelectedFilter(
-                                                    FilterType
-                                                        .Rating);
+                                              onTap: () async{
+                                                if (provider.selectedFilterTypeList.contains(FilterType.Rating)) {
+                                                  provider.selectedFilterTypeList.remove(FilterType.Rating);
+                                                  await provider.initHome3(context);
+                                                } else {
+                                                  provider.selectedFilterTypeList.add(FilterType.Rating);
+                                                  await provider.Filter(context);
+                                                }
                                                 Navigator.pop(context);
                                               },
                                               shouldShowBoxShadow: false,
@@ -1163,13 +1228,13 @@ class _ExploreScreen2State extends State<ExploreScreen2>
                             ),
                             SizedBox(height: 2.h),
                             ListView.builder(
-                              padding: EdgeInsets.zero,
-                              physics: NeverScrollableScrollPhysics(),
-                              shrinkWrap: true,
-                              itemBuilder: (context, index) =>
-                                  salonCard(index),
-                              itemCount:
-                              provider.filteredSalonData.length,
+                                padding: EdgeInsets.zero,
+                                physics: NeverScrollableScrollPhysics(),
+                                shrinkWrap: true,
+                                itemBuilder: (context, index) =>
+                                    salonCard(index),
+                                itemCount:
+                                provider.salonData2.length
                             )
                           ],
                         ),
@@ -1186,129 +1251,511 @@ class _ExploreScreen2State extends State<ExploreScreen2>
   }
 
   Widget artistCard(
-      Artist artist,
+      ArtistData artist,
       int index,
       ) {
     return Consumer<ExploreProvider>(builder: (context, provider, child) {
       return Padding(
         padding: EdgeInsets.only(right: 4.w),
-          child: CurvedBorderedCard(
-            borderColor: const Color(0xFFDBDBDB),
-            fillColor: index.isEven ? const Color(0xFF212121) : Colors.white,
-            child: Container(
-              padding: EdgeInsets.all(3.w),
-              constraints: BoxConstraints(maxWidth: 45.w),
-              width: 45.w,
-              child: GestureDetector(
-                onTap: () {
-                  context.read<BarberProvider>().setArtistDataFromHome(
-                    artist,
-                  );
-                  Navigator.pushNamed(
-                    context,
-                    NamedRoutes.barberProfileRoute2,
-                  );
-                },
-                child: Stack(
-                  children: <Widget>[
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 4.w),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: <Widget>[
-                          Column(
-                            children: <Widget>[
-                              Padding(
-                                padding: EdgeInsets.all(0.5.h),
-                                child: CircleAvatar(
-                                  radius: 5.h,
-                                  backgroundImage: NetworkImage(
-                                    artist.imagePath!,
+        child: CurvedBorderedCard(
+          borderColor: const Color(0xFFDBDBDB),
+          fillColor: index.isEven ? const Color(0xFF212121) : Colors.white,
+          child: Container(
+            padding: EdgeInsets.all(3.w),
+            constraints: BoxConstraints(maxWidth: 45.w),
+            width: 45.w,
+            child: GestureDetector(
+              onTap: () async {
+                SalonDetailsProvider salonDetailsProvider = context.read<SalonDetailsProvider>();
+                String artistId = artist.id;
+                String salonId = artist.salonId;
+                List<Service> services = artist.services;
+
+                BarberProvider barberDetailsProvider = context.read<BarberProvider>();
+
+                try {
+                  Loader.showLoader(context);
+
+                  // Prepare a list of Futures for all API calls
+                  List<Future<Response<dynamic>>> apiCalls = [
+                    Dio().get('http://13.235.49.214:8800/partner/artist/single/$artistId'),
+                    Dio().get('http://13.235.49.214:8800/partner/salon/single/$salonId'),
+                    // You may want to modify this part based on how you want to handle multiple services
+                    if (services.isNotEmpty) ...services.map((service) =>
+                        Dio().get('http://13.235.49.214:8800/partner/service/single/${service.serviceId}'))
+                  ];
+
+                  // Use Future.wait to run multiple async operations concurrently
+                  List<Response<dynamic>> responses = await Future.wait(apiCalls);
+
+                  Loader.hideLoader(context);
+
+                  // Check the responses for each API call
+                  for (var response in responses) {
+                    if (response.data != null && response.data is Map<String, dynamic>) {
+                      if (response.requestOptions.uri.pathSegments.contains('artist')) {
+                        // Process artist API response
+                        ArtistResponse apiResponse = ArtistResponse.fromJson(response.data);
+                        if (apiResponse != null && apiResponse.data != null) {
+                          barberDetailsProvider.setArtistDetails(apiResponse.data);
+                        } else {
+                          print('Failed to fetch artist details: Invalid response format');
+                        }
+                      } else if (response.requestOptions.uri.pathSegments.contains('salon')) {
+                        // Process salon API response
+                        ApiResponse apiResponse = ApiResponse.fromJson(response.data);
+                        ApiResponse salonDetails = ApiResponse(
+                          status: apiResponse.status,
+                          message: apiResponse.message,
+                          data: ApiResponseData(
+                            data: apiResponse.data.data,
+                            artists: apiResponse.data.artists,
+                            services: apiResponse.data.services,
+                          ),
+                        );
+                        salonDetailsProvider.setSalonDetails(salonDetails);
+                        barberDetailsProvider.setSalonDetails(salonDetails);
+                      } else if (response.requestOptions.uri.pathSegments.contains('service')) {
+                        ServiceResponse serviceResponse = ServiceResponse.fromJson(response.data);
+                        ServiceResponse serviceresponse = ServiceResponse(
+                            status: serviceResponse.status,
+                            message: serviceResponse.message,
+                            data:    serviceResponse.data);
+                        salonDetailsProvider.setServiceDetails(serviceresponse);
+                        if (serviceResponse != null && serviceResponse.data != null) {
+                          // Handle service response
+                        } else {
+                          print('Failed to fetch service details: Invalid response format');
+                        }
+                      }
+                    } else {
+                      print('Failed to fetch details: Invalid response format');
+                    }
+                  }
+
+                  // If the API calls are successful, navigate to the next screen
+                  Navigator.pushNamed(context, NamedRoutes.barberProfileRoute2, arguments: artistId);
+                } catch (error) {
+                  Loader.hideLoader(context);
+                  // Handle the case where the API call was not successful
+                  // You can show an error message or take appropriate action
+                  Navigator.pushNamed(context, NamedRoutes.bottomNavigationRoute2);
+                  print('Failed to fetch details: $error');
+                }
+              },
+              child: Stack(
+                children: <Widget>[
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 4.w),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: <Widget>[
+                        Column(
+                          children: <Widget>[
+                            Padding(
+                              padding: EdgeInsets.all(0.5.h),
+                              child: CircleAvatar(
+                                radius: 5.h,
+                                backgroundImage: NetworkImage(
+                                  artist.imageUrl,
+                                ),
+                              ),
+                            ),
+                            Text(
+                              artist.name ?? '',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: index.isOdd
+                                    ? ColorsConstant.textDark
+                                    : Colors.white,
+                                fontSize: 13.sp,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            Text(
+                              artist.salonId ?? '',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: ColorsConstant.textLight,
+                                fontSize: 10.sp,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            Text.rich(
+                              TextSpan(
+                                children: <InlineSpan>[
+                                  WidgetSpan(
+                                    alignment: PlaceholderAlignment.baseline,
+                                    baseline: TextBaseline.ideographic,
+                                    child: SvgPicture.asset(
+                                      ImagePathConstant.starIcon,
+                                      color: ColorsConstant.greenRating,
+                                    ),
                                   ),
+                                  WidgetSpan(
+                                    child: SizedBox(width: 1.w),
+                                  ),
+                                  TextSpan(
+                                    text: artist.rating.toStringAsFixed(1),
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 10.sp,
+                                      color: ColorsConstant.greenRating,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        Align(
+                          alignment: Alignment.bottomCenter,
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: <Widget>[
+                              Text.rich(
+                                TextSpan(
+                                  children: <InlineSpan>[
+                                    WidgetSpan(
+                                      alignment: PlaceholderAlignment.baseline,
+                                      baseline: TextBaseline.ideographic,
+                                      child: SvgPicture.asset(
+                                        ImagePathConstant.locationIconAlt,
+                                        color: ColorsConstant.purpleDistance,
+                                        height: 2.h,
+                                      ),
+                                    ),
+                                    WidgetSpan(
+                                      child: SizedBox(width: 1.w),
+                                    ),
+                                    TextSpan(
+                                      text: '',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 10.sp,
+                                        color: ColorsConstant.purpleDistance,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                              Text(
-                                artist.name ?? '',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: index.isOdd
-                                      ? ColorsConstant.textDark
-                                      : Colors.white,
-                                  fontSize: 13.sp,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              Text(
-                                artist.salonName ?? '',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: ColorsConstant.textLight,
-                                  fontSize: 10.sp,
-                                  fontWeight: FontWeight.w500,
+                              Text.rich(
+                                TextSpan(
+                                  children: <InlineSpan>[
+                                    WidgetSpan(
+                                      alignment: PlaceholderAlignment.baseline,
+                                      baseline: TextBaseline.ideographic,
+                                      child: SvgPicture.asset(
+                                        ImagePathConstant.starIcon,
+                                        color: ColorsConstant.greenRating,
+                                      ),
+                                    ),
+                                    WidgetSpan(
+                                      child: SizedBox(width: 1.w),
+                                    ),
+                                    TextSpan(
+                                      text: artist.rating.toStringAsFixed(1),
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 10.sp,
+                                        color: ColorsConstant.greenRating,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ],
                           ),
-                          Align(
-                            alignment: Alignment.bottomCenter,
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: <Widget>[
-                                Text.rich(
-                                  TextSpan(
-                                    children: <InlineSpan>[
-                                      WidgetSpan(
-                                        alignment: PlaceholderAlignment.baseline,
-                                        baseline: TextBaseline.ideographic,
-                                        child: SvgPicture.asset(
-                                          ImagePathConstant.locationIconAlt,
-                                          color: ColorsConstant.purpleDistance,
-                                          height: 2.h,
-                                        ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Align(
+                    alignment: Alignment.topRight,
+                    child: InkWell(
+                      onTap: () {
+                       showSignInDialog(context);
+                      },
+                      child: SvgPicture.asset(
+                        context
+                            .read<HomeProvider>()
+                            .artistList2
+                            .contains(artist.id)
+                            ? ImagePathConstant.saveIconFill
+                            : ImagePathConstant.saveIcon,
+                        color: context
+                            .read<HomeProvider>()
+                            .artistList2
+                            .contains(artist.id)
+                            ? ColorsConstant.appColor
+                            : index.isOdd
+                            ? const Color(0xFF212121)
+                            : Colors.white,
+                        height: 3.h,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    });
+  }
+
+  Widget titleSearchBarWithLocation() {
+    return MediaQuery.removePadding(
+      context: context,
+      removeTop: true,
+      child: SliverAppBar(
+        elevation: 10,
+        automaticallyImplyLeading: false,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(3.h),
+            topRight: Radius.circular(3.h),
+          ),
+        ),
+        backgroundColor: Colors.white,
+        pinned: true,
+        floating: true,
+        title: GestureDetector(
+          onTap: () => FocusManager.instance.primaryFocus!.unfocus(),
+          child: Container(
+            padding: EdgeInsets.only(top: 3.h),
+            child: Row(
+              children:[
+                IconButton(onPressed: (){
+                  Navigator.pushNamed(context, NamedRoutes.bottomNavigationRoute2);
+                }, icon: Icon(Icons.arrow_back_ios,color: Colors.black,)),
+                Text(
+                  StringConstant.exploreSalons,
+                  style: StyleConstant.headingTextStyle,
+                ),
+              ],
+            ),
+          ),
+        ),
+        centerTitle: false,
+        bottom: PreferredSize(
+          preferredSize: Size.fromHeight(13.h),
+          child: Consumer<ExploreProvider>(builder: (context, provider, child) {
+            return TabBar(
+              controller: homeScreenController,
+              indicatorColor: Colors.white,
+              tabs: <Widget>[
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => FocusManager.instance.primaryFocus!.unfocus(),
+                  child: Padding(
+                    padding: EdgeInsets.only(top: 4.3.h, bottom: 2.h),
+                    child: TextFormField(
+                      controller: provider.salonSearchController,
+                      cursorColor: ColorsConstant.appColor,
+                      style: StyleConstant.searchTextStyle,
+                      textInputAction: TextInputAction.done,
+                      onChanged: (searchText) =>
+                          provider.filterArtistList(searchText),
+                      decoration: StyleConstant.searchBoxInputDecoration(
+                        context,
+                        hintText: StringConstant.search,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          }),
+        ),
+      ),
+    );
+  }
+
+  Widget salonCard(int index) {
+    return Consumer2<ExploreProvider,HomeProvider>(
+      builder: (context, provider,homeprovider, child) {
+
+        return Container(
+          color: Colors.white,
+          child: GestureDetector(
+            onTap: () async {
+              String salonId =  provider.salonData2[index].id ?? '';
+              SalonDetailsProvider salonDetailsProvider = context.read<SalonDetailsProvider>();
+
+              try {
+                Loader.showLoader(context);
+                final response = await Dio().get(
+                  'http://13.235.49.214:8800/partner/salon/single/$salonId',
+                );
+                Loader.hideLoader(context);
+
+                ApiResponse apiResponse = ApiResponse.fromJson(response.data);
+                ApiResponse salonDetails = ApiResponse(
+                  status: apiResponse.status,
+                  message: apiResponse.message,
+                  data: ApiResponseData(
+                    data: apiResponse.data.data,
+                    artists: apiResponse.data.artists,
+                    services: apiResponse.data.services,
+                  ),
+                );
+
+                // Pass the salonDetails to SalonDetailsProvider
+                salonDetailsProvider.setSalonDetails(salonDetails);
+
+                // If the API call is successful, navigate to the SalonDetailsScreen
+                Navigator.pushNamed(context, NamedRoutes.salonDetailsRoute2, arguments: salonId);
+              } catch (error) {
+                Loader.hideLoader(context);
+                // Handle the case where the API call was not successful
+                // You can show an error message or take appropriate action
+                Navigator.pushNamed(context, NamedRoutes.bottomNavigationRoute2);
+                print('Failed to fetch salon details: $error');
+              }
+            },
+            child: Container(
+              decoration: BoxDecoration(borderRadius: BorderRadius.circular(5)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  CarouselSlider(
+                    options: CarouselOptions(
+                        viewportFraction: 1.0,
+                        autoPlay: true,
+                        autoPlayInterval: Duration(seconds: 3),
+                        autoPlayAnimationDuration: Duration(milliseconds: 800),
+                        autoPlayCurve: Curves.fastOutSlowIn),
+                    items: (provider.salonData2[index].images ?? <ImageData>[]) // Use an empty list if images is null
+                        .map((ImageData imageUrl) {
+                      return Builder(
+                        builder: (BuildContext context) {
+                          return Stack(
+                            children: <Widget>[
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(5),
+                                child: Image.network(
+                                  imageUrl.url as String, // Cast imageUrl to String
+                                  height: 35.h,
+                                  width: SizerUtil.width,
+                                  fit: BoxFit.fill,
+                                  // When image is loading from the server it takes some time
+                                  // So we will show progress indicator while loading
+                                  loadingBuilder: (BuildContext context,
+                                      Widget child,
+                                      ImageChunkEvent? loadingProgress) {
+                                    if (loadingProgress == null) return child;
+                                    return Center(
+                                      child: CircularProgressIndicator(
+                                        value: loadingProgress
+                                            .expectedTotalBytes !=
+                                            null
+                                            ? loadingProgress
+                                            .cumulativeBytesLoaded /
+                                            loadingProgress
+                                                .expectedTotalBytes!
+                                            : null,
                                       ),
-                                      WidgetSpan(
-                                        child: SizedBox(width: 1.w),
-                                      ),
-                                      TextSpan(
-                                        text: provider.filteredSalonData
-                                            .firstWhere(
-                                              (element) =>
-                                          element.id == artist.salonId,
-                                        )
-                                            .distanceFromUserAsString,
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 10.sp,
-                                          color: ColorsConstant.purpleDistance,
-                                        ),
-                                      ),
-                                    ],
+                                    );
+                                  },
+                                ),
+                              ),
+                              Positioned(
+                                top: 1.h,
+                                right: 1.h,
+                                child: InkWell(
+                                  onTap: () {
+                                   showSignInDialog(context);
+                                  },
+                                  child: Container(
+                                    padding: EdgeInsets.all(1.w),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Icon(
+                                      context
+                                          .read<HomeProvider>()
+                                          .salonList2
+                                          .contains(provider
+                                          .salonData2[index].id)
+
+                                          ?  CupertinoIcons.heart_fill
+                                          : CupertinoIcons.heart,
+                                      size: 2.5.h,
+                                      color: ColorsConstant.appColor,
+                                    ),
                                   ),
                                 ),
-                                Text.rich(
-                                  TextSpan(
-                                    children: <InlineSpan>[
-                                      WidgetSpan(
-                                        alignment: PlaceholderAlignment.baseline,
-                                        baseline: TextBaseline.ideographic,
-                                        child: SvgPicture.asset(
-                                          ImagePathConstant.starIcon,
-                                          color: ColorsConstant.greenRating,
-                                        ),
-                                      ),
-                                      WidgetSpan(
-                                        child: SizedBox(width: 1.w),
-                                      ),
-                                      TextSpan(
-                                        text: artist.rating.toString(),
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 10.sp,
-                                          color: ColorsConstant.greenRating,
-                                        ),
-                                      ),
-                                    ],
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                    }).toList(),
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        provider.salonData2[index].name ?? '',
+                        style: TextStyle(
+                          color: ColorsConstant.textDark,
+                          fontSize: 15.sp,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Text(
+                        '${provider.salonData2[index].address}',
+                        style: TextStyle(
+                          color: ColorsConstant.greySalonAddress,
+                          fontSize: 11.sp,
+                        ),
+                      ),
+                      SizedBox(height: 1.2.h),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: <Widget>[
+                          ColorfulInformationCard(
+                            imagePath: ImagePathConstant.locationIconAlt,
+                            text:
+                            '${provider.salonData2[index].distance.toStringAsFixed(2)}',
+                            color: ColorsConstant.purpleDistance,
+                          ),
+                          SizedBox(width: 3.w),
+                          ColorfulInformationCard(
+                            imagePath: ImagePathConstant.starIcon,
+                            text: '${provider.salonData2[index].rating.toStringAsFixed(1)}',
+                            color: ColorsConstant.greenRating,
+                          ),
+                          SizedBox(width: 3.w),
+                          provider.salonData2[index].discount == 0 ||provider.salonData2[index].discount==null?SizedBox():Container(
+                            constraints: BoxConstraints(minWidth: 13.w),
+                            padding: EdgeInsets.symmetric(
+                              vertical: 0.3.h,
+                              horizontal: 2.w,
+                            ),
+                            decoration: BoxDecoration(
+                              color: ColorsConstant.appColor,
+                              borderRadius: BorderRadius.circular(0.5.h),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Color(0xFF000000).withOpacity(0.14),
+                                  blurRadius: 10,
+                                  spreadRadius: 2,
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: <Widget>[
+                                Text(
+                                  '${provider.salonData2[index].discount} %off',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10.sp,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
                               ],
@@ -1316,32 +1763,108 @@ class _ExploreScreen2State extends State<ExploreScreen2>
                           ),
                         ],
                       ),
-                    ),
-                    Align(
-                      alignment: Alignment.topRight,
-                      child: InkWell(
-                        onTap: () {
-                           showSignInDialog(context);
-                        },
-                        child: SvgPicture.asset(
-                               ImagePathConstant.saveIcon,
-                          color:
-                               ColorsConstant.appColor,
-                             //  index.isOdd
-                           //   const Color(0xFF212121)
-                           //   Colors.white,
-                          height: 3.h,
+                    ],
+                  ),
+                  SizedBox(height: 1.5.h),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      TimeDateCard(
+                        child: Text.rich(
+                          TextSpan(
+                            children: [
+                              TextSpan(
+                                text: StringConstant.timings,
+                                style: TextStyle(
+                                  color: ColorsConstant.textDark,
+                                  fontSize: 10.sp,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              TextSpan(
+                                text: "  |  ",
+                                style: TextStyle(
+                                  color: ColorsConstant.textDark,
+                                  fontSize: 10.sp,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              TextSpan(
+                                text: '${provider.salonData2[index].timing.opening} - ${provider.salonData2[index].timing.closing}',
+                                style: TextStyle(
+                                  color: ColorsConstant.textDark,
+                                  fontSize: 10.sp,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
+                      SizedBox(height: 2.w),
+                      TimeDateCard(
+                        child: Text.rich(
+                          TextSpan(
+                            children: [
+                              TextSpan(
+                                text: StringConstant.closed,
+                                style: TextStyle(
+                                  color: ColorsConstant.textDark,
+                                  fontSize: 10.sp,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              TextSpan(
+                                text: "  |  ",
+                                style: TextStyle(
+                                  color: ColorsConstant.textDark,
+                                  fontSize: 10.sp,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              TextSpan(
+                                text: provider
+                                    .salonData2[index].closedOn,
+                                style: TextStyle(
+                                  color: ColorsConstant.textDark,
+                                  fontSize: 10.sp,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 1.2.h),
+                  index == (provider.salonData2.length - 1)
+                      ? SizedBox(height: 10.h)
+                      : Divider(
+                    thickness: 1,
+                    color: ColorsConstant.divider,
+                  ),
+                  SizedBox(height: 1.h),
+                ],
               ),
             ),
           ),
-      );
-    });
+        );
+      },
+    );
   }
+
+  Widget appScreenCommonBackground() {
+    return Container(
+      color: ColorsConstant.appBackgroundColor,
+      alignment: Alignment.topCenter,
+      child: SvgPicture.asset(
+        ImagePathConstant.appBackgroundImage,
+        color: ColorsConstant.graphicFill,
+      ),
+    );
+  }
+
   void showSignInDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -1396,8 +1919,8 @@ class _ExploreScreen2State extends State<ExploreScreen2>
                     child: Text("OK",style: TextStyle( color:Colors.black,)),
                     onPressed: () {
                       Navigator.pushNamed(
-                        context,
-                        NamedRoutes.authenticationRoute2,
+                          context,
+                          NamedRoutes.authenticationRoute
                       );
                     },
                   ),
@@ -1409,380 +1932,5 @@ class _ExploreScreen2State extends State<ExploreScreen2>
       },
     );
   }
-
-  Widget titleSearchBarWithLocation() {
-    return MediaQuery.removePadding(
-      context: context,
-      removeTop: true,
-      child: SliverAppBar(
-        elevation: 10,
-        automaticallyImplyLeading: false,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(3.h),
-            topRight: Radius.circular(3.h),
-          ),
-        ),
-        backgroundColor: Colors.white,
-        pinned: true,
-        floating: true,
-        title: GestureDetector(
-          onTap: () => FocusManager.instance.primaryFocus!.unfocus(),
-          child: Container(
-            padding: EdgeInsets.only(top: 3.h),
-            child: Text(
-              StringConstant.exploreSalons,
-              style: StyleConstant.headingTextStyle,
-            ),
-          ),
-        ),
-        centerTitle: false,
-        bottom: PreferredSize(
-          preferredSize: Size.fromHeight(13.h),
-          child: Consumer<ExploreProvider>(builder: (context, provider, child) {
-            return TabBar(
-              controller: homeScreenController,
-              indicatorColor: Colors.white,
-              tabs: <Widget>[
-                GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () => FocusManager.instance.primaryFocus!.unfocus(),
-                  child: Padding(
-                    padding: EdgeInsets.only(top: 4.3.h, bottom: 2.h),
-                    child: TextFormField(
-                      controller: provider.salonSearchController,
-                      cursorColor: ColorsConstant.appColor,
-                      style: StyleConstant.searchTextStyle,
-                      textInputAction: TextInputAction.done,
-                      onChanged: (searchText) =>
-                          provider.filterSalonList(searchText),
-                      decoration: StyleConstant.searchBoxInputDecoration(
-                        context,
-                        hintText: StringConstant.search,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            );
-          }),
-        ),
-      ),
-    );
-  }
-
-  Widget salonCard(int index) {
-    return Consumer<ExploreProvider>(
-      builder: (context, provider, child) {
-        return Container(
-          color: Colors.white,
-          child: GestureDetector(
-            onTap: () {
-              FocusManager.instance.primaryFocus!.unfocus();
-              provider.setSelectedSalonIndex(context, index: index);
-              Navigator.pushNamed(context, NamedRoutes.salonDetailsRoute2);
-            },
-            child: Container(
-              decoration: BoxDecoration(borderRadius: BorderRadius.circular(5)),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  CarouselSlider(
-                    options: CarouselOptions(
-                        viewportFraction: 1.0,
-                        autoPlay: true,
-                        autoPlayInterval: Duration(seconds: 3),
-                        autoPlayAnimationDuration: Duration(milliseconds: 800),
-                        autoPlayCurve: Curves.fastOutSlowIn),
-                    items: provider.filteredSalonData[index].imageList!
-                        .map((imageUrl) {
-                      return Builder(
-                        builder: (BuildContext context) {
-                          return Stack(
-                            children: <Widget>[
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(5),
-                                child: Image.network(
-                                  imageUrl,
-                                  height: 35.h,
-                                  width: SizerUtil.width,
-                                  fit: BoxFit.fill,
-                                  // When image is loading from the server it takes some time
-                                  // So we will show progress indicator while loading
-                                  loadingBuilder: (BuildContext context,
-                                      Widget child,
-                                      ImageChunkEvent? loadingProgress) {
-                                    if (loadingProgress == null) return child;
-                                    return Center(
-                                      child: CircularProgressIndicator(
-                                        value: loadingProgress
-                                            .expectedTotalBytes !=
-                                            null
-                                            ? loadingProgress
-                                            .cumulativeBytesLoaded /
-                                            loadingProgress
-                                                .expectedTotalBytes!
-                                            : null,
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
-                              Positioned(
-                                top: 1.h,
-                                right: 1.h,
-                                child: InkWell(
-                                  onTap: () {
-                                   showSignInDialog(context);
-                                  },
-                                  child: Container(
-                                    padding: EdgeInsets.all(1.w),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Icon(
-                                     /* context
-                                          .read<HomeProvider>()
-                                          .userData
-                                          .preferredSalon!
-                                          .contains(provider
-                                          .filteredSalonData[index].id)
-*/
-                                           CupertinoIcons.heart,
-                                          //: CupertinoIcons.heart,
-                                      size: 2.5.h,
-                                      color: ColorsConstant.appColor,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          );
-                        },
-                      );
-                    }).toList(),
-                  ),
-                  // Stack(
-                  //   children: <Widget>[
-                  //     ClipRRect(
-                  //       borderRadius: BorderRadius.circular(5),
-                  //       child: Image.network(
-                  //         provider.filteredSalonData[index].imageList![0],
-                  //         height: 35.h,
-                  //         fit: BoxFit.cover,
-                  //       ),
-                  //     ),
-                  //     Positioned(
-                  //       top: 1.h,
-                  //       right: 1.h,
-                  //       child: InkWell(
-                  //         onTap: () {
-                  //           if (!context
-                  //               .read<HomeProvider>()
-                  //               .userData
-                  //               .preferredSalon!
-                  //               .contains(
-                  //               provider.filteredSalonData[index].id)) {
-                  //             provider.addPreferedSalon(context,
-                  //                 provider.filteredSalonData[index].id);
-                  //           } else {
-                  //             provider.removePreferedSalon(context,
-                  //                 provider.filteredSalonData[index].id);
-                  //           }
-                  //         },
-                  //         child: Container(
-                  //           padding: EdgeInsets.all(1.w),
-                  //           decoration: BoxDecoration(
-                  //             color: Colors.white,
-                  //             shape: BoxShape.circle,
-                  //           ),
-                  //           child: Icon(
-                  //             context
-                  //                 .read<HomeProvider>()
-                  //                 .userData
-                  //                 .preferredSalon!
-                  //                 .contains(
-                  //                 provider.filteredSalonData[index].id)
-                  //                 ? CupertinoIcons.heart_fill
-                  //                 : CupertinoIcons.heart,
-                  //             size: 2.5.h,
-                  //             color: ColorsConstant.appColor,
-                  //           ),
-                  //         ),
-                  //       ),
-                  //     ),
-                  //   ],
-                  // ),
-                  SizedBox(height: 1.4.h),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Text(
-                        provider.filteredSalonData[index].name ?? '',
-                        style: TextStyle(
-                          color: ColorsConstant.textDark,
-                          fontSize: 15.sp,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      Text(
-                        '${provider.filteredSalonData[index].address?.addressString}',
-                        style: TextStyle(
-                          color: ColorsConstant.greySalonAddress,
-                          fontSize: 11.sp,
-                        ),
-                      ),
-                      SizedBox(height: 1.2.h),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: <Widget>[
-                          ColorfulInformationCard(
-                            imagePath: ImagePathConstant.locationIconAlt,
-                            text:
-                            '${provider.filteredSalonData[index].distanceFromUserAsString}',
-                            color: ColorsConstant.purpleDistance,
-                          ),
-                          SizedBox(width: 3.w),
-                          ColorfulInformationCard(
-                            imagePath: ImagePathConstant.starIcon,
-                            text: '${provider.filteredSalonData[index].rating}',
-                            color: ColorsConstant.greenRating,
-                          ),
-                          SizedBox(width: 3.w),
-                          provider.filteredSalonData[index].discountPercentage==0||provider.filteredSalonData[index].discountPercentage==null?SizedBox():Container(
-                            constraints: BoxConstraints(minWidth: 13.w),
-                            padding: EdgeInsets.symmetric(
-                              vertical: 0.3.h,
-                              horizontal: 2.w,
-                            ),
-                            decoration: BoxDecoration(
-                              color: ColorsConstant.appColor,
-                              borderRadius: BorderRadius.circular(0.5.h),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Color(0xFF000000).withOpacity(0.14),
-                                  blurRadius: 10,
-                                  spreadRadius: 2,
-                                ),
-                              ],
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: <Widget>[
-                                Text(
-                                  '${provider.filteredSalonData[index].discountPercentage} %off',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 10.sp,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 1.5.h),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      TimeDateCard(
-                        child: Text.rich(
-                          TextSpan(
-                            children: [
-                              TextSpan(
-                                text: StringConstant.timings,
-                                style: TextStyle(
-                                  color: ColorsConstant.textDark,
-                                  fontSize: 10.sp,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              TextSpan(
-                                text: "  |  ",
-                                style: TextStyle(
-                                  color: ColorsConstant.textDark,
-                                  fontSize: 10.sp,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              TextSpan(
-                                text:
-                                "${provider.formatTime(provider.filteredSalonData[index].timing!.opening ?? 0)} - ${provider.formatTime(provider.filteredSalonData[index].timing!.closing ?? 0)}",
-                                style: TextStyle(
-                                  color: ColorsConstant.textDark,
-                                  fontSize: 10.sp,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      SizedBox(height: 2.w),
-                      TimeDateCard(
-                        child: Text.rich(
-                          TextSpan(
-                            children: [
-                              TextSpan(
-                                text: StringConstant.closed,
-                                style: TextStyle(
-                                  color: ColorsConstant.textDark,
-                                  fontSize: 10.sp,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              TextSpan(
-                                text: "  |  ",
-                                style: TextStyle(
-                                  color: ColorsConstant.textDark,
-                                  fontSize: 10.sp,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              TextSpan(
-                                text: provider
-                                    .filteredSalonData[index].closingDay,
-                                style: TextStyle(
-                                  color: ColorsConstant.textDark,
-                                  fontSize: 10.sp,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 1.2.h),
-                  index == (provider.filteredSalonData.length - 1)
-                      ? SizedBox(height: 10.h)
-                      : Divider(
-                    thickness: 1,
-                    color: ColorsConstant.divider,
-                  ),
-                  SizedBox(height: 1.h),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget appScreenCommonBackground() {
-    return Container(
-      color: ColorsConstant.appBackgroundColor,
-      alignment: Alignment.topCenter,
-      child: SvgPicture.asset(
-        ImagePathConstant.appBackgroundImage,
-        color: ColorsConstant.graphicFill,
-      ),
-    );
-  }
 }
+

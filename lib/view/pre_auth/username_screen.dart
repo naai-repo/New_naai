@@ -9,6 +9,10 @@ import 'package:naai/view_model/pre_auth/authentication_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:sizer/sizer.dart';
 
+import '../../controller/update_user_controller.dart';
+import '../../utils/routing/named_routes.dart';
+import '../../view_model/pre_auth/loginResult.dart';
+
 class UsernameScreen extends StatelessWidget {
   const UsernameScreen({Key? key}) : super(key: key);
 
@@ -26,7 +30,10 @@ class UsernameScreen extends StatelessWidget {
           title: IconButton(
             onPressed: () {
               provider.clearUsernameController();
-              Navigator.pop(context);
+              Navigator.pushReplacementNamed(
+                context,
+                NamedRoutes.authenticationRoute,
+              );
             },
             splashRadius: 0.1,
             splashColor: Colors.transparent,
@@ -41,72 +48,142 @@ class UsernameScreen extends StatelessWidget {
           onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
           child: Padding(
             padding: EdgeInsets.symmetric(horizontal: 5.w, vertical: 2.h),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  StringConstant.addName,
-                  style: TextStyle(
-                    fontSize: 19.sp,
-                    fontWeight: FontWeight.w600,
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    StringConstant.addName,
+                    style: TextStyle(
+                      fontSize: 19.sp,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                ),
-                Text(
-                  StringConstant.addNameSubtext,
-                  style: TextStyle(
-                    fontSize: 11.sp,
-                    color: ColorsConstant.textLight,
+                  Text(
+                    StringConstant.addNameSubtext,
+                    style: TextStyle(
+                      fontSize: 11.sp,
+                      color: ColorsConstant.textLight,
+                    ),
                   ),
-                ),
-                SizedBox(height: 3.h),
-                userNameTextField(),
-                Padding(
-                  padding: EdgeInsets.only(top: 3.h),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Text(
-                        StringConstant.chooseYourGender,
-                        style: TextStyle(
-                          fontSize: 11.sp,
-                          color: ColorsConstant.textLight,
+                  SizedBox(height: 3.h),
+                  userNameTextField(),
+                  Padding(
+                    padding: EdgeInsets.only(top: 3.h),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(
+                          StringConstant.chooseYourGender,
+                          style: TextStyle(
+                            fontSize: 11.sp,
+                            color: ColorsConstant.textLight,
+                          ),
                         ),
-                      ),
-                      SizedBox(height: 2.h),
-                      Row(
-                        children: <Widget>[
-                          genderSelector(
-                            text: StringConstant.male,
-                            isSelected:
-                                provider.selectedGender == StringConstant.male,
-                          ),
-                          SizedBox(
-                            width: 10.w,
-                          ),
-                          genderSelector(
-                            text: StringConstant.female,
-                            isSelected: provider.selectedGender ==
-                                StringConstant.female,
-                          ),
-                        ],
-                      ),
-                    ],
+                        SizedBox(height: 2.h),
+                        Row(
+                          children: <Widget>[
+                            genderSelector(
+                              text: StringConstant.male,
+                              isSelected:
+                                  provider.selectedGender == StringConstant.male,
+                            ),
+                            SizedBox(
+                              width: 10.w,
+                            ),
+                            genderSelector(
+                              text: StringConstant.female,
+                              isSelected: provider.selectedGender ==
+                                  StringConstant.female,
+                            ),
+                          ],
+                        ),
+                    SizedBox(height: 3.h),
+                    authenticationOptionsDivider(),
+                    Text(
+                    StringConstant.Optional,
+                    style: TextStyle(
+                      fontSize: 11.sp,
+                      color: ColorsConstant.textLight,
+                    ),
                   ),
-                ),
-                Spacer(),
-                ReusableWidgets.redFullWidthButton(
-                  buttonText: StringConstant.continueText,
-                  onTap: () => provider.storePhoneAuthDataInDb(context),
-                  isActive: provider.isUsernameButtonActive,
-                ),
-              ],
+                        SizedBox(height: 3.h),
+                        emailTextField(),
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: 25.h),
+                  ReusableWidgets.redFullWidthButton(
+                    buttonText: StringConstant.continueText,
+                    onTap: () async {
+                       try {
+                         final loginResult = Provider.of<LoginResultProvider>(context, listen: false).loginResult;
+                         final userId = loginResult?['userId'];
+                         final name = provider.userNameController.text;
+                        final gender = provider.selectedGender;
+                        final email = provider.emailController.text;
+                        final userData = {
+                          'name': name,
+                          'gender': gender,
+                          'email': email,
+                        };
+                        final updateController = UpdateUserController();
+                        final response = await updateController.updateUser(userId, userData, context);
+
+                        if (response.status == 'success') {
+                          Navigator.pushReplacementNamed(
+                            context,
+                            NamedRoutes.bottomNavigationRoute,
+                          );
+                        } else {
+                          // Handle update user failure, show an error message or perform any other actions
+                          print('Update user failed: ${response.message}');
+                          ReusableWidgets.showFlutterToast(context, 'Update user failed: ${response.message}');
+                        }
+                      } catch (error) {
+                        print('Error during update user: $error');
+                        // Handle error, show an error message or perform any other actions
+                        ReusableWidgets.showFlutterToast(context, 'Error during update user');
+                      }
+                    },
+                    isActive: provider.isUsernameButtonActive,
+                  ),
+                ],
+              ),
             ),
           ),
         ),
       );
     });
   }
-
+  Widget authenticationOptionsDivider() {
+    return Row(
+      children: <Widget>[
+        SizedBox(width: 5.w),
+        Expanded(
+          child: Divider(
+            thickness: 2.0,
+          ),
+        ),
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 5.w),
+          child: Text(
+            StringConstant.or,
+            style: TextStyle(
+              fontSize: 13.sp,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+        Expanded(
+          child: Divider(
+            thickness: 2.0,
+          ),
+        ),
+        SizedBox(width: 5.w),
+      ],
+    );
+  }
   Widget genderSelector({
     required String text,
     bool isSelected = false,
@@ -187,6 +264,47 @@ class UsernameScreen extends StatelessWidget {
               letterSpacing: 0.5,
               color: ColorsConstant.enterMobileTextColor,
             ),
+            border: OutlineInputBorder(
+              borderSide: BorderSide.none,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            counterText: '',
+          ),
+        );
+      },
+    );
+  }
+
+  Widget emailTextField() {
+    return Consumer<AuthenticationProvider>(
+      builder: (context, provider, child) {
+        return TextFormField(
+          controller: provider.emailController,
+          textCapitalization: TextCapitalization.words,
+          keyboardType: TextInputType.emailAddress,
+          cursorColor: ColorsConstant.appColor,
+          maxLength: 20,
+          onChanged: (value) => provider.setUsernameButtonActive(),
+          inputFormatters: <TextInputFormatter>[
+            FilteringTextInputFormatter.deny(RegExp('[0-9]'))
+          ],
+          style: TextStyle(
+            fontSize: 12.sp,
+            letterSpacing: 3.0,
+            fontWeight: FontWeight.w500,
+          ),
+          textInputAction: TextInputAction.done,
+          decoration: InputDecoration(
+            contentPadding:
+            EdgeInsets.symmetric(horizontal: 5.w, vertical: 2.h),
+            filled: true,
+            fillColor: ColorsConstant.appColorAccent,
+            hintText: StringConstant.enterYourEmail,
+            hintStyle: TextStyle(
+              fontSize: 11.sp,
+              fontWeight: FontWeight.w400,
+              letterSpacing: 0.5,
+              color: ColorsConstant.enterMobileTextColor,),
             border: OutlineInputBorder(
               borderSide: BorderSide.none,
               borderRadius: BorderRadius.circular(10),

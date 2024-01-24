@@ -18,6 +18,8 @@ import 'package:provider/provider.dart';
 import 'package:sizer/sizer.dart';
 import 'package:intl/intl.dart';
 
+import '../../models/salon_detail.dart';
+
 class ReusableWidgets {
   static Widget redFullWidthButton({
     required String buttonText,
@@ -389,7 +391,7 @@ class ReusableWidgets {
             ),
           ),
           SizedBox(height: 1.h),
-          provider.filteredServiceList.length == 0
+          provider.salonDetails!.data.services.length == 0
               ? Container(
                   height: 10.h,
                   child: Center(
@@ -400,16 +402,16 @@ class ReusableWidgets {
                   padding: EdgeInsets.zero,
                   shrinkWrap: true,
                   physics: NeverScrollableScrollPhysics(),
-                  itemCount: provider.filteredServiceList.length,
+                  itemCount: provider.salonDetails!.data.services.length,
                   itemBuilder: (context, index) {
-                    ServiceDetail? serviceDetail =
-                        provider.filteredServiceList[index];
-                    bool isAdded = provider.currentBooking.serviceIds
+                    DataService? serviceDetail =
+                        provider.salonDetails!.data.services[index];
+                    bool isAdded = provider.salonDetails!.data.services
                             ?.contains(serviceDetail.id) ??
                         false;
                     return GestureDetector(
                       onTap: () =>
-                          provider.setSelectedService(serviceDetail.id ?? ''),
+                          provider.setSelectedService2(serviceDetail.id ?? ''),
                       child: Container(
                         margin: EdgeInsets.symmetric(
                           vertical: 1.h,
@@ -457,7 +459,7 @@ class ReusableWidgets {
                               crossAxisAlignment: CrossAxisAlignment.center,
                               children: <Widget>[
                                 Text(
-                                  "Rs. ${serviceDetail.price}",
+                                  "Rs. ${serviceDetail.basePrice}",
                                   style: TextStyle(
                                     fontSize: 10.sp,
                                     fontWeight: FontWeight.w600,
@@ -471,9 +473,12 @@ class ReusableWidgets {
                                     width: 2,
                                   ),
                                   value: isAdded,
-                                  onChanged: (value) =>
-                                      provider.setSelectedService(
-                                          serviceDetail.id ?? ''),
+                                  onChanged: (value) {
+                                    isAdded = value ?? false;
+                                    provider.setSelectedService2(
+                                        serviceDetail.id ?? '');
+                                    //      provider.toggleServiceSelection(serviceDetail.id ?? '', value ?? false),
+                                  },
                                 ),
                               ],
                             ),

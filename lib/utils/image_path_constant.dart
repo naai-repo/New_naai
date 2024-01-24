@@ -1,6 +1,7 @@
 import 'package:naai/utils/utility_functions.dart';
 
 class ImagePathConstant {
+  static final String loginScreen = UtilityFunctions.getImagePath(imageTitle: 'BG.svg');
   static final String appLogo =
       UtilityFunctions.getImagePath(imageTitle: 'app_logo.png');
   static final String inAppLogo =

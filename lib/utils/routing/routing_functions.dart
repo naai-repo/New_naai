@@ -12,7 +12,7 @@ import 'package:naai/view/post_auth/profile/booking_history_screen.dart';
 import 'package:naai/view/post_auth/profile/favourites_screen.dart';
 import 'package:naai/view/post_auth/profile/reviews_screen.dart';
 import 'package:naai/view/post_auth/salon_details/salon_details_screen.dart';
-import 'package:naai/view/pre_auth/authentication_screen.dart';
+import 'package:naai/view/pre_auth/Authentication_screen.dart';
 import 'package:naai/view/post_auth/explore/explore_screen.dart';
 import 'package:naai/view/pre_auth/username_screen.dart';
 import 'package:naai/view/pre_auth/verify_otp_screen.dart';
@@ -20,6 +20,7 @@ import 'package:naai/view/splash_screen.dart';
 import 'package:naai/utils/routing/named_routes.dart';
 
 import '../../view/post_auth/profile/profile_screen.dart';
+import '../../view/pre_auth/forget_password_screen.dart';
 
 class ScreenArguments {
   num showPrice;
@@ -42,9 +43,6 @@ class RoutingFunctions {
       case NamedRoutes.authenticationRoute:
         target = AuthenticationScreen();
         break;
-      case NamedRoutes.authenticationRoute2:
-        target = AuthenticationScreen2();
-        break;
       case NamedRoutes.verifyOtpRoute:
         target = VerifyOtpScreen();
         break;
@@ -54,6 +52,9 @@ class RoutingFunctions {
       case NamedRoutes.bottomNavigationRoute:
         target = BottomNavigationScreen();
         break;
+      case NamedRoutes.bottomNavigationRoute4:
+        target = BottomNavigationScreen4();
+        break;
       case NamedRoutes.bottomNavigationRoute2:
         target = BottomNavigationScreen2();
         break;
@@ -62,6 +63,9 @@ class RoutingFunctions {
         break;
       case NamedRoutes.exploreRoute:
         target = ExploreScreen();
+        break;
+      case NamedRoutes.exploreRoute2:
+        target = ExploreScreen2();
         break;
       case NamedRoutes.exploreStylistRoute:
         target = ExploreStylist();
@@ -95,6 +99,9 @@ class RoutingFunctions {
         break;
       case NamedRoutes.createBookingRoute:
         target = CreateBookingScreen();
+        break;
+      case NamedRoutes.createBookingRoute3:
+        target = CreateBookingScreen3();
         break;
       case NamedRoutes.createBookingRoute2:
         target = CreateBookingScreen2();

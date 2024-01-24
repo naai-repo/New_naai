@@ -1,3 +1,7 @@
+
+import 'dart:convert';
+import 'package:collection/collection.dart';
+import 'package:dio/dio.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -16,16 +20,31 @@ import 'package:naai/view_model/post_auth/barber/barber_provider.dart';
 import 'package:naai/view_model/post_auth/explore/explore_provider.dart';
 import 'package:naai/view_model/post_auth/home/home_provider.dart';
 import 'package:provider/provider.dart';
+import '../../../models/artist_detail.dart';
+import '../../../models/artist_services.dart';
+import '../../../models/salon_detail.dart';
+import '../../../models/service_response.dart';
+import '../../../utils/access_token.dart';
 
 class SalonDetailsProvider with ChangeNotifier {
   List<String> _imageList = [];
-
+  final Dio dio = Dio();
   List<Gender> _selectedGendersFilter = [];
   List<Services> _selectedServiceCategories = [];
   List<ServiceDetail> _serviceList = [];
+  DataService? serviceDetail;
   // List<Review> _salonReviewList = [];
   List<ServiceDetail> _filteredServiceList = [];
   List<Artist> _artistList = [];
+  DateTime? _selectedDate;
+
+  DateTime? get selectedDate => _selectedDate;
+
+  void setSelectedDate(DateTime? date) {
+    _selectedDate = date;
+    notifyListeners();
+  }
+
   //List<String> _currentBooking.serviceIds = [];
 
   /// Used to display artist's availability
@@ -47,7 +66,7 @@ class SalonDetailsProvider with ChangeNotifier {
   bool _selectedSingleStaff = true;
   bool _selectedMultipleStaff = false;
 
-  bool _selectedMultipleServices = false;//for multiple services added
+  bool _selectedMultipleServices = false; //for multiple services added
 
   bool _isOnSelectStaffType = true;
   bool _isOnSelectSlot = false;
@@ -62,33 +81,47 @@ class SalonDetailsProvider with ChangeNotifier {
 
   //============= GETTERS =============//
   List<Artist> get artistList => _artistList;
+
   List<Gender> get selectedGendersFilter => _selectedGendersFilter;
+
   List<Services> get selectedServiceCategories => _selectedServiceCategories;
+
   List<ServiceDetail> get serviceList => _serviceList;
+
   List<ServiceDetail> get filteredServiceList => _filteredServiceList;
+
   // List<Artist> get artistList => _artistList;
   // List<Review> get salonReviewList => _salonReviewList;
   // List<String> get selectedServices => _currentBooking.serviceIds;
   List<String> get imageList => _imageList;
 
   List<int> get artistAvailabilityToDisplay => _artistAvailabilityToDisplay;
+
   List<int> get artistAvailabilityForCalculation =>
       _artistAvailabilityForCalculation;
+
   List<int> get initialAvailability => _initialAvailability;
 
   int get selectedSalonIndex => _selectedSalonIndex;
 
   double get totalPrice => _totalPrice;
+
   double get showPrice => _showPrice;
 
   Booking get currentBooking => _currentBooking;
 
   bool get isOnSelectStaffType => _isOnSelectStaffType;
+
   bool get isOnSelectSlot => _isOnSelectSlot;
+
   bool get isOnPaymentPage => _isOnPaymentPage;
+
   bool get selectedSingleStaff => _selectedSingleStaff;
+
   bool get selectedMultipleStaff => _selectedMultipleStaff;
-  bool get selectedMultipleServices => _selectedMultipleServices; // added for getting multiple services
+
+  bool get selectedMultipleServices =>
+      _selectedMultipleServices; // added for getting multiple services
   bool get isNextButtonActive => _isNextButtonActive;
 
   SalonData get selectedSalonData => _selectedSalonData;
@@ -97,6 +130,203 @@ class SalonDetailsProvider with ChangeNotifier {
 
   PageController get salonImageCarouselController =>
       _salonImageCarouselController;
+  String? _salonId;
+
+  String? get salonId => _salonId;
+
+  ApiResponse? _salonDetails; // Replace SalonDetails with your actual model
+
+  ApiResponse? get salonDetails => _salonDetails;
+
+  ServiceResponse? _serviceData;
+  ServiceResponse? get serviceData => _serviceData;
+
+  Data? _artistDetail;
+
+  Data? get artistDetail => _artistDetail;
+
+  Data? salonid;
+
+  void setSalonDetails(ApiResponse salonDetails) {
+    _salonDetails = salonDetails;
+    notifyListeners();
+  }
+
+  void setServiceDetails(ServiceResponse serviceData) {
+    _serviceData = serviceData;
+    notifyListeners();
+  }
+
+  ArtistServiceList? artistServiceList;
+
+
+  Future<void> fetchArtistListAndNavigate(context, String salonId, List<String> selectedServiceIds) async {
+    try {
+      Loader.showLoader(context);
+      final response = await Dio().post(
+        'http://13.235.49.214:8800/appointments/singleArtist/list',
+        data: {
+          "salonId": salonId,
+          "services": selectedServiceIds,
+        },
+      );
+      Loader.hideLoader(context);
+
+      if (response.statusCode == 200) {
+        artistServiceList = ArtistServiceList.fromJson(response.data);
+        // Check the length of selectedServiceIds
+        if (selectedServiceIds.length == 1) {
+          // Navigate to createBookingRoute if there is only one service
+          Navigator.pushNamed(
+            context,
+            NamedRoutes.createBookingRoute3,
+            arguments: {
+              'salonId': salonId,
+              'selectedServiceIds': selectedServiceIds,
+            },
+          );
+        } else {
+          // Navigate to createBooking3Route if there are multiple services
+          Navigator.pushNamed(
+            context,
+            NamedRoutes.createBookingRoute,
+            arguments: {
+              'salonId': salonId,
+              'selectedServiceIds': selectedServiceIds,
+            },
+          );
+        }
+      } else {
+        // Handle other status codes
+        print('Failed to fetch artist list: ${response.statusCode}');
+      }
+    } catch (error) {
+      Loader.hideLoader(context);
+      // Handle errors
+      print('Failed to fetch artist list: $error');
+    }
+  }
+
+
+  Future<void> submitReview2( BuildContext context, {
+    required int stars,
+    required String text,
+  }) async {
+    final Dio dio = Dio();
+
+    final Map<String, dynamic> requestData = {
+      "title": "Review Salon",
+      "description": text,
+      "salonId": salonid,
+      "rating": stars
+    };
+
+    try {
+      Loader.showLoader(context);
+
+      String? authToken = await AccessTokenManager.getAccessToken();
+
+      if (authToken == null) {
+        Loader.hideLoader(context);
+        print("Access token not found. User may not be authenticated.");
+        // Handle the case where the user is not authenticated
+        return;
+      }
+
+      // Include Bearer token in the headers
+      dio.options.headers["Authorization"] = "Bearer $authToken";
+
+
+      final response = await dio.post(
+        'http://13.235.49.214:8800/partner/review/add',
+        options: Options(headers: {"Content-Type": "application/json"}),
+        data: json.encode(requestData),
+      );
+      Loader.hideLoader(context);
+      if (response.statusCode == 200) {
+        // Review submitted successfully, handle the response data if needed
+        print("Review submitted successfully!");
+        print(response.data);
+      } else {
+        Loader.hideLoader(context);
+        // Failed to submit the review, handle the error
+        print("Failed to submit the review");
+        print(response.data);
+      }
+    } catch (error) {
+      Loader.hideLoader(context);
+      // Handle any exceptions that occurred during the request
+      print("Error: $error");
+    }
+  }
+
+
+  void setApiResponse(ApiResponse apiResponse) {
+    ApiResponse salonDetails = ApiResponse(
+      status: apiResponse.status,
+      message: apiResponse.message,
+      data: ApiResponseData(
+        data: apiResponse.data.data,
+        artists: apiResponse.data.artists,
+        services: apiResponse.data.services,
+      ),
+    );
+    setSalonDetails(salonDetails);
+  }
+
+  String? Servicetitle;
+
+  Future<void> fetchData() async {
+    try {
+      final response = await Dio().get(
+        'http://13.235.49.214:8800/partner/service/single/${salonid!.salonId}',
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = response.data['data'];
+        final String title = data['serviceTitle'];
+        Servicetitle = title;
+        print('titleis $title');
+      } else {
+        // Handle other status codes
+        print('Failed to fetch service title: ${response.statusCode}');
+      }
+    } catch (error) {
+      // Handle errors
+      print('Failed to fetch service title: $error');
+    }
+  }
+  Set<DataService> _selectedServices = Set<DataService>();
+  Set<Service2> _barberselectedServices = Set<Service2>();
+  Set<DataService> getSelectedServices() => _selectedServices;
+
+  Set<Service2> barbergetSelectedServices() => _barberselectedServices;
+
+  void toggleSelectedService(DataService service) {
+    if (_selectedServices.contains(service)) {
+      _selectedServices.remove(service);
+    } else {
+      _selectedServices.add(service);
+    }
+    _totalPrice = calculateTotalPrice();
+    // Recalculate show price if a discount is applied
+    setShowPrice(_totalPrice, _salonDetails?.data.data.discount ?? 0);
+
+    notifyListeners();
+  }
+
+  void toggleSelectedServicebarber(Service2 service) {
+    if ( _barberselectedServices.contains(service)) {
+      _barberselectedServices.remove(service);
+    } else {
+      _barberselectedServices.add(service);
+    }
+    _totalPrice = calculateTotalPrice();
+    // Recalculate show price if a discount is applied
+    setShowPrice(_totalPrice, _salonDetails?.data.data.discount ?? 0);
+
+    notifyListeners();
+  }
 
   /// Initialise the salon details screen
   void initSalonDetailsData(BuildContext context) async {
@@ -108,18 +338,20 @@ class SalonDetailsProvider with ChangeNotifier {
       getServiceList(context),
       // getSalonReviewsList(context),
     ]).onError(
-      (error, stackTrace) =>
+          (error, stackTrace) =>
           ReusableWidgets.showFlutterToast(context, '$error'),
     );
 
     Loader.hideLoader(context);
-
+  }
+  void setShowPrice(double totalPrice, num discountPercentage) {
+    _showPrice = totalPrice - (totalPrice * discountPercentage/100);
   }
 
-  void setShowPrice(double totalPrice, num discountPercentage){
-    _showPrice = totalPrice - totalPrice*discountPercentage/100;
+  double calculateTotalPrice() {
+    // Calculate total price by summing up the base prices of selected services
+    return _selectedServices.fold(0.0, (sum, service) => sum + service.basePrice);
   }
-
   /// Get details related to a given service.
   dynamic getServiceDetails({
     required String serviceId,
@@ -128,7 +360,7 @@ class SalonDetailsProvider with ChangeNotifier {
     bool getGender = false,
   }) {
     ServiceDetail? service =
-        _serviceList.firstWhere((element) => element.id == serviceId);
+    _serviceList.firstWhere((element) => element.id == serviceId);
     if (getServiceCharge) {
       return service.price;
     }
@@ -164,12 +396,13 @@ class SalonDetailsProvider with ChangeNotifier {
   /// Get the name of the artist whose [artistId] is given
   String getSelectedArtistName(String artistId, BuildContext context) {
     return context
-            .read<HomeProvider>()
-            .artistList
-            .firstWhere((element) => element.id == artistId)
-            .name ??
+        .read<HomeProvider>()
+        .artistList2
+        .firstWhere((element) => element.id == artistId)
+        .name ??
         '';
   }
+
   String getSelectedMultipleArtistName(String artistId, BuildContext context) {
     return context
         .read<HomeProvider>()
@@ -180,8 +413,7 @@ class SalonDetailsProvider with ChangeNotifier {
   }
 
   /// Set values of booking related data
-  void setBookingData(
-    BuildContext context, {
+  void setBookingData(BuildContext context, {
     bool setArtistId = false,
     bool setSelectedDate = false,
     bool setSelectedTime = false,
@@ -194,18 +426,19 @@ class SalonDetailsProvider with ChangeNotifier {
     }
     if (setSelectedDate) {
       String formattedDate =
-          DateFormat('dd-MM-yyyy').format(selectedDate ?? DateTime.now());
+      DateFormat('dd-MM-yyyy').format(selectedDate ?? DateTime.now());
       _currentBooking.selectedDate = formattedDate;
       _currentBooking.selectedDateInDateTimeFormat = selectedDate;
       setArtistStartEndTime();
     }
     if (setSelectedTime) {
       int indexOfStartTime =
-          _artistAvailabilityForCalculation.indexOf(startTime ?? 0);
+      _artistAvailabilityForCalculation.indexOf(startTime ?? 0);
       _currentBooking.startTime = startTime;
       _currentBooking.endTime = _artistAvailabilityForCalculation[
-          indexOfStartTime + (_currentBooking.serviceIds?.length ?? 0) * 2];
-      if(_currentBooking.serviceIds?.length != null && _currentBooking.serviceIds?.length != 1 ){
+      indexOfStartTime + (_currentBooking.serviceIds?.length ?? 0) * 2];
+      if (_currentBooking.serviceIds?.length != null &&
+          _currentBooking.serviceIds?.length != 1) {
         _selectedMultipleServices = true;
         print("Start time is");
         print(startTime);
@@ -217,10 +450,8 @@ class SalonDetailsProvider with ChangeNotifier {
   }
 
   /// Show the given [contentWidget] into a pre-styled dialogue box
-  void showDialogue(
-    BuildContext context,
-    Widget contentWidget,
-  ) {
+  void showDialogue(BuildContext context,
+      Widget contentWidget,) {
     showDialog(
       context: context,
       barrierColor: Colors.black.withOpacity(0.45),
@@ -239,8 +470,8 @@ class SalonDetailsProvider with ChangeNotifier {
     String day = DateFormat.E().format(
         DateFormat('dd-MM-yyyy').parse(_currentBooking.selectedDate ?? ''));
     Availability artistAvailability = _artistList
-            .firstWhere((element) => element.id == _currentBooking.artistId)
-            .availability ??
+        .firstWhere((element) => element.id == _currentBooking.artistId)
+        .availability ??
         Availability();
     switch (day) {
       case 'Mon':
@@ -301,8 +532,8 @@ class SalonDetailsProvider with ChangeNotifier {
       Loader.hideLoader(context);
       _bookingList.forEach((booking) {
         for (int i = booking.startTime ?? 0;
-            i < (booking.endTime ?? 0);
-            i += 1800) {
+        i < (booking.endTime ?? 0);
+        i += 1800) {
           _artistAvailabilityForCalculation
               .removeWhere((availability) => availability == i);
           _artistAvailabilityToDisplay
@@ -322,11 +553,19 @@ class SalonDetailsProvider with ChangeNotifier {
       });
 
       if (_currentBooking.selectedDateInDateTimeFormat!.day ==
-              DateTime.now().day &&
+          DateTime
+              .now()
+              .day &&
           _currentBooking.selectedDateInDateTimeFormat!.month ==
-              DateTime.now().month) {
+              DateTime
+                  .now()
+                  .month) {
         int secondsElapsedTillNow =
-            DateTime.now().hour * 3600 + DateTime.now().minute * 60;
+            DateTime
+                .now()
+                .hour * 3600 + DateTime
+                .now()
+                .minute * 60;
         _artistAvailabilityToDisplay
             .removeWhere((element) => element <= secondsElapsedTillNow);
       }
@@ -337,8 +576,7 @@ class SalonDetailsProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> getSalonData(
-    BuildContext context, {
+  Future<void> getSalonData(BuildContext context, {
     required String salonId,
   }) async {
     Loader.showLoader(context);
@@ -354,10 +592,8 @@ class SalonDetailsProvider with ChangeNotifier {
   }
 
   ///Get the list of image for current
-  Future<void> getImageList(
-    BuildContext context,
-    String salonId,
-  ) async {
+  Future<void> getImageList(BuildContext context,
+      String salonId,) async {
     Loader.showLoader(context);
     try {
       _imageList = _selectedSalonData.imageList!.cast();
@@ -383,7 +619,8 @@ class SalonDetailsProvider with ChangeNotifier {
     DateTime currentTime = midnight.add(Duration(seconds: seconds));
 
     String timeString =
-        "${currentTime.hour.toString().padLeft(2, '0')}:${currentTime.minute.toString().padLeft(2, '0')}";
+        "${currentTime.hour.toString().padLeft(2, '0')}:${currentTime.minute
+        .toString().padLeft(2, '0')}";
 
     return timeString;
   }
@@ -398,7 +635,8 @@ class SalonDetailsProvider with ChangeNotifier {
     }
 
     String formattedTime =
-        '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')} $amPm';
+        '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(
+        2, '0')} $amPm';
     return formattedTime;
   }
 
@@ -409,13 +647,13 @@ class SalonDetailsProvider with ChangeNotifier {
     bool selectSlotFinished = false,
   }) {
     if (selectSlotFinished &&
-        _currentBooking.artistId != null &&
+        artistServiceList!.selectedArtist != null &&
         _currentBooking.startTime != null &&
         _currentBooking.endTime != null) {
       _isOnSelectStaffType = false;
       _isOnSelectSlot = false;
       _isOnPaymentPage = true;
-    } else if (selectStaffFinished && _currentBooking.artistId != null) {
+    } else if (selectStaffFinished && artistServiceList!.selectedArtist != null) {
       _isOnSelectStaffType = false;
       _isOnSelectSlot = true;
       _isOnPaymentPage = false;
@@ -432,11 +670,32 @@ class SalonDetailsProvider with ChangeNotifier {
   /// Set the value of selected [SalonData] instance in [SalonDetailsProvider]
   void setSelectedSalonData(BuildContext context) {
     _selectedSalonData =
-        context.read<ExploreProvider>().filteredSalonData[_selectedSalonIndex];
+    context
+        .read<ExploreProvider>()
+        .filteredSalonData[_selectedSalonIndex];
 
     _filteredServiceList.clear();
     _filteredServiceList.addAll(_serviceList);
   }
+
+  DataService? _selectedService;
+
+  DataService? get selectedService => _selectedService;
+
+  void setSelectedService2(String serviceId) {
+    // Find the service with the given id in salonDetails
+    DataService? selectedService = salonDetails?.data.services.firstWhereOrNull(
+          (service) => service.id == serviceId,
+    );
+
+    // If the service is found, update the selected service
+    if (selectedService != null) {
+      _selectedService = selectedService;
+      notifyListeners();
+    }
+  }
+
+
 
   /// Add selected service's id into [_currentBooking]
   void setSelectedService(
@@ -462,9 +721,7 @@ class SalonDetailsProvider with ChangeNotifier {
     }
     notifyListeners();
   }
-
-  /// Set Service Time
-
+   /// Set Service Time
 
   void setServiceIds({
     required List<String> ids,
@@ -517,6 +774,8 @@ class SalonDetailsProvider with ChangeNotifier {
     }
     notifyListeners();
   }
+
+
 
   /// Get the list of services provided by the selected salon
   Future<void> getServiceList(BuildContext context) async {
@@ -706,6 +965,15 @@ class SalonDetailsProvider with ChangeNotifier {
     // TODO: Make for two services.
     // Approach get the length of _currentBooking.serviceIds and select that much number of slots
 
+
+    notifyListeners();
+  }
+  void resetCurrentBooking2() {
+    _selectedServices.clear(); // Clear selected services
+    _totalPrice = 0; // Reset total price
+    _showPrice = 0; // Reset show price
+
+    // Add any other data you want to reset here
 
     notifyListeners();
   }

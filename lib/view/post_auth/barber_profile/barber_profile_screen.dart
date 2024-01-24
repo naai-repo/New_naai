@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
@@ -21,6 +22,9 @@ import 'package:readmore/readmore.dart';
 import 'package:sizer/sizer.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../models/artist_detail.dart';
+import '../../../models/salon_detail.dart';
+import '../../../utils/loading_indicator.dart';
 import '../create_booking/create_booking_screen.dart';
 
 class BarberProfileScreen extends StatefulWidget {
@@ -34,11 +38,10 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
   int selectedTab = 0;
   num myShowPrice = 0;
 
+
   @override
   void initState() {
-    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-      context.read<BarberProvider>().initArtistData(context);
-    });
+    BarberProvider barberProvider = context.read<BarberProvider>();
     super.initState();
   }
 
@@ -46,240 +49,226 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
   Widget build(BuildContext context) {
     return Consumer<BarberProvider>(
       builder: (context, barberProvider, child) {
-        return WillPopScope(
-          onWillPop: () async {
-            barberProvider.clearSearchController();
-            barberProvider.clearSelectedGendersFilter();
-            barberProvider.clearSelectedServiceCategories();
-            return true;
-          },
-          child:
-            Consumer<SalonDetailsProvider>(builder: (context, provider, child) {
-              if (provider.selectedSalonData.discountPercentage == 0 ||
-                  provider.selectedSalonData.discountPercentage == null) {
-                myShowPrice = provider.totalPrice;
-              }
-              else {
-                provider.setShowPrice(provider.totalPrice,
-                    provider.selectedSalonData.discountPercentage!);
-                myShowPrice = provider.showPrice;
-              }
-              return Scaffold(
-                resizeToAvoidBottomInset: true,
-                body: Stack(
-                  children: <Widget>[
-                    ReusableWidgets.appScreenCommonBackground(),
-                    CustomScrollView(
-                      physics: BouncingScrollPhysics(),
-                      slivers: [
-                        ReusableWidgets.transparentFlexibleSpace(),
-                        SliverAppBar(
-                          elevation: 10,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.only(
-                              topLeft: Radius.circular(3.h),
-                              topRight: Radius.circular(3.h),
+        return Consumer<SalonDetailsProvider>(builder: (context, provider, child) {
+          BarberProvider barberProvider = context.read<BarberProvider>(); // Use the same instance
+          return Scaffold(
+            resizeToAvoidBottomInset: true,
+            body: Stack(
+              children: <Widget>[
+                ReusableWidgets.appScreenCommonBackground(),
+                CustomScrollView(
+                  physics: BouncingScrollPhysics(),
+                  slivers: [
+                    ReusableWidgets.transparentFlexibleSpace(),
+                    SliverAppBar(
+                      elevation: 10,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(3.h),
+                          topRight: Radius.circular(3.h),
+                        ),
+                      ),
+                      backgroundColor: Colors.white,
+                      pinned: true,
+                      floating: true,
+                      leadingWidth: 0,
+                      title: Container(
+                        padding: EdgeInsets.only(top: 1.h, bottom: 2.h),
+                        child: Row(
+                          children: <Widget>[
+                            GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onTap: () {
+                                barberProvider.clearSearchController();
+                                barberProvider.clearSelectedGendersFilter();
+                                barberProvider
+                                    .clearSelectedServiceCategories();
+                                barberProvider.clearfilteredServiceList();
+                                Navigator.pop(context);
+                              },
+                              child: Padding(
+                                padding: EdgeInsets.all(1.h),
+                                child: SvgPicture.asset(
+                                  ImagePathConstant.leftArrowIcon,
+                                  color: ColorsConstant.textDark,
+                                  height: 2.h,
+                                ),
+                              ),
                             ),
-                          ),
-                          backgroundColor: Colors.white,
-                          pinned: true,
-                          floating: true,
-                          leadingWidth: 0,
-                          title: Container(
-                            padding: EdgeInsets.only(top: 1.h, bottom: 2.h),
-                            child: Row(
+                            SizedBox(width: 4.w),
+                            Text(
+                              StringConstant.barberProfile,
+                              style: StyleConstant.headingTextStyle,
+                            ),
+                          ],
+                        ),
+                      ),
+                      centerTitle: false,
+                    ),
+                    SliverList(
+                      delegate: SliverChildListDelegate(
+                        [
+                          Container(
+                            color: Colors.white,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: <Widget>[
-                                GestureDetector(
-                                  behavior: HitTestBehavior.opaque,
-                                  onTap: () {
-                                    barberProvider.clearSearchController();
-                                    barberProvider.clearSelectedGendersFilter();
-                                    barberProvider
-                                        .clearSelectedServiceCategories();
-                                    barberProvider.clearfilteredServiceList();
-                                    Navigator.pop(context);
-                                  },
-                                  child: Padding(
-                                    padding: EdgeInsets.all(1.h),
-                                    child: SvgPicture.asset(
-                                      ImagePathConstant.leftArrowIcon,
-                                      color: ColorsConstant.textDark,
-                                      height: 2.h,
-                                    ),
+                                Container(
+                                  margin: EdgeInsets.only(
+                                      top: 1.h, right: 4.w, left: 4.w),
+                                  padding: EdgeInsets.all(1.h),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(
+                                        2.h),
                                   ),
+                                  child: barberOverview(),
                                 ),
-                                SizedBox(width: 4.w),
-                                Text(
-                                  StringConstant.barberProfile,
-                                  style: StyleConstant.headingTextStyle,
+                                SizedBox(height: 2.h),
+                                Divider(
+                                  thickness: 2,
+                                  height: 0,
+                                  color: ColorsConstant.graphicFillDark,
                                 ),
+                                servicesAndReviewTabBar(),
+                                selectedTab == 0
+                                    ? servicesTab()
+                                    : reviewColumn(),
                               ],
                             ),
                           ),
-                          centerTitle: false,
-                        ),
-                        SliverList(
-                          delegate: SliverChildListDelegate(
-                            [
-                              Container(
-                                color: Colors.white,
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: <Widget>[
-                                    Container(
-                                      margin: EdgeInsets.only(
-                                          top: 1.h, right: 4.w, left: 4.w),
-                                      padding: EdgeInsets.all(1.h),
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(
-                                            2.h),
-                                      ),
-                                      child: barberOverview(),
-                                    ),
-                                    SizedBox(height: 2.h),
-                                    Divider(
-                                      thickness: 2,
-                                      height: 0,
-                                      color: ColorsConstant.graphicFillDark,
-                                    ),
-                                    servicesAndReviewTabBar(),
-                                    selectedTab == 0
-                                        ? servicesTab()
-                                        : reviewColumn(),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ],
                 ),
-                bottomNavigationBar: Visibility(
-                  visible: Provider
-                      .of<SalonDetailsProvider>(context, listen: true)
-                      .totalPrice >
-                      0,
-                  child: Container(
-                    margin: EdgeInsets.only(
-                      bottom: 2.h,
-                      right: 5.w,
-                      left: 5.w,
-                    ),
-                    padding: EdgeInsets.symmetric(
-                      vertical: 1.h,
-                      horizontal: 3.w,
-                    ),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(1.h),
-                      boxShadow: <BoxShadow>[
-                        BoxShadow(
-                          offset: Offset(0, 2.0),
-                          color: Colors.grey,
-                          spreadRadius: 0.2,
-                          blurRadius: 15,
-                        ),
-                      ],
-                      color: Colors.white,
-                    ),
-                    /*
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: <Widget>[
-                        Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: <Widget>[
-                            Text(
-                              StringConstant.total,
-                              style: TextStyle(
-                                fontWeight: FontWeight.w500,
-                                fontSize: 10.sp,
-                                color: ColorsConstant.textDark,
-                              ),
-                            ),
-                            Text(
-                                'Rs. ${context
-                                    .read<SalonDetailsProvider>()
-                                    .totalPrice}',
-                                style: StyleConstant.textDark15sp600Style),
-                          ],
-                        ),
-                        VariableWidthCta(
-                          onTap: () =>
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      CreateBookingScreen2(
-                                        artistName: barberProvider.artist
-                                            .name ??
-                                            '', // Pass the name here
-                                      ),
-                                ),
-                              ),
-                          isActive: true,
-                          buttonText: StringConstant.confirmBooking,
-                        )
-                      ],
-                    ),
-                    */
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: <Widget>[
-                        Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: <Widget>[
-                            Text(
-                              StringConstant.total,
-                              style: TextStyle(
-                                fontWeight: FontWeight.w500,
-                                fontSize: 10.sp,
-                                color: ColorsConstant.textDark,
-                              ),
-                            ),
-                            Text('Rs.${myShowPrice}',
-                                style: StyleConstant.textDark15sp600Style),
-                          ],
-                        ),
-                        provider.selectedSalonData.discountPercentage==0||provider.selectedSalonData.discountPercentage==null?SizedBox():Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: <Widget>[
-                            SizedBox(
-                              height: 2.5.h,
-                            ),
-                            Text('${provider.totalPrice}',
-                                style: StyleConstant
-                                    .textDark12sp500StyleLineThrough),
-                          ],
-                        ),
-                        VariableWidthCta(
-                          onTap: () =>
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      CreateBookingScreen2(
-                                        artistName: barberProvider.artist
-                                            .name ??
-                                            '', // Pass the name here
-                                      ),
-                                ),
-                              ),
-                          isActive: true,
-                          buttonText: StringConstant.confirmBooking,
-                        )
-                      ],
-                    ),
-                  )
-                     //   : SizedBox()
-                  ),
-              );
-            }
+              ],
             ),
+            bottomNavigationBar: Visibility(
+              visible: Provider
+                  .of<SalonDetailsProvider>(context, listen: true)
+                  .totalPrice >
+                  0,
+              child: Container(
+                margin: EdgeInsets.only(
+                  bottom: 2.h,
+                  right: 5.w,
+                  left: 5.w,
+                ),
+                padding: EdgeInsets.symmetric(
+                  vertical: 1.h,
+                  horizontal: 3.w,
+                ),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(1.h),
+                  boxShadow: <BoxShadow>[
+                    BoxShadow(
+                      offset: Offset(0, 2.0),
+                      color: Colors.grey,
+                      spreadRadius: 0.2,
+                      blurRadius: 15,
+                    ),
+                  ],
+                  color: Colors.white,
+                ),
+                /*
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: <Widget>[
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(
+                          StringConstant.total,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w500,
+                            fontSize: 10.sp,
+                            color: ColorsConstant.textDark,
+                          ),
+                        ),
+                        Text(
+                            'Rs. ${context
+                                .read<SalonDetailsProvider>()
+                                .totalPrice}',
+                            style: StyleConstant.textDark15sp600Style),
+                      ],
+                    ),
+                    VariableWidthCta(
+                      onTap: () =>
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  CreateBookingScreen2(
+                                    artistName: barberProvider.artist
+                                        .name ??
+                                        '', // Pass the name here
+                                  ),
+                            ),
+                          ),
+                      isActive: true,
+                      buttonText: StringConstant.confirmBooking,
+                    )
+                  ],
+                ),
+                */
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: <Widget>[
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(
+                          StringConstant.total,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w500,
+                            fontSize: 10.sp,
+                            color: ColorsConstant.textDark,
+                          ),
+                        ),
+                        Text('Rs.${myShowPrice}',
+                            style: StyleConstant.textDark15sp600Style),
+                      ],
+                    ),
+                    provider.salonDetails!.data.data.discount==0||provider.salonDetails!.data.data.discount==null
+                        ?
+                    SizedBox()
+                   : Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        SizedBox(
+                          height: 2.5.h,
+                        ),
+                        Text('${provider.totalPrice}',
+                            style: StyleConstant
+                                .textDark12sp500StyleLineThrough),
+                      ],
+                    ),
+                    VariableWidthCta(
+                      onTap: () =>
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  CreateBookingScreen2(
+                                    artistName: barberProvider.artist
+                                        .name ??
+                                        '', // Pass the name here
+                                  ),
+                            ),
+                          ),
+                      isActive: true,
+                      buttonText: StringConstant.confirmBooking,
+                    )
+                  ],
+                ),
+              )
+                 //   : SizedBox()
+              ),
+          );
+        }
         );
       },
     );
@@ -287,6 +276,9 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
 
   Widget servicesTab() {
     return Consumer<SalonDetailsProvider>(builder: (context, provider, child) {
+      BarberProvider barberProvider = context.read<BarberProvider>(); // Use the same instance
+      Set<Service2> selectedServices = provider.barbergetSelectedServices();
+print('${barberProvider.Servicetitle}');
       return Column(
         children: <Widget>[
           GestureDetector(
@@ -317,7 +309,7 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
             ),
           ),
           SizedBox(height: 1.h),
-          context.read<BarberProvider>().filteredServiceList.length == 0
+          context.read<BarberProvider>().artistDetails!.services.length == 0
               ? Container(
                   height: 10.h,
                   child: Center(
@@ -329,18 +321,20 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
                   shrinkWrap: true,
                   physics: NeverScrollableScrollPhysics(),
                   itemCount:
-                      context.read<BarberProvider>().filteredServiceList.length,
+                      context.read<BarberProvider>().artistDetails!.services.length,
                   itemBuilder: (context, index) {
-                    ServiceDetail? serviceDetail = context
-                        .read<BarberProvider>()
-                        .filteredServiceList[index];
-                    bool isAdded = provider.currentBooking.serviceIds
-                            ?.contains(serviceDetail.id) ??
-                        false;
+                    Data? serviceDetail3 =  context.read<BarberProvider>().artistDetails;
+                    Service2? serviceDetail  =
+                        context.read<BarberProvider>().artistDetails!.services[index];
+                  //  bool isAdded  = provider.salonDetails!.data.services
+                  //      ?.contains(serviceDetail.id) ??
+                 //   false;// Assuming paid is a boolean
+
                     return GestureDetector(
-                      onTap: () =>
-                          provider.setSelectedService(serviceDetail.id ?? ''),
-                      child: Container(
+                      onTap: () {
+                        provider.toggleSelectedServicebarber(serviceDetail!);
+                      },
+                                child: Container(
                         margin: EdgeInsets.symmetric(
                           vertical: 1.h,
                           horizontal: 3.w,
@@ -363,7 +357,7 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
                               child: Row(
                                 children: <Widget>[
                                   SvgPicture.asset(
-                                    serviceDetail.targetGender == Gender.MEN
+                                    serviceDetail3!.targetGender == Gender.MEN
                                         ? ImagePathConstant.manIcon
                                         : ImagePathConstant.womanIcon,
                                     height: 4.h,
@@ -371,7 +365,7 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
                                   SizedBox(width: 2.w),
                                   Expanded(
                                     child: Text(
-                                      serviceDetail.serviceTitle ?? "",
+                                      provider.serviceData!.data.serviceTitle ?? '',
                                       style: TextStyle(
                                         color: ColorsConstant.textDark,
                                         fontSize: 10.sp,
@@ -395,15 +389,16 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
                                   ),
                                 ),
                                 Checkbox(
+                                  value: selectedServices.contains(serviceDetail),
                                   activeColor: ColorsConstant.appColor,
                                   side: BorderSide(
                                     color: Color.fromARGB(255, 193, 193, 193),
                                     width: 2,
                                   ),
-                                  value: isAdded,
-                                  onChanged: (value) =>
-                                      provider.setSelectedService(
-                                          serviceDetail.id ?? ''),
+                                  onChanged: (value) {
+                                    provider.toggleSelectedServicebarber(
+                                        serviceDetail!);
+                                  },
                                 ),
                               ],
                             ),
@@ -836,6 +831,7 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
   Widget barberOverview() {
     return Consumer2<BarberProvider, ExploreProvider>(
         builder: (context, barberProvider, exploreProvider, child) {
+
       return Column(
         children: <Widget>[
           Row(
@@ -858,9 +854,10 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
                   child: CircleAvatar(
                     radius: 7.h,
                     backgroundImage:
-                        NetworkImage(barberProvider.artist.imagePath!)
+                        NetworkImage(barberProvider.artistDetails!.imageUrl)
                             as ImageProvider,
                   ),
+
                 ),
               ),
               SizedBox(width: 5.w),
@@ -870,7 +867,7 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: <Widget>[
                     Text(
-                      barberProvider.artist.name ?? '',
+                      barberProvider.artistDetails?.name ?? '',
                       style: TextStyle(
                         color: ColorsConstant.blackAvailableStaff,
                         fontWeight: FontWeight.w600,
@@ -888,7 +885,7 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
                       ),
                     ),
                     Text(
-                      barberProvider.artist.salonName ?? '',
+                      barberProvider.salonDetails!.data.data.name ?? '',
                       style: TextStyle(
                         color: ColorsConstant.blackAvailableStaff,
                         fontWeight: FontWeight.w600,
@@ -924,7 +921,7 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
                       children: List<Widget>.generate(
                         5,
                         (i) => (i >
-                                int.parse(barberProvider.artist.rating
+                                int.parse(barberProvider.artistDetails?.rating
                                             ?.round()
                                             .toString() ??
                                         "0") -
@@ -947,17 +944,39 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
               SizedBox(
                 width: 38.w,
                 child: GestureDetector(
-                  onTap: () {
-                    exploreProvider.setSelectedSalonIndex(
-                      context,
-                      index: exploreProvider.salonData.indexWhere(
-                        (salon) => salon.id == barberProvider.artist.salonId,
-                      ),
-                    );
-                    Navigator.pushNamed(
-                      context,
-                      NamedRoutes.salonDetailsRoute,
-                    );
+                  onTap: () async {
+                    String salonId = barberProvider.artistDetails!.salonId;
+                    SalonDetailsProvider salonDetailsProvider = context.read<SalonDetailsProvider>();
+                    try {
+                      Loader.showLoader(context);
+                      final response = await Dio().get(
+                        'http://13.235.49.214:8800/partner/salon/single/$salonId',
+                      );
+                      Loader.hideLoader(context);
+
+                      ApiResponse apiResponse = ApiResponse.fromJson(response.data);
+                      ApiResponse salonDetails = ApiResponse(
+                        status: apiResponse.status,
+                        message: apiResponse.message,
+                        data: ApiResponseData(
+                          data: apiResponse.data.data,
+                          artists: apiResponse.data.artists,
+                          services: apiResponse.data.services,
+                        ),
+                      );
+
+                      // Pass the salonDetails to SalonDetailsProvider
+                      salonDetailsProvider.setSalonDetails(salonDetails);
+
+                      // If the API call is successful, navigate to the SalonDetailsScreen
+                      Navigator.pushNamed(context, NamedRoutes.salonDetailsRoute, arguments: salonId);
+                    } catch (error) {
+                      Loader.hideLoader(context);
+                      // Handle the case where the API call was not successful
+                      // You can show an error message or take appropriate action
+                      Navigator.pushNamed(context, NamedRoutes.bottomNavigationRoute);
+                      print('Failed to fetch salon details: $error');
+                    }
                   },
                   child: Container(
                     padding: EdgeInsets.symmetric(
@@ -1003,14 +1022,7 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
           ContactAndInteractionWidget(
             iconOnePath: ImagePathConstant.phoneIcon,
             iconTwoPath: ImagePathConstant.shareIcon,
-            iconThreePath: context
-                    .read<HomeProvider>()
-                    .userData
-                    .preferredArtist!
-                    .contains(barberProvider.artist.id)
-
-                ? ImagePathConstant.saveIconFill
-                : ImagePathConstant.saveIcon,
+            iconThreePath: ImagePathConstant.saveIcon,
             iconFourPath: ImagePathConstant.instagramIcon,
             onTapIconOne: () => launchUrl(
               Uri(
@@ -1019,23 +1031,22 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
               ),
             ),
             onTapIconTwo: () => launchUrl(
-              Uri.parse(barberProvider.artist.instagramLink ??
+              Uri.parse(barberProvider.artistDetails!.links.instagram ??
                   'https://www.instagram.com/naaiindia'),
             ),
             onTapIconThree: () {
               if (context
                   .read<HomeProvider>()
-                  .userData
-                  .preferredArtist!
-                  .contains(barberProvider.artist.id)) {
+                  .artistList2
+                  .contains(barberProvider.artistDetails!.id)) {
                 exploreProvider.removePreferedArtist(
                   context,
-                  barberProvider.artist.id,
+                  barberProvider.artistDetails!.id,
                 );
               } else {
                 exploreProvider.addPreferedArtist(
                   context,
-                  barberProvider.artist.id,
+                  barberProvider.artistDetails!.id,
                 );
               }
             },
@@ -1098,27 +1109,25 @@ class BarberProfileScreen2 extends StatefulWidget {
 
 class _BarberProfileScreen2State extends State<BarberProfileScreen2> {
   int selectedTab = 0;
+  num myShowPrice = 0;
+
 
   @override
   void initState() {
-    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-      context.read<BarberProvider>().initArtistData(context);
-    });
+    BarberProvider barberProvider = context.read<BarberProvider>();
+
     super.initState();
+
   }
+
 
   @override
   Widget build(BuildContext context) {
     return Consumer<BarberProvider>(
       builder: (context, barberProvider, child) {
-        return WillPopScope(
-          onWillPop: () async {
-            barberProvider.clearSearchController();
-            barberProvider.clearSelectedGendersFilter();
-            barberProvider.clearSelectedServiceCategories();
-            return true;
-          },
-          child: Scaffold(
+        return Consumer<SalonDetailsProvider>(builder: (context, provider, child) {
+          BarberProvider barberProvider = context.read<BarberProvider>(); // Use the same instance
+          return Scaffold(
             resizeToAvoidBottomInset: true,
             body: Stack(
               children: <Widget>[
@@ -1148,7 +1157,9 @@ class _BarberProfileScreen2State extends State<BarberProfileScreen2> {
                               onTap: () {
                                 barberProvider.clearSearchController();
                                 barberProvider.clearSelectedGendersFilter();
-                                barberProvider.clearSelectedServiceCategories();
+                                barberProvider
+                                    .clearSelectedServiceCategories();
+                                barberProvider.clearfilteredServiceList();
                                 Navigator.pop(context);
                               },
                               child: Padding(
@@ -1183,7 +1194,8 @@ class _BarberProfileScreen2State extends State<BarberProfileScreen2> {
                                       top: 1.h, right: 4.w, left: 4.w),
                                   padding: EdgeInsets.all(1.h),
                                   decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(2.h),
+                                    borderRadius: BorderRadius.circular(
+                                        2.h),
                                   ),
                                   child: barberOverview(),
                                 ),
@@ -1208,31 +1220,33 @@ class _BarberProfileScreen2State extends State<BarberProfileScreen2> {
               ],
             ),
             bottomNavigationBar: Visibility(
-              visible: Provider.of<SalonDetailsProvider>(context, listen: true)
-                  .totalPrice >
-                  0,
-              child: Container(
-                margin: EdgeInsets.only(
-                  bottom: 2.h,
-                  right: 5.w,
-                  left: 5.w,
-                ),
-                padding: EdgeInsets.symmetric(
-                  vertical: 1.h,
-                  horizontal: 3.w,
-                ),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(1.h),
-                  boxShadow: <BoxShadow>[
-                    BoxShadow(
-                      offset: Offset(0, 2.0),
-                      color: Colors.grey,
-                      spreadRadius: 0.2,
-                      blurRadius: 15,
-                    ),
-                  ],
-                  color: Colors.white,
-                ),
+                visible: Provider
+                    .of<SalonDetailsProvider>(context, listen: true)
+                    .totalPrice >
+                    0,
+                child: Container(
+                  margin: EdgeInsets.only(
+                    bottom: 2.h,
+                    right: 5.w,
+                    left: 5.w,
+                  ),
+                  padding: EdgeInsets.symmetric(
+                    vertical: 1.h,
+                    horizontal: 3.w,
+                  ),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(1.h),
+                    boxShadow: <BoxShadow>[
+                      BoxShadow(
+                        offset: Offset(0, 2.0),
+                        color: Colors.grey,
+                        spreadRadius: 0.2,
+                        blurRadius: 15,
+                      ),
+                    ],
+                    color: Colors.white,
+                  ),
+                  /*
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: <Widget>[
@@ -1249,22 +1263,79 @@ class _BarberProfileScreen2State extends State<BarberProfileScreen2> {
                           ),
                         ),
                         Text(
-                            'Rs. ${context.read<SalonDetailsProvider>().totalPrice}',
+                            'Rs. ${context
+                                .read<SalonDetailsProvider>()
+                                .totalPrice}',
                             style: StyleConstant.textDark15sp600Style),
                       ],
                     ),
                     VariableWidthCta(
-                      onTap: () {
-                        showSignInDialog(context);
-                      },
+                      onTap: () =>
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  CreateBookingScreen2(
+                                    artistName: barberProvider.artist
+                                        .name ??
+                                        '', // Pass the name here
+                                  ),
+                            ),
+                          ),
                       isActive: true,
                       buttonText: StringConstant.confirmBooking,
                     )
                   ],
                 ),
-              ),
+                */
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: <Widget>[
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Text(
+                            StringConstant.total,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w500,
+                              fontSize: 10.sp,
+                              color: ColorsConstant.textDark,
+                            ),
+                          ),
+                          Text('Rs.${myShowPrice}',
+                              style: StyleConstant.textDark15sp600Style),
+                        ],
+                      ),
+                      //  provider.salonDetails!.data.data.discount==0||provider.salonDetails!.data.data.discount==null
+                      //      ?
+                      //   SizedBox():
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          SizedBox(
+                            height: 2.5.h,
+                          ),
+                          Text('${provider.totalPrice}',
+                              style: StyleConstant
+                                  .textDark12sp500StyleLineThrough),
+                        ],
+                      ),
+                      VariableWidthCta(
+                        onTap: () {
+                          showSignInDialog(context);
+                        },
+                        isActive: true,
+                        buttonText: StringConstant.confirmBooking,
+                      )
+                    ],
+                  ),
+                )
+              //   : SizedBox()
             ),
-          ),
+          );
+        }
         );
       },
     );
@@ -1272,6 +1343,9 @@ class _BarberProfileScreen2State extends State<BarberProfileScreen2> {
 
   Widget servicesTab() {
     return Consumer<SalonDetailsProvider>(builder: (context, provider, child) {
+      BarberProvider barberProvider = context.read<BarberProvider>(); // Use the same instance
+      Set<Service2> selectedServices = provider.barbergetSelectedServices();
+
       return Column(
         children: <Widget>[
           GestureDetector(
@@ -1302,7 +1376,7 @@ class _BarberProfileScreen2State extends State<BarberProfileScreen2> {
             ),
           ),
           SizedBox(height: 1.h),
-          context.read<BarberProvider>().filteredServiceList.length == 0
+          context.read<BarberProvider>().artistDetails!.services.length == 0
               ? Container(
             height: 10.h,
             child: Center(
@@ -1314,17 +1388,19 @@ class _BarberProfileScreen2State extends State<BarberProfileScreen2> {
             shrinkWrap: true,
             physics: NeverScrollableScrollPhysics(),
             itemCount:
-            context.read<BarberProvider>().filteredServiceList.length,
+            context.read<BarberProvider>().artistDetails!.services.length,
             itemBuilder: (context, index) {
-              ServiceDetail? serviceDetail = context
-                  .read<BarberProvider>()
-                  .filteredServiceList[index];
-              bool isAdded = provider.currentBooking.serviceIds
-                  ?.contains(serviceDetail.id) ??
-                  false;
+              Data? serviceDetail3 =  context.read<BarberProvider>().artistDetails;
+              Service2? serviceDetail  =
+              context.read<BarberProvider>().artistDetails!.services[index];
+              //  bool isAdded  = provider.salonDetails!.data.services
+              //      ?.contains(serviceDetail.id) ??
+              //   false;// Assuming paid is a boolean
+              DataService? serviceDetail4;
               return GestureDetector(
-                onTap: () =>
-                    provider.setSelectedService(serviceDetail.id ?? ''),
+                onTap: () {
+                  provider.toggleSelectedServicebarber(serviceDetail!);
+                },
                 child: Container(
                   margin: EdgeInsets.symmetric(
                     vertical: 1.h,
@@ -1348,7 +1424,7 @@ class _BarberProfileScreen2State extends State<BarberProfileScreen2> {
                         child: Row(
                           children: <Widget>[
                             SvgPicture.asset(
-                              serviceDetail.targetGender == Gender.MEN
+                              serviceDetail3!.targetGender == Gender.MEN
                                   ? ImagePathConstant.manIcon
                                   : ImagePathConstant.womanIcon,
                               height: 4.h,
@@ -1356,7 +1432,7 @@ class _BarberProfileScreen2State extends State<BarberProfileScreen2> {
                             SizedBox(width: 2.w),
                             Expanded(
                               child: Text(
-                                serviceDetail.serviceTitle ?? "",
+                                barberProvider.Servicetitle ?? '',
                                 style: TextStyle(
                                   color: ColorsConstant.textDark,
                                   fontSize: 10.sp,
@@ -1380,15 +1456,16 @@ class _BarberProfileScreen2State extends State<BarberProfileScreen2> {
                             ),
                           ),
                           Checkbox(
+                            value: selectedServices.contains(serviceDetail),
                             activeColor: ColorsConstant.appColor,
                             side: BorderSide(
                               color: Color.fromARGB(255, 193, 193, 193),
                               width: 2,
                             ),
-                            value: isAdded,
-                            onChanged: (value) =>
-                                provider.setSelectedService(
-                                    serviceDetail.id ?? ''),
+                            onChanged: (value) {
+                              provider.toggleSelectedServicebarber(
+                                  serviceDetail!);
+                            },
                           ),
                         ],
                       ),
@@ -1601,7 +1678,7 @@ class _BarberProfileScreen2State extends State<BarberProfileScreen2> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                AddReviewComponent2(reviewForSalon: false),
+                AddReviewComponent(reviewForSalon: false),
                 Padding(
                   padding: EdgeInsets.only(top: 2.h, bottom: 1.h),
                   child: Text(
@@ -1843,9 +1920,10 @@ class _BarberProfileScreen2State extends State<BarberProfileScreen2> {
                       child: CircleAvatar(
                         radius: 7.h,
                         backgroundImage:
-                        NetworkImage(barberProvider.artist.imagePath!)
+                        NetworkImage(barberProvider.artistDetails!.imageUrl)
                         as ImageProvider,
                       ),
+
                     ),
                   ),
                   SizedBox(width: 5.w),
@@ -1855,7 +1933,7 @@ class _BarberProfileScreen2State extends State<BarberProfileScreen2> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: <Widget>[
                         Text(
-                          barberProvider.artist.name ?? '',
+                          barberProvider.artistDetails?.name ?? '',
                           style: TextStyle(
                             color: ColorsConstant.blackAvailableStaff,
                             fontWeight: FontWeight.w600,
@@ -1873,7 +1951,7 @@ class _BarberProfileScreen2State extends State<BarberProfileScreen2> {
                           ),
                         ),
                         Text(
-                          barberProvider.artist.salonName ?? '',
+                          barberProvider.salonDetails!.data.data.name ?? '',
                           style: TextStyle(
                             color: ColorsConstant.blackAvailableStaff,
                             fontWeight: FontWeight.w600,
@@ -1885,6 +1963,7 @@ class _BarberProfileScreen2State extends State<BarberProfileScreen2> {
                   ),
                 ],
               ),
+
               SizedBox(height: 3.h),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1908,7 +1987,7 @@ class _BarberProfileScreen2State extends State<BarberProfileScreen2> {
                           children: List<Widget>.generate(
                             5,
                                 (i) => (i >
-                                int.parse(barberProvider.artist.rating
+                                int.parse(barberProvider.artistDetails?.rating
                                     ?.round()
                                     .toString() ??
                                     "0") -
@@ -1931,17 +2010,39 @@ class _BarberProfileScreen2State extends State<BarberProfileScreen2> {
                   SizedBox(
                     width: 38.w,
                     child: GestureDetector(
-                      onTap: () {
-                        exploreProvider.setSelectedSalonIndex(
-                          context,
-                          index: exploreProvider.salonData.indexWhere(
-                                (salon) => salon.id == barberProvider.artist.salonId,
-                          ),
-                        );
-                        Navigator.pushNamed(
-                          context,
-                          NamedRoutes.salonDetailsRoute2,
-                        );
+                      onTap: () async {
+                        String salonId = barberProvider.artistDetails!.salonId;
+                        SalonDetailsProvider salonDetailsProvider = context.read<SalonDetailsProvider>();
+                        try {
+                          Loader.showLoader(context);
+                          final response = await Dio().get(
+                            'http://13.235.49.214:8800/partner/salon/single/$salonId',
+                          );
+                          Loader.hideLoader(context);
+
+                          ApiResponse apiResponse = ApiResponse.fromJson(response.data);
+                          ApiResponse salonDetails = ApiResponse(
+                            status: apiResponse.status,
+                            message: apiResponse.message,
+                            data: ApiResponseData(
+                              data: apiResponse.data.data,
+                              artists: apiResponse.data.artists,
+                              services: apiResponse.data.services,
+                            ),
+                          );
+
+                          // Pass the salonDetails to SalonDetailsProvider
+                          salonDetailsProvider.setSalonDetails(salonDetails);
+
+                          // If the API call is successful, navigate to the SalonDetailsScreen
+                          Navigator.pushNamed(context, NamedRoutes.salonDetailsRoute, arguments: salonId);
+                        } catch (error) {
+                          Loader.hideLoader(context);
+                          // Handle the case where the API call was not successful
+                          // You can show an error message or take appropriate action
+                          Navigator.pushNamed(context, NamedRoutes.bottomNavigationRoute);
+                          print('Failed to fetch salon details: $error');
+                        }
                       },
                       child: Container(
                         padding: EdgeInsets.symmetric(
@@ -1987,8 +2088,7 @@ class _BarberProfileScreen2State extends State<BarberProfileScreen2> {
               ContactAndInteractionWidget(
                 iconOnePath: ImagePathConstant.phoneIcon,
                 iconTwoPath: ImagePathConstant.shareIcon,
-                iconThreePath:  ImagePathConstant.saveIcon,
-                //    : ImagePathConstant.saveIcon,
+                iconThreePath: ImagePathConstant.saveIcon,
                 iconFourPath: ImagePathConstant.instagramIcon,
                 onTapIconOne: () => launchUrl(
                   Uri(
@@ -1997,11 +2097,11 @@ class _BarberProfileScreen2State extends State<BarberProfileScreen2> {
                   ),
                 ),
                 onTapIconTwo: () => launchUrl(
-                  Uri.parse(barberProvider.artist.instagramLink ??
+                  Uri.parse(barberProvider.artistDetails!.links.instagram ??
                       'https://www.instagram.com/naaiindia'),
                 ),
                 onTapIconThree: () {
-                showSignInDialog(context);
+                 showSignInDialog(context);
                 },
                 onTapIconFour: () => launchUrl(
                   Uri.parse('https://www.instagram.com/naaiindia'),
@@ -2012,6 +2112,46 @@ class _BarberProfileScreen2State extends State<BarberProfileScreen2> {
           );
         });
   }
+
+  Widget servicesAndReviewTabBar() {
+    return Container(
+      height: 7.h,
+      color: Colors.white,
+      child: DefaultTabController(
+        length: 2,
+        child: Scaffold(
+          bottomNavigationBar: Container(
+            color: Colors.white,
+            child: TabBar(
+              padding: EdgeInsets.symmetric(horizontal: 3.w),
+              labelColor: ColorsConstant.appColor,
+              indicatorColor: ColorsConstant.appColor,
+              unselectedLabelColor: ColorsConstant.divider,
+              indicatorSize: TabBarIndicatorSize.tab,
+              onTap: (tabIndex) => setState(() {
+                selectedTab = tabIndex;
+              }),
+              tabs: [
+                Padding(
+                  padding: EdgeInsets.symmetric(vertical: 1.h),
+                  child: Tab(
+                    child: Text(StringConstant.services.toUpperCase()),
+                  ),
+                ),
+                Padding(
+                  padding: EdgeInsets.symmetric(vertical: 1.h),
+                  child: Tab(
+                    child: Text(StringConstant.reviews.toUpperCase()),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   void showSignInDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -2066,8 +2206,8 @@ class _BarberProfileScreen2State extends State<BarberProfileScreen2> {
                     child: Text("OK",style: TextStyle( color:Colors.black,)),
                     onPressed: () {
                       Navigator.pushNamed(
-                        context,
-                        NamedRoutes.authenticationRoute2,
+                          context,
+                          NamedRoutes.authenticationRoute
                       );
                     },
                   ),
@@ -2079,42 +2219,6 @@ class _BarberProfileScreen2State extends State<BarberProfileScreen2> {
       },
     );
   }
-  Widget servicesAndReviewTabBar() {
-    return Container(
-      height: 7.h,
-      color: Colors.white,
-      child: DefaultTabController(
-        length: 2,
-        child: Scaffold(
-          bottomNavigationBar: Container(
-            color: Colors.white,
-            child: TabBar(
-              padding: EdgeInsets.symmetric(horizontal: 3.w),
-              labelColor: ColorsConstant.appColor,
-              indicatorColor: ColorsConstant.appColor,
-              unselectedLabelColor: ColorsConstant.divider,
-              indicatorSize: TabBarIndicatorSize.tab,
-              onTap: (tabIndex) => setState(() {
-                selectedTab = tabIndex;
-              }),
-              tabs: [
-                Padding(
-                  padding: EdgeInsets.symmetric(vertical: 1.h),
-                  child: Tab(
-                    child: Text(StringConstant.services.toUpperCase()),
-                  ),
-                ),
-                Padding(
-                  padding: EdgeInsets.symmetric(vertical: 1.h),
-                  child: Tab(
-                    child: Text(StringConstant.reviews.toUpperCase()),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 }
+
+

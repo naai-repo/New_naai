@@ -2,6 +2,7 @@ class StringConstant {
   // General strings
   static const String imageBaseDirectory = 'assets/images/';
   static const String splashScreenText = 'redefining your salon experience';
+  static const String loginSignup = 'Login using mobile no.';
   static const String artist = 'Artist';
   static const String timings = "Timings";
   static const String closed = "Closed";
@@ -21,13 +22,19 @@ class StringConstant {
       'Enter code that we have sent to your mobile no.';
   static const String verifyNumber = 'VERIFY NUMBER';
   static const String addName = 'Add Name';
+  static const String signUP = 'SignUp';
+  static const String login = 'Login';
+  static const String forgetPassword = 'Forget Password';
   static const String enterYourName = 'Enter your name';
   static const String continueText = 'CONTINUE';
+  static const String enterYourPassword = 'Enter your password';
+  static const String enterYourEmail = 'Enter your email';
   static const String male = 'Male';
   static const String female = 'Female';
   static const String addNameSubtext =
       'We’ll require your personal name to set up your profile';
   static const String chooseYourGender = 'Choose your gender';
+  static const String Optional = '(Optional)';
 
   // Explore screen strings
   static const String explore = 'Explore';
@@ -51,7 +58,7 @@ class StringConstant {
   static const String viewMore = 'View more';
   static const String categories = 'Categories';
   static const String salonsNearMe = 'Salons near me';
-  static const String ourStylist = 'Our stylist';
+  static const String ourStylist = 'Top 10 stylist for you';
   static const String confirmLocation = 'Confirm Location';
   static const String confirmLocation2 = 'Confirm Location';
   static const String previousBooking = 'Previous Booking';

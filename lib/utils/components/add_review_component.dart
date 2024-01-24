@@ -111,13 +111,13 @@ class _AddReviewComponentState extends State<AddReviewComponent> {
           GestureDetector(
             onTap: () async {
               if (widget.reviewForSalon) {
-                await context.read<SalonDetailsProvider>().submitReview(
+                await context.read<SalonDetailsProvider>().submitReview2(
                       context,
                       stars: selectedStarIndex + 1,
                       text: reviewTextController.text.trim(),
                     );
               } else {
-                await context.read<BarberProvider>().submitReview(
+                await context.read<BarberProvider>().submitReview2(
                       context,
                       stars: selectedStarIndex + 1,
                       text: reviewTextController.text.trim(),
@@ -334,7 +334,7 @@ class _AddReviewComponent2State extends State<AddReviewComponent2> {
                     onPressed: () {
                       Navigator.pushNamed(
                         context,
-                        NamedRoutes.authenticationRoute2,
+                          NamedRoutes.authenticationRoute
                       );
                     },
                   ),

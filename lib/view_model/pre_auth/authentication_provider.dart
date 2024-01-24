@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -18,6 +17,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:http/http.dart' as http;
 
+import '../../utils/access_token.dart';
+
 class AuthenticationProvider with ChangeNotifier {
   bool _isGetOtpButtonActive = false;
   bool _isVerifyOtpButtonActive = false;
@@ -31,7 +32,9 @@ class AuthenticationProvider with ChangeNotifier {
   String _selectedGender = '';
   DateTime?  _logintime;
 
+
   TextEditingController _userNameController = TextEditingController();
+  TextEditingController _emailController = TextEditingController();
   TextEditingController _mobileNumberController = TextEditingController();
   TextEditingController _otpDigitOneController = TextEditingController();
   TextEditingController _otpDigitTwoController = TextEditingController();
@@ -51,6 +54,7 @@ class AuthenticationProvider with ChangeNotifier {
   String? get userId => _userId;
 
   TextEditingController get userNameController => _userNameController;
+  TextEditingController get emailController => _emailController;
   TextEditingController get mobileNumberController => _mobileNumberController;
   TextEditingController get otpDigitOneController => _otpDigitOneController;
   TextEditingController get otpDigitTwoController => _otpDigitTwoController;
@@ -96,7 +100,7 @@ class AuthenticationProvider with ChangeNotifier {
     }
 
     final GoogleSignInAuthentication googleAuth =
-        await googleUser.authentication;
+    await googleUser.authentication;
 
     final credential = GoogleAuthProvider.credential(
       accessToken: googleAuth.accessToken,
@@ -104,8 +108,8 @@ class AuthenticationProvider with ChangeNotifier {
     );
 
     User? user = (await FirebaseAuth.instance
-            .signInWithCredential(credential)
-            .onError((error, stackTrace) {
+        .signInWithCredential(credential)
+        .onError((error, stackTrace) {
       throw Exception('Something went wrong!');
     }))
         .user;
@@ -114,10 +118,10 @@ class AuthenticationProvider with ChangeNotifier {
       storeUserDataInCollection(
         context: context,
         userData: UserModel(
-          name: user.displayName,
-          gmailId: user.email,
-          id: user.uid,
-          image: user.photoURL
+            name: user.displayName,
+            gmailId: user.email,
+            id: user.uid,
+            image: user.photoURL
         ),
         docId: user.uid,
       );
@@ -155,118 +159,7 @@ class AuthenticationProvider with ChangeNotifier {
 
   }
 
-  /// Method to verify the entered phone number and send an OTP to the user if the
-  /// entered phone number is valid.
-  void phoneNumberLogin(BuildContext context) async {
-    _isOtpLoaderActive = true;
-    notifyListeners();
-    try {
-      _phoneNumber = "+91${_mobileNumberController.text}";
-      await FirebaseAuth.instance.verifyPhoneNumber(
-        phoneNumber: _phoneNumber,
-        verificationCompleted: (PhoneAuthCredential credential) {
-          print("Access TOKEN IS -->${credential.accessToken}"  );
-          print("TOKEN IS -->${credential.token}"  );
-        },
-        verificationFailed: (FirebaseException e) {
-          _isOtpLoaderActive = false;
-          notifyListeners();
-          if (e.message!
-              .contains('format of the phone number provided is incorrect')) {
-            ReusableWidgets.showFlutterToast(context, 'Invalid phone number!');
-          }else if (e.message!.contains('Timed out waiting for SMS')) {
-            ReusableWidgets.showFlutterToast(context, 'Timed out waiting for SMS.');
-          }
-          throw ExceptionHandling(message: e.message ?? "");
-        },
-        codeSent: (String verificationId, int? resendCode) {
-          setVerificationId(value: verificationId);
-          resetOtpControllers();
-          _isOtpLoaderActive = false;
-          notifyListeners();
-          Navigator.pushNamed(context, NamedRoutes.verifyOtpRoute);
-        },
-        codeAutoRetrievalTimeout: (String verificationId) {},
-      );
-    } catch (e) {
-      _isOtpLoaderActive = false;
-      notifyListeners();
-      ReusableWidgets.showFlutterToast(
-        context,
-        '$e',
-      );
-    }
-  }
 
-  /// Verify the OTP entered by user.
-  void verifyOtp(BuildContext context) async {
-    Loader.showLoader(context);
-    try {
-      final credential = PhoneAuthProvider.credential(
-        verificationId: _verificationId,
-        smsCode: _enteredOtp,
-      );
-      await FirebaseAuth.instance
-          .signInWithCredential(credential)
-          .onError((FirebaseException error, stackTrace) {
-        throw ExceptionHandling(message: error.message ?? "");
-      });
-
-      resetMobielNumberController();
-      resetOtpControllers();
-
-      User? user = FirebaseAuth.instance.currentUser;
-
-      Loader.hideLoader(context);
-
-      setUserId(userId: user!.uid);
-      if (await DatabaseService().checkUserExists(uid: user.uid) == false) {
-        Navigator.pushReplacementNamed(context, NamedRoutes.addUserNameRoute);
-      } else {
-        Navigator.pushReplacementNamed(
-            context, NamedRoutes.bottomNavigationRoute);
-      }
-    } catch (e) {
-      Loader.hideLoader(context);
-      ReusableWidgets.showFlutterToast(
-        context,
-        '$e',
-      );
-    }
-  }
-
-  /// Trigger [storeUserDataInCollection] method to store the data in database
-  /// Specifically for phone authentication
-  void storePhoneAuthDataInDb(BuildContext context) async {
-    bool wasLoginSuccessful = await storeUserDataInCollection(
-      context: context,
-      userData: UserModel(
-        name: _userNameController.text,
-        phoneNumber: _phoneNumber,
-        gender: _selectedGender,
-        homeLocation: HomeLocation(),
-        id: _userId,
-     loginTime: _logintime,
-        image: 'https://firebasestorage.googleapis.com/v0/b/naai-5d31f.appspot.com/o/user_images%2Fsalon_dummy_image.png?alt=media&token=ceb17927-8a85-4f22-8908-6f16acdb2e40&_gl=1*jxkn7y*_ga*MTQ0NjM3MTQzMy4xNjk2Njg1MTk3*_ga_CW55HF8NVT*MTY5NjgzMTkzNS44LjEuMTY5NjgzMjEyNy41OC4wLjA.'
-      ),
-      docId: _userId ?? '',
-    );
-
-    // Reset all the text controllers
-    resetMobielNumberController();
-    resetOtpControllers();
-    clearUsernameController();
-
-    if (wasLoginSuccessful) {
-      Navigator.pushReplacementNamed(
-          context, NamedRoutes.bottomNavigationRoute);
-    } else {
-      FirebaseAuth.instance.signOut();
-      Navigator.pop(context);
-    }
-  }
-
-  /// Store user data in the [FirebaseFirestore]
   Future<bool> storeUserDataInCollection({
     required BuildContext context,
     required UserModel userData,
@@ -276,13 +169,13 @@ class AuthenticationProvider with ChangeNotifier {
     try {
       await DatabaseService()
           .setUserData(
-            userData: userData.toMap(),
-            docId: docId,
-          )
+        userData: userData.toMap(),
+        docId: docId,
+      )
           .onError(
             (FirebaseException error, stackTrace) =>
-                throw ExceptionHandling(message: error.message ?? ""),
-          );
+        throw ExceptionHandling(message: error.message ?? ""),
+      );
       return true;
     } catch (e) {
       Loader.hideLoader(context);
@@ -357,12 +250,8 @@ class AuthenticationProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  /// Trigger logout event
-  Future<void> logout(BuildContext context) async {
-    FirebaseAuth.instance.signOut();
-    SharedPreferenceHelper.clearAll();
-    Phoenix.rebirth(context);
-  }
+
+
 
   /// Save the [_userId] after authentication in [SharedPreferences]
   /// and in [AuthenticationProvider]
@@ -370,11 +259,19 @@ class AuthenticationProvider with ChangeNotifier {
     _userId = userId;
     await SharedPreferenceHelper.setUserId(userId ?? '');
   }
-
-  /// Get the [_userId] from [SharedPreferences]
-  Future<String?> getUserId() async {
-    return await SharedPreferenceHelper.getUserId();
+  void handleLogoutClick(BuildContext context ) async {
+    // Delete the access token
+    await AccessTokenManager.removeAccessToken();
+    // Navigate to the splash screen
+    resetMobielNumberController();
+    resetOtpControllers();
+    Navigator.pushReplacementNamed(
+      context,
+      NamedRoutes.splashRoute,
+    );
   }
+
+
 
   /// Reset the value of [_mobileNumberController] and [_isGetOtpButtonActive]
   void resetMobielNumberController() {

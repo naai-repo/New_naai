@@ -1,10 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
-
+import 'package:dio/dio.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:location/location.dart' as location;
+import 'package:location/location.dart';
 import 'package:logger/logger.dart';
 import 'package:mapbox_gl/mapbox_gl.dart';
 import 'package:naai/models/artist.dart';
@@ -14,6 +17,7 @@ import 'package:naai/models/user.dart';
 import 'package:naai/models/user_location.dart';
 import 'package:naai/services/api_service/base_client.dart';
 import 'package:naai/services/database.dart';
+import 'package:naai/utils/api_constant.dart';
 import 'package:naai/utils/api_endpoint_constant.dart';
 import 'package:naai/utils/colors_constant.dart';
 import 'package:naai/utils/exception/exception_handling.dart';
@@ -25,27 +29,32 @@ import 'package:naai/utils/utility_functions.dart';
 import 'package:naai/view/widgets/reusable_widgets.dart';
 import 'package:naai/view_model/post_auth/explore/explore_provider.dart';
 import 'package:naai/view_model/post_auth/salon_details/salon_details_provider.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:sizer/sizer.dart';
 import 'package:intl/intl.dart';
-import 'package:url_launcher/url_launcher.dart';
-
+import 'package:sizer/sizer.dart';
+import '../../../models/artist_model.dart';
 import '../../../models/review.dart';
+import '../../../models/salon_model.dart';
 import '../../../models/service_detail.dart';
-import '../../../view/post_auth/bottom_navigation_screen.dart';
+import '../../pre_auth/loginResult.dart';
 
 class HomeProvider with ChangeNotifier {
   bool _changedLocation = false;
-
+  final Dio dio = Dio();
+ // Use the phone number from the response
   final _mapLocation = location.Location();
   late LatLng _userCurrentLatLng;
+
+  String userAddress = 'No Location Found';
+
 
   location.Location get mapLocation => _mapLocation;
   LatLng get userCurrentLatLng => _userCurrentLatLng;
 
   List<SalonData> _salonList = [];
+  List<SalonData2> _salonList2 = [];
+  List<ArtistData> _artistList2 = [];
   List<Artist> _artistList = [];
   List<Review> _allReviewList = [];
   List<ServiceDetail> _services = [];
@@ -63,11 +72,14 @@ String ?  _addressText;
 
   UserModel _userData = UserModel();
 
+
   List<Booking> _lastOrNextBooking = [];
   List<Booking> _allBookings = [];
 
   //============= GETTERS =============//
   List<SalonData> get salonList => _salonList;
+  List<SalonData2> get salonList2 => _salonList2;
+  List<ArtistData> get artistList2 => _artistList2;
   List<Artist> get artistList => _artistList;
   List<Review> get reviewList => _allReviewList;
   List<ServiceDetail> get service => _services;
@@ -77,10 +89,12 @@ String ?  _addressText;
   TextEditingController get mapSearchController => _mapSearchController;
 
   UserModel get userData => _userData;
+  ArtistData get artistData => artistData;
 
   List<Booking> get lastOrNextBooking => _lastOrNextBooking;
   List<Booking> get allBookings => _allBookings;
-
+  int displayedSalonCount = 5; // Number of salons to display initially
+  int displayedArtistCount = 5;
   /// Check if there is a [uid] stored in [SharedPreferences] or not.
   /// If no [uid] is found, then get the userId of the currently logged in
   /// user and save it in [SharedPreferences].
@@ -92,6 +106,45 @@ String ?  _addressText;
       await SharedPreferenceHelper.setUserId(uid);
     }
   }
+  List<ArtistData> getDisplayedArtists() {
+    // Logic to return the currently displayed artists
+    return artistList2.take(displayedArtistCount).toList();
+  }
+
+  bool shouldShowArtistLoadButton() {
+    // Logic to determine whether to show the load more button for artists
+    return displayedArtistCount < artistList2.length && artistList2.isNotEmpty;
+  }
+
+  void loadMoreArtists() {
+    // Logic to load more artists
+    // For demonstration purposes, we'll add dummy data here
+    //  artistList.addAll(getDummyArtists());
+    displayedArtistCount += 5; // Increase the count to show the newly loaded artists
+    notifyListeners();
+  }
+  List<SalonData2> getDisplayedSalons() {
+    // Logic to return the currently displayed salons
+    return salonList2.take(displayedSalonCount).toList();
+
+  }
+  bool shouldShowLoadButton() {
+    return displayedSalonCount < salonList2.length && salonList2.isNotEmpty;
+  }
+  void loadMoreSalons() {
+    displayedSalonCount += 5;
+    notifyListeners();
+  }
+
+  set salonList2(List<SalonData2> value) {
+    _salonList2 = value;
+    notifyListeners();
+  }
+
+  set artistList2(List<ArtistData> value) {
+    _artistList2 = value;
+    notifyListeners();
+  }
 
   /// Initialising [_symbol]
   void initializeSymbol() {
@@ -100,63 +153,69 @@ String ?  _addressText;
       const SymbolOptions(),
     );
   }
+  bool _isSearchExpanded = false;
 
-  /// Method to trigger all the API functions of home screen
-/*
-  Future<void> initHome(BuildContext context) async {
-    var _serviceEnabled = await _mapLocation.serviceEnabled();
-    await locationPopUp(context);
-    if (!_serviceEnabled) {
-   //   _serviceEnabled = await _mapLocation.requestService();
-    }
-   // await requestLocationPermission(context);
-    var _permissionGranted = await _mapLocation.hasPermission();
-    if (_permissionGranted == location.PermissionStatus.denied) {
-     // _permissionGranted = await _mapLocation.requestPermission();
-      await requestLocationPermission(context);
-    }
-  await Loader.showLoader(context);
+  bool get isSearchExpanded => _isSearchExpanded;
 
-    var _locationData = await _mapLocation.getLocation();
-
-    _userCurrentLatLng =
-        LatLng(_locationData.latitude!, _locationData.longitude!);
-
-    await Future.wait(
-      [
-        getUserDetails(context).whenComplete(
-              () async =>
-          await context.read<ExploreProvider>().getSalonList(context),
-        ),
-        getAllArtists(context),
-        getAllReviews(context),
-      ],
-    ).onError(
-          (error, stackTrace) =>
-          ReusableWidgets.showFlutterToast(context, '$error'),
-    );
-
-    _salonList = [...context.read<ExploreProvider>().salonData];
-    changeRatings(context);
-
-
-    if (_userData.homeLocation?.geoLocation == null) {
-      Loader.hideLoader(context);
-      Navigator.pushNamed(
-        context,
-        NamedRoutes.setHomeLocationRoute,
-      );
-
-    } else {
-
-      await getUserBookings(context);
-      await getServicesNamesAndPrice(context);
-      Loader.hideLoader(context);
-    }
-
+  set isSearchExpanded(bool value) {
+    _isSearchExpanded = value;
     notifyListeners();
   }
-  */
+  /// Method to trigger all the API functions of home screen
+  Future<String> getAddress(double latitude, double longitude) async {
+    try {
+      List<Placemark> placemarks = await placemarkFromCoordinates(latitude, longitude);
+      Placemark place = placemarks[0];
+      return "${place.locality}, ${place.country}";
+    } catch (e) {
+      print("Error getting address: $e");
+      return "Error: $e";
+    }
+  }
+  Future<void> DiscountFilter(BuildContext context) async {
+
+    Loader.showLoader(context);
+      try {
+        Position currentLocation = await Geolocator.getCurrentPosition();
+        print(
+            'Current Location: ${currentLocation.longitude}, ${currentLocation
+                .latitude}');
+        userAddress =
+        await getAddress(currentLocation.latitude, currentLocation.longitude);
+        print('Addressssss: $userAddress');
+        await Future.wait([
+            getDistanceAndRating(coords: [currentLocation.longitude, currentLocation.latitude]),
+          //  getArtistRating(coords: [currentLocation.longitude, currentLocation.latitude]),
+        ]);
+      } catch (e) {
+        Loader.hideLoader(context);
+        print("Error getting location: $e");
+      }
+    Loader.hideLoader(context);
+    }
+
+  Future<void> DiscountFilterforMen(BuildContext context) async {
+
+    Loader.showLoader(context);
+    try {
+      Position currentLocation = await Geolocator.getCurrentPosition();
+      print(
+          'Current Location: ${currentLocation.longitude}, ${currentLocation
+              .latitude}');
+      userAddress =
+      await getAddress(currentLocation.latitude, currentLocation.longitude);
+      print('Addressssss: $userAddress');
+      await Future.wait([
+        getDistanceAndRatingForMen(coords: [currentLocation.longitude, currentLocation.latitude]),
+        //  getArtistRating(coords: [currentLocation.longitude, currentLocation.latitude]),
+      ]);
+    } catch (e) {
+      Loader.hideLoader(context);
+      print("Error getting location: $e");
+    }
+    Loader.hideLoader(context);
+  }
+
   Future<void> initHome(BuildContext context) async {
     var _serviceEnabled = await _mapLocation.serviceEnabled();
     await locationPopUp(context);
@@ -170,84 +229,237 @@ String ?  _addressText;
       return; // Stop further execution
     }
 
-   // _permissionGranted = await _mapLocation.requestPermission();
-      if (_permissionGranted != location.PermissionStatus.granted) return;
-       Loader.showLoader(context);
+    if (_permissionGranted != location.PermissionStatus.granted) return;
+
+    Loader.showLoader(context);
+    final box = await Hive.openBox('userBox');
+    final userId = box.get('userId') ?? '';
+    if (userId.isNotEmpty) {
+      print('Retrieved userId from Hive: $userId');
+      try {
+        Position currentLocation = await Geolocator.getCurrentPosition();
+        print(
+            'Current Location: ${currentLocation.longitude}, ${currentLocation
+                .latitude}');
+        userAddress =
+        await getAddress(currentLocation.latitude, currentLocation.longitude);
+        print('Addressssss: $userAddress');
+        await updateUserLocation(
+          userId: userId,
+          coords: [currentLocation.longitude, currentLocation.latitude],
+        );
+
+        // Run top salon and top artist requests concurrently
+        await Future.wait([
+          getTopSalons(
+              coords: [currentLocation.longitude, currentLocation.latitude]),
+          getTopArtists(
+              coords: [currentLocation.longitude, currentLocation.latitude]),
+          //  getDistanceAndRating(coords: [currentLocation.longitude, currentLocation.latitude]),
+          //  getArtistRating(coords: [currentLocation.longitude, currentLocation.latitude]),
+        ]);
+      } catch (e) {
+        Loader.hideLoader(context);
+        print("Error getting location: $e");
+      }
+    }
+    Loader.hideLoader(context);
+  }
+  Future<void> retrieveUserData() async {
+    final box = await Hive.openBox('userBox');
+    final userId = box.get('userId') ?? '';
+    final latitude = box.get('latitude') ?? 0.0;
+    final longitude = box.get('longitude') ?? 0.0;
+
+    print('Retrieved userId: $userId');
+    print('Retrieved Location: $latitude, $longitude');
+  }
+
+  Future<void> updateUserLocation({
+    required String userId,
+    required List<double> coords,
+  }) async {
+    final apiUrl = UrlConstants.updateLocation;
+
+    final Map<String, dynamic> requestData = {
+      "userId": userId,
+      "coords": coords,
+    };
 
     try {
-      var _locationData = await _mapLocation.getLocation();
-      _userCurrentLatLng = LatLng(_locationData.latitude!, _locationData.longitude!);
-
-      await Future.wait([
-        getUserDetails(context).whenComplete(() async {
-          await context.read<ExploreProvider>().getSalonList(context);
+      final response = await dio.post(
+        apiUrl,
+        options: Options(headers: {
+          'Content-Type': 'application/json; charset=UTF-8',
         }),
-        getAllArtists(context),
-        getAllReviews(context),
-      ]);
-
-      _salonList = [...context.read<ExploreProvider>().salonData];
-      changeRatings(context);
-
-      if (_userData.homeLocation?.geoLocation == null) {
-        Loader.hideLoader(context);
-        Navigator.pushNamed(context, NamedRoutes.setHomeLocationRoute);
-      } else {
-        await getUserBookings(context);
-        await getServicesNamesAndPrice(context);
-        Loader.hideLoader(context);
-      }
-    } catch (error) {
-      Loader.hideLoader(context);
-      ReusableWidgets.showFlutterToast(context, '$error');
-    }
-
-    notifyListeners();
-  }
-
-  Future<void> requestLocationPermission(BuildContext context) async {
-    var _permissionGranted = await _mapLocation.hasPermission();
-    if (_permissionGranted == location.PermissionStatus.denied) {
-      await showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10.0), // Adjust the radius as needed
-            ),
-            title: const Text('Discover Salons Near You 📍✨'),
-            content: SingleChildScrollView( // Ensures the dialog is scrollable if the content is too long
-              child: ListBody(
-                children: const <Widget>[
-                  Text('To provide you with a personalized experience and show you the best salons nearby, we kindly request access to your location. Your privacy is important to us, and your location data will be used solely to enhance your service.'),
-                  SizedBox(height:10),
-                  Text('Please tap \'Allow\' to grant location access and start exploring your local beauty destinations!'),
-                  SizedBox(height:10),
-                  Text('Thank you for helping us tailor your salon discovery journey. 💇‍♀️💇‍♂️'),
-                ],
-              ),
-            ),
-            actions: [
-              ElevatedButton(
-                child: const Text('Allow'),
-                style: ElevatedButton.styleFrom(
-                  primary: ColorsConstant.appColor, // Change the button's background color
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10), // Adjust the radius as needed
-                  ),
-                ),
-                onPressed: () {
-                  Navigator.of(context).pop(); // Close the pop-up.
-                  // Request location permission again.
-                  _mapLocation.requestPermission();
-                },
-              ),
-            ],
-          );
-        },
+        data: requestData,
       );
+
+      if (response.statusCode == 200) {
+        // Handle successful response
+        print("Location updated successfully!");
+        print(response.data);
+      } else {
+        // Handle error response
+        print("Failed to update location");
+        print(response.data);
+      }
+    } catch (e) {
+      // Handle Dio errors
+      print("Dio error: $e");
     }
   }
+
+  Future<void> getTopSalons({required List<double> coords}) async {
+    final apiUrl = UrlConstants.topSalon;
+
+    final Map<String, dynamic> requestData = {
+      "location": {"type": "Point", "coordinates": coords},
+    };
+
+    try {
+      final response = await dio.post(
+        apiUrl,
+        options: Options(headers: {
+          'Content-Type': 'application/json; charset=UTF-8',
+        }),
+        data: requestData,
+      );
+
+      if (response.statusCode == 200) {
+        salonList2 = SalonApiResponse.fromJson(response.data).data;
+        print("Top Salons: ${response.data}");
+      } else {
+        // Handle error response for top salons
+        print("Failed to fetch top salons");
+        print(response.data);
+      }
+    } catch (e) {
+      // Handle Dio errors for top salons
+      print("Dio error for top salons: $e");
+    }
+  }
+
+  Future<void> getTopArtists({required List<double> coords}) async {
+    final apiUrl = UrlConstants.topArtist;
+
+    final Map<String, dynamic> requestData = {
+      "location": {"type": "Point", "coordinates": coords},
+    };
+
+    try {
+      final response = await dio.post(
+        apiUrl,
+        options: Options(headers: {
+          'Content-Type': 'application/json; charset=UTF-8',
+        }),
+        data: requestData,
+      );
+
+      if (response.statusCode == 200) {
+        artistList2 = ArtistApiResponse.fromJson(response.data).data;
+        print("Top Artists: ${response.data}");
+      } else {
+        // Handle error response for top artists
+        print("Failed to fetch top artists");
+        print(response.data);
+      }
+    } catch (e) {
+      // Handle Dio errors for top artists
+      print("Dio error for top artists: $e");
+    }
+  }
+
+  Future<void> getDistanceAndRating({required List<double> coords}) async {
+    final apiUrl = UrlConstants.discountAndRating;
+
+    final Map<String, dynamic> requestData = {
+      "location": {"type": "Point", "coordinates": coords},
+    };
+
+    try {
+      final response = await dio.post(
+        apiUrl,
+        options: Options(headers: {
+          'Content-Type': 'application/json; charset=UTF-8',
+        }),
+        data: requestData,
+      );
+
+      if (response.statusCode == 200) {
+        salonList2 = SalonApiResponse.fromJson(response.data).data;
+        print("Top Artists: ${response.data}");
+      } else {
+        // Handle error response for top artists
+        print("Failed to fetch top artists");
+        print(response.data);
+      }
+    } catch (e) {
+      // Handle Dio errors for top artists
+      print("Dio error for top artists: $e");
+    }
+  }
+
+  Future<void> getDistanceAndRatingForMen({required List<double> coords}) async {
+    final apiUrl = UrlConstants.discountAndRatingForMen;
+
+    final Map<String, dynamic> requestData = {
+      "location": {"type": "Point", "coordinates": coords},
+    };
+
+    try {
+      final response = await dio.post(
+        apiUrl,
+        options: Options(headers: {
+          'Content-Type': 'application/json; charset=UTF-8',
+        }),
+        data: requestData,
+      );
+
+      if (response.statusCode == 200) {
+        salonList2 = SalonApiResponse.fromJson(response.data).data;
+        print("Top Artists: ${response.data}");
+      } else {
+        // Handle error response for top artists
+        print("Failed to fetch top artists");
+        print(response.data);
+      }
+    } catch (e) {
+      // Handle Dio errors for top artists
+      print("Dio error for top artists: $e");
+    }
+  }
+
+  Future<void> getArtistRating({required List<double> coords}) async {
+    final apiUrl = UrlConstants.ratingFilter;
+
+    final Map<String, dynamic> requestData = {
+      "location": {"type": "Point", "coordinates": coords},
+    };
+
+    try {
+      final response = await dio.post(
+        apiUrl,
+        options: Options(headers: {
+          'Content-Type': 'application/json; charset=UTF-8',
+        }),
+        data: requestData,
+      );
+
+      if (response.statusCode == 200) {
+        // Handle successful response for top artists
+        print("Top Artists: ${response.data}");
+      } else {
+        // Handle error response for top artists
+        print("Failed to fetch top artists");
+        print(response.data);
+      }
+    } catch (e) {
+      // Handle Dio errors for top artists
+      print("Dio error for top artists: $e");
+    }
+  }
+
 
   Future locationPopUp(BuildContext context) async {
     var _permissionGranted = await _mapLocation.hasPermission();
@@ -326,44 +538,53 @@ String ?  _addressText;
     }
   }
 
-
   Future<void> initHome2(BuildContext context) async {
-
     var _serviceEnabled = await _mapLocation.serviceEnabled();
     await locationPopUp(context);
     if (!_serviceEnabled) {
-      //   _serviceEnabled = await _mapLocation.requestService();
+      _serviceEnabled = await _mapLocation.requestService();
+      if (!_serviceEnabled) return;
     }
-    // await requestLocationPermission(context);
     var _permissionGranted = await _mapLocation.hasPermission();
     if (_permissionGranted == location.PermissionStatus.denied) {
-      // _permissionGranted = await _mapLocation.requestPermission();
       Navigator.pushNamed(context, NamedRoutes.setHomeLocationRoute2);
-      return; // Stop further execution
+      return;
     }
-    await Loader.showLoader(context);
 
-    var _locationData = await _mapLocation.getLocation();
+    if (_permissionGranted != location.PermissionStatus.granted) return;
 
-    _userCurrentLatLng =
-        LatLng(_locationData.latitude!, _locationData.longitude!);
-    await Future.wait(
-      [
-        getUserDetails(context).whenComplete(
-              () async =>
-          await context.read<ExploreProvider>().getSalonList(context),
-        ),
-        getAllArtists(context),
-        getAllReviews(context),
-      ],
-    );
-    _salonList = [...context.read<ExploreProvider>().salonData];
-    changeRatings(context);
-      await getUserBookings(context);
-      await getServicesNamesAndPrice(context);
-      Loader.hideLoader(context);
-    notifyListeners();
-  }
+    Loader.showLoader(context);
+
+        try {
+          Position currentLocation = await Geolocator.getCurrentPosition();
+          print(
+              'Current Location: ${currentLocation.longitude}, ${currentLocation
+                  .latitude}');
+
+          userAddress =
+          await getAddress(currentLocation.latitude, currentLocation.longitude);
+          print('Addressssss: $userAddress');
+          await updateUserLocation(
+            userId: '659e565fedf72717a11caf27',
+            coords: [currentLocation.longitude, currentLocation.latitude],
+          );
+
+          // Run top salon and top artist requests concurrently
+          await Future.wait([
+            getTopSalons(
+                coords: [currentLocation.longitude, currentLocation.latitude]),
+            getTopArtists(
+                coords: [currentLocation.longitude, currentLocation.latitude]),
+            //  getDistanceAndRating(coords: [currentLocation.longitude, currentLocation.latitude]),
+            //  getArtistRating(coords: [currentLocation.longitude, currentLocation.latitude]),
+          ]);
+        } catch (e) {
+          Loader.hideLoader(context);
+          print("Error getting location: $e");
+        }
+    Loader.hideLoader(context);
+    }
+
 
   /// Fetch the user details from [FirebaseFirestore]
   Future<void> getUserDetails(BuildContext context) async {
@@ -545,10 +766,7 @@ String ?  _addressText;
 
     Loader.hideLoader(context);
 
-    await getFormattedAddressConfirmation(
-      context: context,
-      coordinates: currentLatLng,
-    );
+
   }
 
   Future<void> onMapCreated2(
@@ -556,13 +774,7 @@ String ?  _addressText;
       BuildContext context,
       ) async {
     this._controller = mapController;
-/*
-    var _serviceEnabled = await _mapLocation.serviceEnabled();
 
-    if (!_serviceEnabled) {
-      _serviceEnabled = await _mapLocation.requestService();
-    }
-    */
     var _permissionGranted = await _mapLocation.hasPermission();
     if (_permissionGranted == location.PermissionStatus.denied) {
       ReusableWidgets.showFlutterToast(
@@ -602,10 +814,7 @@ String ?  _addressText;
 
     Loader.hideLoader(context);
 
-    await getFormattedAddressConfirmation2(
-      context: context,
-      coordinates: currentLatLng,
-    );
+
   }
 
   /// Take user to the place, selected from search suggestions
@@ -632,10 +841,7 @@ String ?  _addressText;
 
     clearMapSearchText();
 
-    await getFormattedAddressConfirmation(
-      context: context,
-      coordinates: selectedLatLng,
-    );
+
     notifyListeners();
   }
 
@@ -689,140 +895,15 @@ String ?  _addressText;
         CameraPosition(target: coordinates, zoom: 16),
       ),
     );
-
     await getFormattedAddressConfirmation(
       context: context,
       coordinates: coordinates,
     );
 
-    notifyListeners();
-  }
-  Future<void> onMapClick2({
-    required BuildContext context,
-    required LatLng coordinates,
-  }) async {
-    _mapSearchController.clear();
-    print("Coordinates ===> $coordinates");
-    await _controller.removeSymbol(_symbol);
-
-    _symbol = await _controller.addSymbol(
-      UtilityFunctions.getCurrentLocationSymbolOptions(latLng: coordinates),
-    );
-
-    this._controller.animateCamera(
-      CameraUpdate.newCameraPosition(
-        CameraPosition(target: coordinates, zoom: 16),
-      ),
-    );
-
-    await getFormattedAddressConfirmation2(
-      context: context,
-      coordinates: coordinates,
-    );
 
     notifyListeners();
   }
 
-  /// Update the user's location related data in [FirebaseFirestore]
-  void updateUserLocation(
-      BuildContext context,
-      LatLng latLng,
-      ) async {
-    UserModel user = UserModel.fromMap(_userData.toMap());
-
-  //  user.homeLocation = HomeLocation();
-    HomeLocation updatedHomeLocation = HomeLocation();
-   // user.homeLocation?.addressString = _addressText;
-  //  user.homeLocation?.geoLocation =
-  //      GeoPoint(latLng.latitude, latLng.longitude);
-    updatedHomeLocation.addressString = _addressText;
-    updatedHomeLocation.geoLocation = GeoPoint(latLng.latitude, latLng.longitude);
-    user.homeLocation = updatedHomeLocation;
-
-  //  Map<String, dynamic> data = user.toMap();
-    Map<String, dynamic> data = {
-      'homeLocation': user.homeLocation?.toMap(), // Update only the home location
-    };
-
-    Loader.showLoader(context);
-    try {
-      await DatabaseService().updateUserData(data: data).onError(
-              (FirebaseException error, stackTrace) =>
-          throw ExceptionHandling(message: error.message ?? ""));
-      _changedLocation = true;
-      await getUserDetails(context);
-      context.read<ExploreProvider>().getSalonList(context, justDistance: true);
-      Loader.hideLoader(context);
-    } catch (e) {
-      Loader.hideLoader(context);
-      ReusableWidgets.showFlutterToast(
-        context,
-        '$e',
-      );
-    }
-    notifyListeners();
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => BottomNavigationScreen3(), // Replace NextScreen with your desired screen
-      ),
-    );
-
-  }
-
-  void updateUserLocation2(
-      BuildContext context,
-      LatLng latLng,
-      ) async {
-    var _serviceEnabled = await _mapLocation.serviceEnabled();
-
-    if (!_serviceEnabled) {
-      _serviceEnabled = await _mapLocation.requestService();
-    }
-
-    var _permissionGranted = await _mapLocation.hasPermission();
-    if (_permissionGranted == location.PermissionStatus.denied) {
-      ReusableWidgets.showFlutterToast(
-        context,
-        'Location permission is required to proceed to find nearby salons and offer personalized recommendations just for you.😊',
-      );
-      return ;
-    }
-    UserModel user = UserModel.fromMap(_userData.toMap());
-
-    user.homeLocation = HomeLocation();
-
-    user.homeLocation?.addressString = _addressText;
-    user.homeLocation?.geoLocation =
-        GeoPoint(latLng.latitude, latLng.longitude);
-
-    Map<String, dynamic> data = user.toMap();
-    Loader.showLoader(context);
-    try {
-      await DatabaseService().updateUserData(data: data).onError(
-              (FirebaseException error, stackTrace) =>
-          throw ExceptionHandling(message: error.message ?? ""));
-      _changedLocation = true;
-      await getUserDetails(context);
-      context.read<ExploreProvider>().getSalonList(context, justDistance: true);
-      Loader.hideLoader(context);
-    } catch (e) {
-      Loader.hideLoader(context);
-    }
-    notifyListeners();
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => BottomNavigationScreen2(), // Replace NextScreen with your desired screen
-      ),
-    );
-
-  }
-
-  /// Get complete address from the provided coordinates
-  /// Format the address according to the need.
-  /// Show a bottom sheet with the formatted address text and a button to confirm
-  /// the new address.
   Future<void> getFormattedAddressConfirmation({
     required BuildContext context,
     required LatLng coordinates,
@@ -833,6 +914,7 @@ String ?  _addressText;
       context: context,
       latLng: coordinates,
     );
+    await saveCoordinatesToHive(coordinates);
 
     Loader.hideLoader(context);
 
@@ -851,7 +933,7 @@ String ?  _addressText;
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             Text(
-              _addressText!,
+              _addressText??'',
               style: TextStyle(
                 fontSize: 14.sp,
                 fontWeight: FontWeight.w500,
@@ -864,24 +946,30 @@ String ?  _addressText;
                 MaterialStateProperty.all(ColorsConstant.appColor),
               ),
               onPressed: () async {
-                  PermissionStatus status = await Permission.location.request();
-                  if (status.isDenied || status.isRestricted || status.isPermanentlyDenied) {
-                    Geolocator.checkPermission();
-                      ReusableWidgets.showFlutterToast(
-                        context,
-                        'Location permission is required to proceed.to find nearby salons and offer personalized recommendations just for you.😊',
-                      );
-                    openAppSettings();
-                  //  updateUserLocation(context, coordinates);
-                    }
-                  else {
-                    // Recheck permission status after returning from settings
-                    PermissionStatus updatedStatus = await Permission.location.status;
-                    if (updatedStatus.isGranted) {
-                      updateUserLocation(context, coordinates);
-                    }
-                  }
-                },
+                final box = await Hive.openBox('userBox');
+                String userId = box.get('userId') ?? '';
+               if (userId.isEmpty) {
+             userId = '659e565fedf72717a11caf27';
+             await box.put('userId', userId);
+    }Loader.showLoader(context);
+                  await updateUserLocation(
+                    userId: userId,
+                    coords: [coordinates.longitude, coordinates.latitude],
+                  );
+                userAddress =
+                await getAddress(coordinates.latitude, coordinates.longitude);
+                await Future.wait([
+                  getTopSalons(
+                      coords: [coordinates.longitude, coordinates.latitude]),
+                  getTopArtists(
+                      coords: [coordinates.longitude, coordinates.latitude]),
+                  //  getDistanceAndRating(coords: [currentLocation.longitude, currentLocation.latitude]),
+                  //  getArtistRating(coords: [currentLocation.longitude, currentLocation.latitude]),
+                ]);
+                Loader.hideLoader(context);
+                  Navigator.pushNamed(
+                      context, NamedRoutes.bottomNavigationRoute3);
+              },
               child: const Text(StringConstant.confirmLocation),
             ),
           ],
@@ -904,6 +992,7 @@ String ?  _addressText;
       context: context,
       latLng: coordinates,
     );
+    await saveCoordinatesToHive(coordinates);
 
     Loader.hideLoader(context);
 
@@ -922,7 +1011,7 @@ String ?  _addressText;
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             Text(
-              _addressText!,
+              _addressText??'',
               style: TextStyle(
                 fontSize: 14.sp,
                 fontWeight: FontWeight.w500,
@@ -935,24 +1024,30 @@ String ?  _addressText;
                 MaterialStateProperty.all(ColorsConstant.appColor),
               ),
               onPressed: () async {
-                PermissionStatus status = await Permission.location.request();
-                if (status.isDenied || status.isRestricted || status.isPermanentlyDenied) {
-                  Geolocator.checkPermission();
-                  ReusableWidgets.showFlutterToast(
-                    context,
-                    'Location permission is required to proceed.to find nearby salons and offer personalized recommendations just for you.😊',
-                  );
-                  openAppSettings();
+                final box = await Hive.openBox('userBox');
+                String userId = box.get('userId') ?? '';
+                if (userId.isEmpty) {
+                  userId = '659e565fedf72717a11caf27';
+                  await box.put('userId', userId);
                 }
-                else {
-                  // Recheck permission status after returning from settings
-                  PermissionStatus updatedStatus = await Permission.location.status;
-                  if (updatedStatus.isGranted) {
-                    updateUserLocation(context, coordinates);
-                  }
-                }
+                Loader.showLoader(context);
+                await updateUserLocation(
+                  userId: userId,
+                  coords: [coordinates.longitude, coordinates.latitude],
+                );
+                Loader.hideLoader(context);
+                await Future.wait([
+                  getTopSalons(
+                      coords: [coordinates.longitude, coordinates.latitude]),
+                  getTopArtists(
+                      coords: [coordinates.longitude, coordinates.latitude]),
+                  //  getDistanceAndRating(coords: [currentLocation.longitude, currentLocation.latitude]),
+                  //  getArtistRating(coords: [currentLocation.longitude, currentLocation.latitude]),
+                ]);
+                Navigator.pushNamed(
+                    context, NamedRoutes.bottomNavigationRoute4);
               },
-              child: const Text(StringConstant.confirmLocation2),
+              child: const Text(StringConstant.confirmLocation),
             ),
           ],
         ),
@@ -963,6 +1058,42 @@ String ?  _addressText;
       _changedLocation = false;
     }
   }
+
+  Future<void> saveCoordinatesToHive(LatLng coordinates) async {
+    final box = await Hive.openBox('userBox');
+    await box.put('savedLatitude', coordinates.latitude);
+    await box.put('savedLongitude', coordinates.longitude);
+  }
+
+  Future<void> onMapClick2({
+    required BuildContext context,
+    required LatLng coordinates,
+  }) async {
+    _mapSearchController.clear();
+    print("Coordinates ===> $coordinates");
+    await _controller.removeSymbol(_symbol);
+
+    _symbol = await _controller.addSymbol(
+      UtilityFunctions.getCurrentLocationSymbolOptions(latLng: coordinates),
+    );
+
+    this._controller.animateCamera(
+      CameraUpdate.newCameraPosition(
+        CameraPosition(target: coordinates, zoom: 16),
+      ),
+    );
+
+    await getFormattedAddressConfirmation2(
+      context: context,
+      coordinates: coordinates,
+    );
+    notifyListeners();
+  }
+
+  /// Get complete address from the provided coordinates
+  /// Format the address according to the need.
+  /// Show a bottom sheet with the formatted address text and a button to confirm
+  /// the new address.
 
 
   /// Method to fetch the current location of the user using [location] package

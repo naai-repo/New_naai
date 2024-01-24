@@ -109,7 +109,7 @@ class StyleConstant {
                       width: 20.w,
                       child: Marquee(
                         text:
-                            context.read<HomeProvider>().getHomeAddressText() ??
+                            context.read<HomeProvider>().userAddress ??
                                 'No Address Found! Please SignIn',
                         velocity: 40.0,
                         pauseAfterRound: const Duration(seconds: 1),

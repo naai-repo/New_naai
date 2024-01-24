@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:naai/utils/colors_constant.dart';
@@ -18,6 +19,12 @@ import 'package:sizer/sizer.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../models/artist_detail.dart';
+import '../../../models/salon_detail.dart';
+import '../../../utils/enums.dart';
+import '../../../utils/loading_indicator.dart';
+import '../../../view_model/post_auth/barber/barber_provider.dart';
+
 class SalonDetailsScreen extends StatefulWidget {
   const SalonDetailsScreen({Key? key}) : super(key: key);
 
@@ -29,13 +36,6 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
   int selectedTab = 0;
   num myShowPrice = 0;
 
-  @override
-  void initState() {
-    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-      context.read<SalonDetailsProvider>().initSalonDetailsData(context);
-    });
-    super.initState();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,17 +48,19 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
         context.read<SalonDetailsProvider>().clearServiceList();
         return true;
       },
-      child:
-          Consumer<SalonDetailsProvider>(builder: (context, provider, child) {
-            if (provider.selectedSalonData.discountPercentage == 0 ||
-                provider.selectedSalonData.discountPercentage == null){
+      child: Consumer<SalonDetailsProvider>(
+          builder: (context, provider, child) {
+       //     ApiResponse? salonDetails = provider.salonDetails; // Use the instance obtained from the context
+            if (provider.salonDetails!.data.data.discount == 0 ||
+                provider.salonDetails!.data.data.discount == null){
               myShowPrice = provider.totalPrice;
             }
             else{
-              provider.setShowPrice(provider.totalPrice, provider.selectedSalonData.discountPercentage!);
+              provider.setShowPrice(provider.totalPrice,provider.salonDetails!.data.data.discount!);
               myShowPrice = provider.showPrice;
-              }
-        return Scaffold(
+            }
+            bool servicesSelected = provider.getSelectedServices().isNotEmpty;
+            return Scaffold(
           body: Stack(
             children: <Widget>[
               ReusableWidgets.appScreenCommonBackground(),
@@ -85,7 +87,7 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
                           GestureDetector(
                             behavior: HitTestBehavior.opaque,
                             onTap: () {
-                              provider.resetCurrentBooking();
+                              provider.resetCurrentBooking2();
                               Navigator.pop(context);
                             },
                             child: Padding(
@@ -125,7 +127,7 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
                                 color: ColorsConstant.graphicFillDark,
                               ),
                               selectedTab == 0
-                                  ? ReusableWidgets.servicesTab()
+                                  ? servicesTab()
                                   : SalonReviewContainer(),
                             ],
                           ),
@@ -141,8 +143,8 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
             alignment: Alignment.center,
             children: <Widget>[
               servicesAndReviewTabBar(),
-              provider.totalPrice > 0
-                  ? Container(
+                if (servicesSelected)
+                   Container(
                       margin: EdgeInsets.only(
                         bottom: 2.h,
                         right: 5.w,
@@ -183,7 +185,7 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
                                   style: StyleConstant.textDark15sp600Style),
                             ],
                           ),
-                          provider.selectedSalonData.discountPercentage==0||provider.selectedSalonData.discountPercentage==null?SizedBox():Column(
+                          provider.salonDetails!.data.data.discount==0||provider.salonDetails!.data.data.discount==null?SizedBox():Column(
                             mainAxisSize: MainAxisSize.min,
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: <Widget>[
@@ -196,11 +198,12 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
                             ],
                           ),
                           VariableWidthCta(
-                            onTap: () {
-                              Navigator.pushNamed(
-                                context,
-                                NamedRoutes.createBookingRoute,
-                              );
+                            onTap: () async {
+                              String salonId = provider.salonDetails!.data.data.id;
+                              List<String> selectedServiceIds = provider.getSelectedServices()
+                                  .map((service) => service.id)
+                                  .toList();
+                              await provider.fetchArtistListAndNavigate(context,salonId, selectedServiceIds);
                             },
                             isActive: true,
                             buttonText: StringConstant.confirmBooking,
@@ -208,14 +211,334 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
                         ],
                       ),
                     )
-                  : SizedBox()
+                 // : SizedBox()
             ],
           ),
         );
       }),
     );
   }
+  static Widget genderFilterTabs({
+    required bool isMen,
+    required bool isWomen,
+  }) {
+    return Consumer<SalonDetailsProvider>(builder: (context, provider, child) {
+      return GestureDetector(
+        onTap: () => provider.setSelectedGendersFilter(
+            selectedGender: isMen ? Gender.MEN : Gender.WOMEN),
+        child: Container(
+          margin: EdgeInsets.only(right: 2.w),
+          padding: EdgeInsets.all(1.5.w),
+          decoration: BoxDecoration(
+            color: provider.selectedGendersFilter.isEmpty
+                ? Colors.white
+                : isMen
+                ? provider.selectedGendersFilter.contains(Gender.MEN)
+                ? ColorsConstant.selectedGenderFilterBoxColor
+                : Colors.white
+                : provider.selectedGendersFilter.contains(Gender.WOMEN)
+                ? ColorsConstant.selectedGenderFilterBoxColor
+                : Colors.white,
+            borderRadius: BorderRadius.circular(1.5.w),
+            border: Border.all(
+              color: provider.selectedGendersFilter.isEmpty
+                  ? ColorsConstant.divider
+                  : isMen
+                  ? provider.selectedGendersFilter.contains(Gender.MEN)
+                  ? ColorsConstant.appColor
+                  : ColorsConstant.divider
+                  : provider.selectedGendersFilter.contains(Gender.WOMEN)
+                  ? ColorsConstant.appColor
+                  : ColorsConstant.divider,
+            ),
+            boxShadow: provider.selectedGendersFilter.isEmpty
+                ? null
+                : isMen
+                ? provider.selectedGendersFilter.contains(Gender.MEN)
+                ? [
+              BoxShadow(
+                color: Color(0xFF000000).withOpacity(0.14),
+                blurRadius: 10,
+                spreadRadius: 2,
+              )
+            ]
+                : null
+                : provider.selectedGendersFilter.contains(Gender.WOMEN)
+                ? [
+              BoxShadow(
+                color: ColorsConstant.dropShadowColor,
+                blurRadius: 10,
+                spreadRadius: 2,
+              )
+            ]
+                : null,
+          ),
+          child: Row(
+            children: <Widget>[
+              Container(
+                height: 3.h,
+                width: 3.h,
+                margin: EdgeInsets.only(right: 1.5.w),
+                child: SvgPicture.asset(
+                  isMen
+                      ? ImagePathConstant.manGenderTypeIcon
+                      : ImagePathConstant.womanGenderTypeIcon,
+                ),
+              ),
+              Text(
+                isMen ? StringConstant.men : StringConstant.women,
+                style: TextStyle(
+                  color: ColorsConstant.textDark,
+                  fontSize: 10.sp,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    });
+  }
+  static Widget genderAndSearchFilterWidget() {
+    return Consumer<SalonDetailsProvider>(builder: (context, provider, child) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: <Widget>[
+          SizedBox(
+            height: 5.h,
+            child: Row(
+              children: <Widget>[
+                genderFilterTabs(isMen: true, isWomen: false),
+                genderFilterTabs(isMen: false, isWomen: true),
+              ],
+            ),
+          ),
+          SizedBox(
+            width: 30.w,
+            height: 4.5.h,
+            child: TextFormField(
+              controller: provider.searchController,
+              cursorColor: ColorsConstant.appColor,
+              style: TextStyle(
+                fontSize: 11.sp,
+                color: ColorsConstant.textDark,
+                fontWeight: FontWeight.w500,
+              ),
+              textInputAction: TextInputAction.done,
+              onChanged: (searchText) =>
+                  provider.filterOnSearchText(searchText),
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: Colors.white,
+                contentPadding: EdgeInsets.symmetric(horizontal: 3.5.w),
+                prefixIcon: Padding(
+                  padding: EdgeInsets.only(left: 0.5.w),
+                  child: SvgPicture.asset(
+                    ImagePathConstant.searchIcon,
+                    color: ColorsConstant.textDark,
+                    height: 10.sp,
+                  ),
+                ),
+                prefixIconConstraints: BoxConstraints(minWidth: 9.w),
+                hintText: StringConstant.search,
+                hintStyle: TextStyle(
+                  color: ColorsConstant.textDark,
+                  fontSize: 10.sp,
+                  fontWeight: FontWeight.w500,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(5.h),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+    });
+  }
+   Widget servicesTab() {
+    return Consumer<SalonDetailsProvider>(builder: (context, provider, child) {
+    //  List<DataService> selectedServices = [];
+      Set<DataService> selectedServices = provider.getSelectedServices();
 
+      return Column(
+        children: <Widget>[
+          GestureDetector(
+            onTap: () {
+              // provider.filteredServiceList.length == 0;
+              FocusManager.instance.primaryFocus!.unfocus();
+            },
+            child: Container(
+              padding: EdgeInsets.all(2.h),
+              decoration: BoxDecoration(
+                color: ColorsConstant.graphicFillDark,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  genderAndSearchFilterWidget(),
+                  Padding(
+                    padding: EdgeInsets.only(top: 4.h, bottom: 1.h),
+                    child: Text(
+                      "${StringConstant.selectCategory}:",
+                      style: TextStyle(
+                        fontSize: 10.sp,
+                        fontWeight: FontWeight.w600,
+                        color: ColorsConstant.textDark,
+                      ),
+                    ),
+                  ),
+                  serviceCategoryFilterWidget(),
+                ],
+              ),
+            ),
+          ),
+          SizedBox(height: 1.h),
+          provider.salonDetails!.data.services.length == 0
+              ? Container(
+            height: 10.h,
+            child: Center(
+              child: Text('Nothing here :('),
+            ),
+          )
+              : ListView.builder(
+            padding: EdgeInsets.zero,
+            shrinkWrap: true,
+            physics: NeverScrollableScrollPhysics(),
+            itemCount: provider.salonDetails!.data.services.length,
+            itemBuilder: (context, index) {
+              DataService? serviceDetail =
+              provider.salonDetails!.data.services[index];
+              return GestureDetector(
+                onTap: () {
+                 //logic for to tap and checked the checkbox
+                  provider.toggleSelectedService(serviceDetail!);
+                },
+                child: Container(
+                  margin: EdgeInsets.symmetric(
+                    vertical: 1.h,
+                    horizontal: 3.w,
+                  ),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 3.w,
+                    vertical: 1.h,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(1.h),
+                    border: Border.all(color: ColorsConstant.divider),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      SizedBox(
+                        width: 50.w,
+                        child: Row(
+                          children: <Widget>[
+                            SvgPicture.asset(
+                              serviceDetail.targetGender == Gender.MEN
+                                  ? ImagePathConstant.manIcon
+                                  : ImagePathConstant.womanIcon,
+                              height: 4.h,
+                            ),
+                            SizedBox(width: 2.w),
+                            Expanded(
+                              child: Text(
+                                serviceDetail.serviceTitle ?? "",
+                                style: TextStyle(
+                                  color: ColorsConstant.textDark,
+                                  fontSize: 10.sp,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: <Widget>[
+                          Text(
+                            "Rs. ${serviceDetail.basePrice}",
+                            style: TextStyle(
+                              fontSize: 10.sp,
+                              fontWeight: FontWeight.w600,
+                              color: ColorsConstant.textDark,
+                            ),
+                          ),
+                          Checkbox(
+                            value: selectedServices.contains(serviceDetail),
+                            activeColor: ColorsConstant.appColor,
+                            side: BorderSide(
+                              color: Color.fromARGB(255, 193, 193, 193),
+                              width: 2,
+                            ),
+                            onChanged: (value) {
+
+                              provider.toggleSelectedService(serviceDetail!);
+                            },
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+          SizedBox(height: 3.h),
+        ],
+      );
+    });
+  }
+   Widget serviceCategoryFilterWidget() {
+    return Consumer<SalonDetailsProvider>(builder: (context, provider, child) {
+      return Container(
+        height: 4.2.h,
+        child: ListView.builder(
+          physics: BouncingScrollPhysics(),
+          shrinkWrap: true,
+          scrollDirection: Axis.horizontal,
+          itemCount: Services.values.length,
+          itemBuilder: (context, index) => GestureDetector(
+            onTap: () {
+              provider.setSelectedServiceCategories(
+                selectedServiceCategory: Services.values[index],
+              );
+            },
+            child: Container(
+              margin: EdgeInsets.only(right: 2.w),
+              height: 4.2.h,
+              padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 0.7.h),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(3.h),
+                color: provider.selectedServiceCategories
+                    .contains(Services.values[index])
+                    ? ColorsConstant.appColor
+                    : Colors.white,
+              ),
+              child: Center(
+                child: Text(
+                  "${Services.values[index].name}",
+                  style: TextStyle(
+                    fontSize: 10.sp,
+                    fontWeight: FontWeight.w600,
+                    color: provider.selectedServiceCategories
+                        .contains(Services.values[index])
+                        ? Colors.white
+                        : ColorsConstant.textDark,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    });
+  }
   Widget imageCarousel() {
     return Consumer<SalonDetailsProvider>(builder: (context, provider, child) {
       return Stack(
@@ -227,9 +550,9 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
               physics: BouncingScrollPhysics(),
               controller: provider.salonImageCarouselController,
               children: <Widget>[
-                ...provider.imageList.map((imageUrl) {
+                ...provider.salonDetails!.data.data.images.map((imageData) {
                   return Image.network(
-                    imageUrl,
+                    imageData.url,
                     fit: BoxFit.cover,
                   );
                 }),
@@ -323,142 +646,166 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
   }
 
   Widget availableStaffList() {
-    return Consumer<SalonDetailsProvider>(builder: (context, provider, child) {
-      return Padding(
-        padding: EdgeInsets.only(top: 2.h),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Text(
-              StringConstant.availableStaff,
-              style: TextStyle(
-                fontSize: 11.sp,
-                color: ColorsConstant.blackAvailableStaff,
-                fontWeight: FontWeight.w600,
+    return Consumer<SalonDetailsProvider>(
+      builder: (context, provider, child) {
+        return Padding(
+          padding: EdgeInsets.only(top: 2.h),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                StringConstant.availableStaff,
+                style: TextStyle(
+                  fontSize: 11.sp,
+                  color: ColorsConstant.blackAvailableStaff,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-            ),
-            SizedBox(height: 2.h),
-            SizedBox(
-              height: 11.h,
-              child: ListView(
-                shrinkWrap: true,
-                physics: BouncingScrollPhysics(),
-                scrollDirection: Axis.horizontal,
-                children: context
-                    .read<HomeProvider>()
-                    .artistList
-                    .where((artist) =>
-                        artist.salonId == provider.selectedSalonData.id)
-                    .toList()
-                    .asMap()
-                    .map((index, artist) => MapEntry(
-                        index,
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(1.5.h),
-                          child: GestureDetector(
-                            onTap: () {
-                              int indexOfArtistOnList = context
-                                  .read<HomeProvider>()
-                                  .artistList
-                                  .indexOf(artist);
-                              provider.setSelectedArtistIndex(context,
-                                  index: indexOfArtistOnList);
-                              Navigator.pushNamed(
-                                context,
-                                NamedRoutes.barberProfileRoute,
+              SizedBox(height: 2.h),
+              SizedBox(
+                height: 11.h,
+                child: ListView(
+                  shrinkWrap: true,
+                  physics: BouncingScrollPhysics(),
+                  scrollDirection: Axis.horizontal,
+                  children: provider.salonDetails?.data.artists.map(
+                        (artist) {
+                      return ClipRRect(
+                        borderRadius: BorderRadius.circular(1.5.h),
+                        child: GestureDetector(
+                          onTap: () async {
+                            String artistId = artist.id;
+                            BarberProvider barberDetailsProvider = context.read<BarberProvider>();
+
+                            try {
+                              Loader.showLoader(context);
+                              final response = await Dio().get(
+                                'http://13.235.49.214:8800/partner/artist/single/$artistId',
                               );
-                            },
+                              Loader.hideLoader(context);
+
+                              if (response.data != null && response.data is Map<String, dynamic>) {
+                                ArtistResponse apiResponse = ArtistResponse.fromJson(response.data);
+
+                                if (apiResponse != null && apiResponse.data != null) {
+                                  // Save the artist details in the provider
+                                  barberDetailsProvider.setArtistDetails(apiResponse.data);
+
+                                  // If the API call is successful, navigate to the BarberProfileRoute
+                                  Navigator.pushNamed(context, NamedRoutes.barberProfileRoute, arguments: artistId);
+                                } else {
+                                  // Handle the case where the response or data is null
+                                  print('Failed to fetch artist details: Invalid response format');
+                                }
+                              } else {
+                                // Handle the case where the response is null or not of the expected type
+                                print('Failed to fetch artist details: Invalid response format');
+                              }
+                            } catch (error) {
+                              Loader.hideLoader(context);
+                              // Handle the case where the API call was not successful
+                              // You can show an error message or take appropriate action
+                              Navigator.pushNamed(context, NamedRoutes.bottomNavigationRoute);
+                              print('Failed to fetch artist details: $error');
+                            }
+                          },
+                          child: Container(
+                          margin: EdgeInsets.only(
+                            bottom: 0.5.h,
+                            left:  2.5.w,
+                          ),
+                          padding: EdgeInsets.symmetric(horizontal: 3.w),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(1.5.h),
+                            boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.shade100,
+                            spreadRadius: 0.1,
+                            blurRadius: 20,
+                          ),
+                            ],
+                          ),
+                          child: Row(
+                            children: <Widget>[
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(4.h),
                             child: Container(
-                              margin: EdgeInsets.only(
-                                bottom: 0.5.h,
-                                left: index == 0 ? 0 : 2.5.w,
-                              ),
-                              padding: EdgeInsets.symmetric(horizontal: 3.w),
+                              height: 7.h,
+                              width: 7.h,
                               decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(1.5.h),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.grey.shade100,
-                                    spreadRadius: 0.1,
-                                    blurRadius: 20,
-                                  ),
-                                ],
+                                shape: BoxShape.circle,
                               ),
-                              child: Row(
-                                children: <Widget>[
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(4.h),
-                                    child: Container(
-                                      height: 7.h,
-                                      width: 7.h,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: Image.network(
-                                        artist.imagePath!,
-                                        fit: BoxFit.cover,
-                                      ),
-                                    ),
-                                  ),
-                                  SizedBox(width: 3.w),
-                                  Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: <Widget>[
-                                      Text(
-                                        artist.name ?? "",
-                                        style: TextStyle(
-                                          fontSize: 11.sp,
-                                          color: ColorsConstant.textDark,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: List<Widget>.generate(
-                                          5,
-                                          (i) => (i >
-                                                  int.parse(artist.rating
-                                                              ?.round()
-                                                              .toString() ??
-                                                          "0") -
-                                                      1)
-                                              ? SvgPicture.asset(
-                                                  ImagePathConstant.starIcon,
-                                                  color:
-                                                      ColorsConstant.greyStar,
-                                                  height: 2.h,
-                                                )
-                                              : SvgPicture.asset(
-                                                  ImagePathConstant.starIcon,
-                                                  color:
-                                                      ColorsConstant.yellowStar,
-                                                  height: 2.h,
-                                                ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
+                              child: Image.network(
+                                artist.imageUrl ?? '',
+                                fit: BoxFit.cover,
                               ),
                             ),
                           ),
-                        )))
-                    .values
-                    .toList(),
+                              SizedBox(width: 3.w),
+                          SizedBox(height: 3.w),
+                          Column(
+                            crossAxisAlignment:
+                            CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: <Widget>[
+                             Text(
+                              artist.name ?? "",
+                              style: TextStyle(
+                                fontSize: 11.sp,
+                                color: ColorsConstant.textDark,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                              Row(
+                                mainAxisAlignment:
+                                MainAxisAlignment.spaceBetween,
+                                children: List<Widget>.generate(
+                                  5,
+                                      (i) => (i >
+                                      int.parse(artist.rating
+                                          ?.round()
+                                          .toString() ??
+                                          "0") -
+                                          1)
+                                      ? SvgPicture.asset(
+                                    ImagePathConstant.starIcon,
+                                    color:
+                                    ColorsConstant.greyStar,
+                                    height: 2.h,
+                                  )
+                                      : SvgPicture.asset(
+                                    ImagePathConstant.starIcon,
+                                    color:
+                                    ColorsConstant.yellowStar,
+                                    height: 2.h,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                         ],
+                          ),
+                        ),
+                        ),
+                      );
+                    },
+                  ).toList() ?? [],
+                ),
               ),
-            ),
-          ],
-        ),
-      );
-    });
+            ],
+          ),
+        );
+      },
+    );
   }
+
 
   Widget salonDetailOverview() {
     return Consumer<SalonDetailsProvider>(builder: (context, provider, child) {
+      //ApiResponse? salonDetails = provider.salonDetails;
+
+
       return Container(
         padding: EdgeInsets.symmetric(
           vertical: 1.h,
@@ -480,7 +827,7 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
                 Container(
                   width: 50.w,
                   child: Text(
-                    provider.selectedSalonData.name ?? "",
+                    provider.salonDetails!.data.data.name,
                     style: TextStyle(
                       color: ColorsConstant.textDark,
                       fontSize: 18.sp,
@@ -516,9 +863,7 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
                       SizedBox(width: 2.w),
                       Text(
                         // TODO:
-                        (provider.selectedSalonData.originalRating ?? 0)
-                            .toStringAsFixed(1),
-
+                        provider.salonDetails!.data.data.rating.toStringAsFixed(1),
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 12.sp,
@@ -536,14 +881,14 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  provider.selectedSalonData.salonType ?? "",
+                  provider.salonDetails!.data.data.salonType ?? "",
                   style: TextStyle(
                     color: ColorsConstant.textLight,
                     fontSize: 11.sp,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-                provider.selectedSalonData.discountPercentage==0||provider.selectedSalonData.discountPercentage==null?SizedBox():Container(
+                provider.salonDetails!.data.data.discount==0||provider.salonDetails!.data.data.discount==null?SizedBox():Container(
                   constraints: BoxConstraints(minWidth: 15.w),
                   padding: EdgeInsets.symmetric(
                     vertical: 0.8.h,
@@ -565,7 +910,7 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
                     children: <Widget>[
                       Text(
                         // TODO:
-                        provider.selectedSalonData.discountPercentage
+                        provider.salonDetails!.data.data.discount
                             .toString() +
                             "% off",
                         style: TextStyle(
@@ -579,20 +924,23 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
                 ),
               ],
             ),
+
             salonAddress(
-              address: provider.selectedSalonData.address?.addressString ?? "",
-              geoPoint: provider.selectedSalonData.address!.geoLocation!,
+              address: provider.salonDetails!.data.data.address ,
+              geoPoint: provider.salonDetails!.data.data.location != null
+                  ? GeoPoint(
+                provider.salonDetails!.data.data.location!.coordinates[1], // Assuming latitude is at index 1
+                provider.salonDetails!.data.data.location!.coordinates[0], // Assuming longitude is at index 0
+              )
+                  : GeoPoint(0.0, 0.0),
+
             ),
 
             salonTiming(),
             ContactAndInteractionWidget(
               iconOnePath: ImagePathConstant.phoneIcon,
               iconTwoPath: ImagePathConstant.shareIcon,
-              iconThreePath: !context
-                  .read<HomeProvider>()
-                  .userData
-                  .preferredSalon!
-                  .contains(provider.selectedSalonData.id) ? ImagePathConstant.saveIcon:ImagePathConstant.saveIconFill,
+              iconThreePath:  ImagePathConstant.saveIcon,
               iconFourPath: ImagePathConstant.instagramIcon,
               onTapIconOne: () => launchUrl(
                 Uri(
@@ -610,20 +958,20 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
                     .read<HomeProvider>()
                     .userData
                     .preferredSalon!
-                    .contains(provider.selectedSalonData.id)) {
+                    .contains(provider.salonId)) {
                   provider.addPreferedSalon(
                     context,
-                    provider.selectedSalonData.id,
+                      provider.salonId
                   );
                 } else {
-                  provider.removePreferedSalon(
-                    context,
-                    provider.selectedSalonData.id,
-                  );
+                 // provider.removePreferedSalon(
+                 //   context,
+
+                //  );
                 }
               },
               onTapIconFour: () => launchUrl(
-                Uri.parse(provider.selectedSalonData.instagramLink ??
+                Uri.parse(provider.salonDetails!.data.data.links.instagram ??
                     'https://www.instagram.com/naaiindia'),
               ),
               backgroundColor: ColorsConstant.lightAppColor,
@@ -638,6 +986,12 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
 
   Widget salonTiming() {
     return Consumer<SalonDetailsProvider>(builder: (context, provider, child) {
+      ApiResponse? salonDetails = provider.salonDetails;
+
+      if (salonDetails == null) {
+        // Handle the case where salonDetails is null
+        return Center(child: Text('Failed to load salon details.'));
+      }
       return Padding(
         padding: EdgeInsets.only(bottom: 3.h),
         child: Column(
@@ -664,8 +1018,8 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
                       ),
                     ),
                     TextSpan(
-                      text:
-                          "${provider.formatTime(provider.selectedSalonData.timing!.opening ?? 0)} - ${provider.formatTime(provider.selectedSalonData.timing!.closing ?? 0)}",
+                      text: '${provider.salonDetails!.data.data.timing.opening} - ${provider.salonDetails!.data.data.timing.closing}',
+                      //       "${provider.formatTime(provider.selectedSalonData.createdAt )} - ${provider.formatTime(provider.selectedSalonData.timing!.closing ?? 0)}",
                       style: TextStyle(
                         color: ColorsConstant.textDark,
                         fontSize: 10.sp,
@@ -698,7 +1052,7 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
                       ),
                     ),
                     TextSpan(
-                      text: provider.selectedSalonData.closingDay,
+                      text: salonDetails.data.data.closedOn,
                       style: TextStyle(
                         color: ColorsConstant.textDark,
                         fontSize: 10.sp,
@@ -716,6 +1070,7 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
   }
 
   Widget salonAddress({required String address, required GeoPoint geoPoint}) {
+
     return Container(
       margin: EdgeInsets.symmetric(vertical: 1.5.h),
       child: Row(
@@ -741,10 +1096,13 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
               );
             },
             child: Padding(
-              padding: EdgeInsets.only(right: 3.w, bottom: 1.w),
-              child: SvgPicture.asset(
-                ImagePathConstant.goToLocationIcon,
-              ),
+              padding: EdgeInsets.only(bottom: 1.w),
+              child: Text('VIEW IN MAP',
+              style:TextStyle(
+                fontWeight: FontWeight.bold,
+              color:ColorsConstant.appColor
+              )
+              )
             ),
           ),
         ],
@@ -774,118 +1132,115 @@ class _SalonDetailsScreen2State extends State<SalonDetailsScreen2> {
   int selectedTab = 0;
   num myShowPrice = 0;
 
-  @override
-  void initState() {
-    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-      context.read<SalonDetailsProvider>().initSalonDetailsData(context);
-    });
-    super.initState();
-  }
 
   @override
   Widget build(BuildContext context) {
-
     return WillPopScope(
       onWillPop: () async {
         context.read<SalonDetailsProvider>().clearSelectedGendersFilter();
         context.read<SalonDetailsProvider>().clearSearchController();
         context.read<SalonDetailsProvider>().clearSelectedServiceCategories();
+        context.read<SalonDetailsProvider>().clearfilteredServiceList();
+        context.read<SalonDetailsProvider>().clearServiceList();
         return true;
       },
-      child:
-          Consumer<SalonDetailsProvider>(builder: (context, provider, child) {
-            if (provider.selectedSalonData.discountPercentage == 0 ||
-                provider.selectedSalonData.discountPercentage == null){
+      child: Consumer<SalonDetailsProvider>(
+          builder: (context, provider, child) {
+            //     ApiResponse? salonDetails = provider.salonDetails; // Use the instance obtained from the context
+            if (provider.salonDetails!.data.data.discount == 0 ||
+                provider.salonDetails!.data.data.discount == null){
               myShowPrice = provider.totalPrice;
             }
             else{
-              provider.setShowPrice(provider.totalPrice, provider.selectedSalonData.discountPercentage!);
+              provider.setShowPrice(provider.totalPrice,provider.salonDetails!.data.data.discount!);
               myShowPrice = provider.showPrice;
             }
-        return Scaffold(
-          body: Stack(
-            children: <Widget>[
-              ReusableWidgets.appScreenCommonBackground(),
-              CustomScrollView(
-                physics: BouncingScrollPhysics(),
-                slivers: [
-                  ReusableWidgets.transparentFlexibleSpace(),
-                  SliverAppBar(
-                    elevation: 10,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(3.h),
-                        topRight: Radius.circular(3.h),
-                      ),
-                    ),
-                    backgroundColor: Colors.white,
-                    pinned: true,
-                    floating: true,
-                    leadingWidth: 0,
-                    title: Container(
-                      padding: EdgeInsets.only(top: 1.h, bottom: 2.h),
-                      child: Row(
-                        children: <Widget>[
-                          GestureDetector(
-                            behavior: HitTestBehavior.opaque,
-                            onTap: () {
-                              Navigator.pop(context);
-                            },
-                            child: Padding(
-                              padding: EdgeInsets.all(1.h),
-                              child: SvgPicture.asset(
-                                ImagePathConstant.leftArrowIcon,
-                                color: ColorsConstant.textDark,
-                                height: 2.h,
-                              ),
-                            ),
+            bool servicesSelected = provider.getSelectedServices().isNotEmpty;
+            return Scaffold(
+              body: Stack(
+                children: <Widget>[
+                  ReusableWidgets.appScreenCommonBackground(),
+                  CustomScrollView(
+                    physics: BouncingScrollPhysics(),
+                    slivers: [
+                      ReusableWidgets.transparentFlexibleSpace(),
+                      SliverAppBar(
+                        elevation: 10,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.only(
+                            topLeft: Radius.circular(3.h),
+                            topRight: Radius.circular(3.h),
                           ),
-                          SizedBox(width: 4.w),
-                          Text(
-                            StringConstant.salonDetail,
-                            style: StyleConstant.headingTextStyle,
-                          ),
-                        ],
-                      ),
-                    ),
-                    centerTitle: false,
-                  ),
-                  SliverList(
-                    delegate: SliverChildListDelegate(
-                      <Widget>[
-                        imageCarousel(),
-                        Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                        ),
+                        backgroundColor: Colors.white,
+                        pinned: true,
+                        floating: true,
+                        leadingWidth: 0,
+                        title: Container(
+                          padding: EdgeInsets.only(top: 1.h, bottom: 2.h),
+                          child: Row(
                             children: <Widget>[
-                              salonDetailOverview(),
-                              Divider(
-                                thickness: 5,
-                                height: 0,
-                                color: ColorsConstant.graphicFillDark,
+                              GestureDetector(
+                                behavior: HitTestBehavior.opaque,
+                                onTap: () {
+                                  provider.resetCurrentBooking2();
+                                  Navigator.pop(context);
+                                },
+                                child: Padding(
+                                  padding: EdgeInsets.all(1.h),
+                                  child: SvgPicture.asset(
+                                    ImagePathConstant.leftArrowIcon,
+                                    color: ColorsConstant.textDark,
+                                    height: 2.h,
+                                  ),
+                                ),
                               ),
-                              selectedTab == 0
-                                  ? ReusableWidgets.servicesTab()
-                                  : SalonReviewContainer2(),
+                              SizedBox(width: 4.w),
+                              Text(
+                                StringConstant.salonDetail,
+                                style: StyleConstant.headingTextStyle,
+                              ),
                             ],
                           ),
                         ),
-                      ],
-                    ),
+                        centerTitle: false,
+                      ),
+                      SliverList(
+                        delegate: SliverChildListDelegate(
+                          <Widget>[
+                            imageCarousel(),
+                            Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: <Widget>[
+                                  salonDetailOverview(),
+                                  Divider(
+                                    thickness: 5,
+                                    height: 0,
+                                    color: ColorsConstant.graphicFillDark,
+                                  ),
+                                  selectedTab == 0
+                                      ? servicesTab()
+                                      : SalonReviewContainer2(),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
-            ],
-          ),
-          bottomNavigationBar: Stack(
-            alignment: Alignment.center,
-            children: <Widget>[
-              servicesAndReviewTabBar(),
-              provider.totalPrice > 0
-                  ? Container(
+              bottomNavigationBar: Stack(
+                alignment: Alignment.center,
+                children: <Widget>[
+                  servicesAndReviewTabBar(),
+                  if (servicesSelected)
+                    Container(
                       margin: EdgeInsets.only(
                         bottom: 2.h,
                         right: 5.w,
@@ -926,7 +1281,7 @@ class _SalonDetailsScreen2State extends State<SalonDetailsScreen2> {
                                   style: StyleConstant.textDark15sp600Style),
                             ],
                           ),
-                          provider.selectedSalonData.discountPercentage==0||provider.selectedSalonData.discountPercentage==null?SizedBox():Column(
+                          provider.salonDetails!.data.data.discount==0||provider.salonDetails!.data.data.discount==null?SizedBox():Column(
                             mainAxisSize: MainAxisSize.min,
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: <Widget>[
@@ -939,7 +1294,12 @@ class _SalonDetailsScreen2State extends State<SalonDetailsScreen2> {
                             ],
                           ),
                           VariableWidthCta(
-                            onTap: () {
+                            onTap: () async {
+                              String salonId = provider.salonDetails!.data.data.id;
+                              List<String> selectedServiceIds = provider.getSelectedServices()
+                                  .map((service) => service.id)
+                                  .toList();
+                           //   await provider.fetchArtistListAndNavigate(context,salonId, selectedServiceIds);
                               showSignInDialog(context);
                             },
                             isActive: true,
@@ -948,12 +1308,898 @@ class _SalonDetailsScreen2State extends State<SalonDetailsScreen2> {
                         ],
                       ),
                     )
-                  : SizedBox()
+                  // : SizedBox()
+                ],
+              ),
+            );
+          }),
+    );
+  }
+  static Widget genderFilterTabs({
+    required bool isMen,
+    required bool isWomen,
+  }) {
+    return Consumer<SalonDetailsProvider>(builder: (context, provider, child) {
+      return GestureDetector(
+        onTap: () => provider.setSelectedGendersFilter(
+            selectedGender: isMen ? Gender.MEN : Gender.WOMEN),
+        child: Container(
+          margin: EdgeInsets.only(right: 2.w),
+          padding: EdgeInsets.all(1.5.w),
+          decoration: BoxDecoration(
+            color: provider.selectedGendersFilter.isEmpty
+                ? Colors.white
+                : isMen
+                ? provider.selectedGendersFilter.contains(Gender.MEN)
+                ? ColorsConstant.selectedGenderFilterBoxColor
+                : Colors.white
+                : provider.selectedGendersFilter.contains(Gender.WOMEN)
+                ? ColorsConstant.selectedGenderFilterBoxColor
+                : Colors.white,
+            borderRadius: BorderRadius.circular(1.5.w),
+            border: Border.all(
+              color: provider.selectedGendersFilter.isEmpty
+                  ? ColorsConstant.divider
+                  : isMen
+                  ? provider.selectedGendersFilter.contains(Gender.MEN)
+                  ? ColorsConstant.appColor
+                  : ColorsConstant.divider
+                  : provider.selectedGendersFilter.contains(Gender.WOMEN)
+                  ? ColorsConstant.appColor
+                  : ColorsConstant.divider,
+            ),
+            boxShadow: provider.selectedGendersFilter.isEmpty
+                ? null
+                : isMen
+                ? provider.selectedGendersFilter.contains(Gender.MEN)
+                ? [
+              BoxShadow(
+                color: Color(0xFF000000).withOpacity(0.14),
+                blurRadius: 10,
+                spreadRadius: 2,
+              )
+            ]
+                : null
+                : provider.selectedGendersFilter.contains(Gender.WOMEN)
+                ? [
+              BoxShadow(
+                color: ColorsConstant.dropShadowColor,
+                blurRadius: 10,
+                spreadRadius: 2,
+              )
+            ]
+                : null,
+          ),
+          child: Row(
+            children: <Widget>[
+              Container(
+                height: 3.h,
+                width: 3.h,
+                margin: EdgeInsets.only(right: 1.5.w),
+                child: SvgPicture.asset(
+                  isMen
+                      ? ImagePathConstant.manGenderTypeIcon
+                      : ImagePathConstant.womanGenderTypeIcon,
+                ),
+              ),
+              Text(
+                isMen ? StringConstant.men : StringConstant.women,
+                style: TextStyle(
+                  color: ColorsConstant.textDark,
+                  fontSize: 10.sp,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    });
+  }
+  static Widget genderAndSearchFilterWidget() {
+    return Consumer<SalonDetailsProvider>(builder: (context, provider, child) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: <Widget>[
+          SizedBox(
+            height: 5.h,
+            child: Row(
+              children: <Widget>[
+                genderFilterTabs(isMen: true, isWomen: false),
+                genderFilterTabs(isMen: false, isWomen: true),
+              ],
+            ),
+          ),
+          SizedBox(
+            width: 30.w,
+            height: 4.5.h,
+            child: TextFormField(
+              controller: provider.searchController,
+              cursorColor: ColorsConstant.appColor,
+              style: TextStyle(
+                fontSize: 11.sp,
+                color: ColorsConstant.textDark,
+                fontWeight: FontWeight.w500,
+              ),
+              textInputAction: TextInputAction.done,
+              onChanged: (searchText) =>
+                  provider.filterOnSearchText(searchText),
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: Colors.white,
+                contentPadding: EdgeInsets.symmetric(horizontal: 3.5.w),
+                prefixIcon: Padding(
+                  padding: EdgeInsets.only(left: 0.5.w),
+                  child: SvgPicture.asset(
+                    ImagePathConstant.searchIcon,
+                    color: ColorsConstant.textDark,
+                    height: 10.sp,
+                  ),
+                ),
+                prefixIconConstraints: BoxConstraints(minWidth: 9.w),
+                hintText: StringConstant.search,
+                hintStyle: TextStyle(
+                  color: ColorsConstant.textDark,
+                  fontSize: 10.sp,
+                  fontWeight: FontWeight.w500,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(5.h),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+    });
+  }
+  Widget servicesTab() {
+    return Consumer<SalonDetailsProvider>(builder: (context, provider, child) {
+      //  List<DataService> selectedServices = [];
+      Set<DataService> selectedServices = provider.getSelectedServices();
+
+      return Column(
+        children: <Widget>[
+          GestureDetector(
+            onTap: () {
+              // provider.filteredServiceList.length == 0;
+              FocusManager.instance.primaryFocus!.unfocus();
+            },
+            child: Container(
+              padding: EdgeInsets.all(2.h),
+              decoration: BoxDecoration(
+                color: ColorsConstant.graphicFillDark,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  genderAndSearchFilterWidget(),
+                  Padding(
+                    padding: EdgeInsets.only(top: 4.h, bottom: 1.h),
+                    child: Text(
+                      "${StringConstant.selectCategory}:",
+                      style: TextStyle(
+                        fontSize: 10.sp,
+                        fontWeight: FontWeight.w600,
+                        color: ColorsConstant.textDark,
+                      ),
+                    ),
+                  ),
+                  serviceCategoryFilterWidget(),
+                ],
+              ),
+            ),
+          ),
+          SizedBox(height: 1.h),
+          provider.salonDetails!.data.services.length == 0
+              ? Container(
+            height: 10.h,
+            child: Center(
+              child: Text('Nothing here :('),
+            ),
+          )
+              : ListView.builder(
+            padding: EdgeInsets.zero,
+            shrinkWrap: true,
+            physics: NeverScrollableScrollPhysics(),
+            itemCount: provider.salonDetails!.data.services.length,
+            itemBuilder: (context, index) {
+              DataService? serviceDetail =
+              provider.salonDetails!.data.services[index];
+              return GestureDetector(
+                onTap: () {
+                  //logic for to tap and checked the checkbox
+                  provider.toggleSelectedService(serviceDetail!);
+                },
+                child: Container(
+                  margin: EdgeInsets.symmetric(
+                    vertical: 1.h,
+                    horizontal: 3.w,
+                  ),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 3.w,
+                    vertical: 1.h,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(1.h),
+                    border: Border.all(color: ColorsConstant.divider),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      SizedBox(
+                        width: 50.w,
+                        child: Row(
+                          children: <Widget>[
+                            SvgPicture.asset(
+                              serviceDetail.targetGender == Gender.MEN
+                                  ? ImagePathConstant.manIcon
+                                  : ImagePathConstant.womanIcon,
+                              height: 4.h,
+                            ),
+                            SizedBox(width: 2.w),
+                            Expanded(
+                              child: Text(
+                                serviceDetail.serviceTitle ?? "",
+                                style: TextStyle(
+                                  color: ColorsConstant.textDark,
+                                  fontSize: 10.sp,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: <Widget>[
+                          Text(
+                            "Rs. ${serviceDetail.basePrice}",
+                            style: TextStyle(
+                              fontSize: 10.sp,
+                              fontWeight: FontWeight.w600,
+                              color: ColorsConstant.textDark,
+                            ),
+                          ),
+                          Checkbox(
+                            value: selectedServices.contains(serviceDetail),
+                            activeColor: ColorsConstant.appColor,
+                            side: BorderSide(
+                              color: Color.fromARGB(255, 193, 193, 193),
+                              width: 2,
+                            ),
+                            onChanged: (value) {
+
+                              provider.toggleSelectedService(serviceDetail!);
+                            },
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+          SizedBox(height: 3.h),
+        ],
+      );
+    });
+  }
+  Widget serviceCategoryFilterWidget() {
+    return Consumer<SalonDetailsProvider>(builder: (context, provider, child) {
+      return Container(
+        height: 4.2.h,
+        child: ListView.builder(
+          physics: BouncingScrollPhysics(),
+          shrinkWrap: true,
+          scrollDirection: Axis.horizontal,
+          itemCount: Services.values.length,
+          itemBuilder: (context, index) => GestureDetector(
+            onTap: () {
+              provider.setSelectedServiceCategories(
+                selectedServiceCategory: Services.values[index],
+              );
+            },
+            child: Container(
+              margin: EdgeInsets.only(right: 2.w),
+              height: 4.2.h,
+              padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 0.7.h),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(3.h),
+                color: provider.selectedServiceCategories
+                    .contains(Services.values[index])
+                    ? ColorsConstant.appColor
+                    : Colors.white,
+              ),
+              child: Center(
+                child: Text(
+                  "${Services.values[index].name}",
+                  style: TextStyle(
+                    fontSize: 10.sp,
+                    fontWeight: FontWeight.w600,
+                    color: provider.selectedServiceCategories
+                        .contains(Services.values[index])
+                        ? Colors.white
+                        : ColorsConstant.textDark,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    });
+  }
+  Widget imageCarousel() {
+    return Consumer<SalonDetailsProvider>(builder: (context, provider, child) {
+      return Stack(
+        alignment: Alignment.bottomCenter,
+        children: <Widget>[
+          SizedBox(
+            height: 35.h,
+            child: PageView(
+              physics: BouncingScrollPhysics(),
+              controller: provider.salonImageCarouselController,
+              children: <Widget>[
+                ...provider.salonDetails!.data.data.images.map((imageData) {
+                  return Image.network(
+                    imageData.url,
+                    fit: BoxFit.cover,
+                  );
+                }),
+              ],
+            ),
+          ),
+          (provider.imageList.length) > 1
+              ? Padding(
+            padding: EdgeInsets.only(bottom: 2.h),
+            child: SmoothPageIndicator(
+              controller: provider.salonImageCarouselController,
+              count: provider.imageList!.length,
+              effect: ExpandingDotsEffect(
+                activeDotColor: ColorsConstant.appColor,
+                dotHeight: 2.w,
+                dotWidth: 2.w,
+                spacing: 2.w,
+              ),
+            ),
+          )
+              : SizedBox(),
+          Positioned(
+            top: 5.h,
+            right: 0,
+            left: 0,
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 3.w),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: <Widget>[
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    //   onTap: () => Navigator.pop(context),
+                    child: Padding(
+                      padding: EdgeInsets.all(1.h),
+                    ),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.all(1.h),
+                    child: SvgPicture.asset(
+                      ImagePathConstant.burgerIcon,
+                      color: Colors.white,
+                      height: 2.5.h,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      );
+    });
+  }
+
+  Widget servicesAndReviewTabBar() {
+    return Container(
+      height: 7.h,
+      color: Colors.white,
+      child: DefaultTabController(
+        length: 2,
+        child: Scaffold(
+          bottomNavigationBar: Container(
+            color: Colors.white,
+            child: TabBar(
+              labelColor: ColorsConstant.appColor,
+              indicatorColor: ColorsConstant.appColor,
+              unselectedLabelColor: ColorsConstant.divider,
+              indicatorSize: TabBarIndicatorSize.tab,
+              onTap: (tabIndex) => setState(() {
+                selectedTab = tabIndex;
+              }),
+              tabs: <Widget>[
+                Padding(
+                  padding: EdgeInsets.symmetric(vertical: 1.h),
+                  child: Tab(
+                    child: Text(StringConstant.services.toUpperCase()),
+                  ),
+                ),
+                Padding(
+                  padding: EdgeInsets.symmetric(vertical: 1.h),
+                  child: Tab(
+                    child: Text(StringConstant.reviews.toUpperCase()),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget availableStaffList() {
+    return Consumer<SalonDetailsProvider>(
+      builder: (context, provider, child) {
+        return Padding(
+          padding: EdgeInsets.only(top: 2.h),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                StringConstant.availableStaff,
+                style: TextStyle(
+                  fontSize: 11.sp,
+                  color: ColorsConstant.blackAvailableStaff,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              SizedBox(height: 2.h),
+              SizedBox(
+                height: 11.h,
+                child: ListView(
+                  shrinkWrap: true,
+                  physics: BouncingScrollPhysics(),
+                  scrollDirection: Axis.horizontal,
+                  children: provider.salonDetails?.data.artists.map(
+                        (artist) {
+                      return ClipRRect(
+                        borderRadius: BorderRadius.circular(1.5.h),
+                        child: GestureDetector(
+                          onTap: () async {
+                            String artistId = artist.id;
+                            BarberProvider barberDetailsProvider = context.read<BarberProvider>();
+
+                            try {
+                              Loader.showLoader(context);
+                              final response = await Dio().get(
+                                'http://13.235.49.214:8800/partner/artist/single/$artistId',
+                              );
+                              Loader.hideLoader(context);
+
+                              if (response.data != null && response.data is Map<String, dynamic>) {
+                                ArtistResponse apiResponse = ArtistResponse.fromJson(response.data);
+
+                                if (apiResponse != null && apiResponse.data != null) {
+                                  // Save the artist details in the provider
+                                  barberDetailsProvider.setArtistDetails(apiResponse.data);
+
+                                  // If the API call is successful, navigate to the BarberProfileRoute
+                                  Navigator.pushNamed(context, NamedRoutes.barberProfileRoute2, arguments: artistId);
+                                } else {
+                                  // Handle the case where the response or data is null
+                                  print('Failed to fetch artist details: Invalid response format');
+                                }
+                              } else {
+                                // Handle the case where the response is null or not of the expected type
+                                print('Failed to fetch artist details: Invalid response format');
+                              }
+                            } catch (error) {
+                              Loader.hideLoader(context);
+                              // Handle the case where the API call was not successful
+                              // You can show an error message or take appropriate action
+                              Navigator.pushNamed(context, NamedRoutes.bottomNavigationRoute2);
+                              print('Failed to fetch artist details: $error');
+                            }
+                          },
+                          child: Container(
+                            margin: EdgeInsets.only(
+                              bottom: 0.5.h,
+                              left:  2.5.w,
+                            ),
+                            padding: EdgeInsets.symmetric(horizontal: 3.w),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(1.5.h),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.grey.shade100,
+                                  spreadRadius: 0.1,
+                                  blurRadius: 20,
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              children: <Widget>[
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(4.h),
+                                  child: Container(
+                                    height: 7.h,
+                                    width: 7.h,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Image.network(
+                                      artist.imageUrl ?? '',
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(width: 3.w),
+                                SizedBox(height: 3.w),
+                                Column(
+                                  crossAxisAlignment:
+                                  CrossAxisAlignment.start,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: <Widget>[
+                                    Text(
+                                      artist.name ?? "",
+                                      style: TextStyle(
+                                        fontSize: 11.sp,
+                                        color: ColorsConstant.textDark,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    Row(
+                                      mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                      children: List<Widget>.generate(
+                                        5,
+                                            (i) => (i >
+                                            int.parse(artist.rating
+                                                ?.round()
+                                                .toString() ??
+                                                "0") -
+                                                1)
+                                            ? SvgPicture.asset(
+                                          ImagePathConstant.starIcon,
+                                          color:
+                                          ColorsConstant.greyStar,
+                                          height: 2.h,
+                                        )
+                                            : SvgPicture.asset(
+                                          ImagePathConstant.starIcon,
+                                          color:
+                                          ColorsConstant.yellowStar,
+                                          height: 2.h,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ).toList() ?? [],
+                ),
+              ),
             ],
           ),
         );
-      }),
+      },
     );
+  }
+
+
+  Widget salonDetailOverview() {
+    return Consumer<SalonDetailsProvider>(builder: (context, provider, child) {
+      //ApiResponse? salonDetails = provider.salonDetails;
+
+
+      return Container(
+        padding: EdgeInsets.symmetric(
+          vertical: 1.h,
+          horizontal: 5.w,
+        ),
+        margin: EdgeInsets.symmetric(
+          vertical: 2.h,
+        ),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(1.h),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Container(
+                  width: 50.w,
+                  child: Text(
+                    provider.salonDetails!.data.data.name,
+                    style: TextStyle(
+                      color: ColorsConstant.textDark,
+                      fontSize: 18.sp,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                Container(
+                  constraints: BoxConstraints(minWidth: 15.w),
+                  padding: EdgeInsets.symmetric(
+                    vertical: 0.8.h,
+                    horizontal: 1.5.h,
+                  ),
+                  decoration: BoxDecoration(
+                    color: ColorsConstant.greenRating,
+                    borderRadius: BorderRadius.circular(0.5.h),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Color(0xFF000000).withOpacity(0.14),
+                        blurRadius: 10,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: <Widget>[
+                      SvgPicture.asset(
+                        ImagePathConstant.starIcon,
+                        color: Colors.white,
+                        height: 2.h,
+                      ),
+                      SizedBox(width: 2.w),
+                      Text(
+                        // TODO:
+                        provider.salonDetails!.data.data.rating.toStringAsFixed(1),
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12.sp,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 0.5.h),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  provider.salonDetails!.data.data.salonType ?? "",
+                  style: TextStyle(
+                    color: ColorsConstant.textLight,
+                    fontSize: 11.sp,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                provider.salonDetails!.data.data.discount==0||provider.salonDetails!.data.data.discount==null?SizedBox():Container(
+                  constraints: BoxConstraints(minWidth: 15.w),
+                  padding: EdgeInsets.symmetric(
+                    vertical: 0.8.h,
+                    horizontal: 1.5.h,
+                  ),
+                  decoration: BoxDecoration(
+                    color: ColorsConstant.appColor,
+                    borderRadius: BorderRadius.circular(0.5.h),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Color(0xFF000000).withOpacity(0.14),
+                        blurRadius: 10,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: <Widget>[
+                      Text(
+                        // TODO:
+                        provider.salonDetails!.data.data.discount
+                            .toString() +
+                            "% off",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12.sp,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+
+            salonAddress(
+              address: provider.salonDetails!.data.data.address ,
+              geoPoint: provider.salonDetails!.data.data.location != null
+                  ? GeoPoint(
+                provider.salonDetails!.data.data.location!.coordinates[1], // Assuming latitude is at index 1
+                provider.salonDetails!.data.data.location!.coordinates[0], // Assuming longitude is at index 0
+              )
+                  : GeoPoint(0.0, 0.0),
+
+            ),
+
+            salonTiming(),
+            ContactAndInteractionWidget(
+              iconOnePath: ImagePathConstant.phoneIcon,
+              iconTwoPath: ImagePathConstant.shareIcon,
+              iconThreePath:  ImagePathConstant.saveIcon,
+              iconFourPath: ImagePathConstant.instagramIcon,
+              onTapIconOne: () => launchUrl(
+                Uri(
+                  scheme: 'tel',
+                  path: StringConstant.generalContantNumber,
+                ),
+              ),
+              onTapIconTwo: () => launchUrl(
+                Uri.parse(
+                  "https://play.google.com/store/apps/details?id=com.naai.flutterApp",
+                ),
+              ),
+              onTapIconThree: () {
+                showSignInDialog(context);
+              },
+              onTapIconFour: () => launchUrl(
+                Uri.parse(provider.salonDetails!.data.data.links.instagram ??
+                    'https://www.instagram.com/naaiindia'),
+              ),
+              backgroundColor: ColorsConstant.lightAppColor,
+            ),
+            SizedBox(height: 2.h),
+            availableStaffList(),
+          ],
+        ),
+      );
+    });
+  }
+
+  Widget salonTiming() {
+    return Consumer<SalonDetailsProvider>(builder: (context, provider, child) {
+      ApiResponse? salonDetails = provider.salonDetails;
+
+      if (salonDetails == null) {
+        // Handle the case where salonDetails is null
+        return Center(child: Text('Failed to load salon details.'));
+      }
+      return Padding(
+        padding: EdgeInsets.only(bottom: 3.h),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            TimeDateCard(
+              child: Text.rich(
+                TextSpan(
+                  children: [
+                    TextSpan(
+                      text: StringConstant.timings,
+                      style: TextStyle(
+                        color: ColorsConstant.textDark,
+                        fontSize: 10.sp,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    TextSpan(
+                      text: " | ",
+                      style: TextStyle(
+                        color: ColorsConstant.textLight,
+                        fontSize: 10.sp,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    TextSpan(
+                      text: '${provider.salonDetails!.data.data.timing.opening} - ${provider.salonDetails!.data.data.timing.closing}',
+                      //       "${provider.formatTime(provider.selectedSalonData.createdAt )} - ${provider.formatTime(provider.selectedSalonData.timing!.closing ?? 0)}",
+                      style: TextStyle(
+                        color: ColorsConstant.textDark,
+                        fontSize: 10.sp,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            SizedBox(height: 2.w),
+            TimeDateCard(
+              child: Text.rich(
+                TextSpan(
+                  children: [
+                    TextSpan(
+                      text: StringConstant.closed,
+                      style: TextStyle(
+                        color: ColorsConstant.textDark,
+                        fontSize: 10.sp,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    TextSpan(
+                      text: "  |  ",
+                      style: TextStyle(
+                        color: ColorsConstant.textDark,
+                        fontSize: 10.sp,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    TextSpan(
+                      text: salonDetails.data.data.closedOn,
+                      style: TextStyle(
+                        color: ColorsConstant.textDark,
+                        fontSize: 10.sp,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    });
+  }
+
+  Widget salonAddress({required String address, required GeoPoint geoPoint}) {
+
+    return Container(
+      margin: EdgeInsets.symmetric(vertical: 1.5.h),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: <Widget>[
+          Flexible(
+            child: Text(
+              "$address,  ",
+              style: TextStyle(
+                color: ColorsConstant.textLight,
+                fontSize: 11.sp,
+                fontWeight: FontWeight.w400,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          InkWell(
+            onTap: () {
+              navigateTo(
+                geoPoint.latitude,
+                geoPoint.longitude,
+              );
+            },
+            child: Padding(
+                padding: EdgeInsets.only(bottom: 1.w),
+                child: Text('VIEW IN MAP',
+                    style:TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color:ColorsConstant.appColor
+                    )
+                )
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static void navigateTo(double lat, double lng) async {
+    var uri = Uri.parse("google.navigation:q=$lat,$lng&mode=d");
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    } else {
+      throw 'Could not launch ${uri.toString()}';
+    }
   }
 
   void showSignInDialog(BuildContext context) {
@@ -993,7 +2239,7 @@ class _SalonDetailsScreen2State extends State<SalonDetailsScreen2> {
                   ElevatedButton(
                     style: ButtonStyle(
                       backgroundColor:
-                          MaterialStateProperty.all<Color>(Colors.black),
+                      MaterialStateProperty.all<Color>(Colors.black),
                       shape: MaterialStateProperty.all<OutlinedBorder>(
                         const StadiumBorder(),
                       ),
@@ -1012,7 +2258,7 @@ class _SalonDetailsScreen2State extends State<SalonDetailsScreen2> {
                     onPressed: () {
                       Navigator.pushNamed(
                         context,
-                        NamedRoutes.authenticationRoute2,
+                        NamedRoutes.authenticationRoute,
                       );
                     },
                   ),
@@ -1023,532 +2269,5 @@ class _SalonDetailsScreen2State extends State<SalonDetailsScreen2> {
         );
       },
     );
-  }
-
-  Widget imageCarousel() {
-    return Consumer<SalonDetailsProvider>(builder: (context, provider, child) {
-      return Stack(
-        alignment: Alignment.bottomCenter,
-        children: <Widget>[
-          SizedBox(
-            height: 35.h,
-            child: PageView(
-              physics: BouncingScrollPhysics(),
-              controller: provider.salonImageCarouselController,
-              children: <Widget>[
-                ...provider.imageList.map((imageUrl) {
-                  return Image.network(
-                    imageUrl,
-                    fit: BoxFit.cover,
-                  );
-                }),
-              ],
-            ),
-          ),
-          (provider.imageList.length) > 1
-              ? Padding(
-                  padding: EdgeInsets.only(bottom: 2.h),
-                  child: SmoothPageIndicator(
-                    controller: provider.salonImageCarouselController,
-                    count: provider.imageList!.length,
-                    effect: ExpandingDotsEffect(
-                      activeDotColor: ColorsConstant.appColor,
-                      dotHeight: 2.w,
-                      dotWidth: 2.w,
-                      spacing: 2.w,
-                    ),
-                  ),
-                )
-              : SizedBox(),
-          Positioned(
-            top: 5.h,
-            right: 0,
-            left: 0,
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 3.w),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: <Widget>[
-                  GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    //   onTap: () => Navigator.pop(context),
-                    child: Padding(
-                      padding: EdgeInsets.all(1.h),
-                    ),
-                  ),
-                  Padding(
-                    padding: EdgeInsets.all(1.h),
-                    child: SvgPicture.asset(
-                      ImagePathConstant.burgerIcon,
-                      color: Colors.white,
-                      height: 2.5.h,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      );
-    });
-  }
-
-  Widget servicesAndReviewTabBar() {
-    return Container(
-      height: 7.h,
-      color: Colors.white,
-      child: DefaultTabController(
-        length: 2,
-        child: Scaffold(
-          bottomNavigationBar: Container(
-            color: Colors.white,
-            child: TabBar(
-              labelColor: ColorsConstant.appColor,
-              indicatorColor: ColorsConstant.appColor,
-              unselectedLabelColor: ColorsConstant.divider,
-              indicatorSize: TabBarIndicatorSize.tab,
-              onTap: (tabIndex) => setState(() {
-                selectedTab = tabIndex;
-              }),
-              tabs: <Widget>[
-                Padding(
-                  padding: EdgeInsets.symmetric(vertical: 1.h),
-                  child: Tab(
-                    child: Text(StringConstant.services.toUpperCase()),
-                  ),
-                ),
-                Padding(
-                  padding: EdgeInsets.symmetric(vertical: 1.h),
-                  child: Tab(
-                    child: Text(StringConstant.reviews.toUpperCase()),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget availableStaffList() {
-    return Consumer<SalonDetailsProvider>(builder: (context, provider, child) {
-      return Padding(
-        padding: EdgeInsets.only(top: 2.h),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Text(
-              StringConstant.availableStaff,
-              style: TextStyle(
-                fontSize: 11.sp,
-                color: ColorsConstant.blackAvailableStaff,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            SizedBox(height: 2.h),
-            SizedBox(
-              height: 11.h,
-              child: ListView(
-                shrinkWrap: true,
-                physics: BouncingScrollPhysics(),
-                scrollDirection: Axis.horizontal,
-                children: context
-                    .read<HomeProvider>()
-                    .artistList
-                    .where((artist) =>
-                        artist.salonId == provider.selectedSalonData.id)
-                    .toList()
-                    .asMap()
-                    .map((index, artist) => MapEntry(
-                    index,
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(1.5.h),
-                      child: GestureDetector(
-                        onTap: () {
-                          int indexOfArtistOnList = context
-                              .read<HomeProvider>()
-                              .artistList
-                              .indexOf(artist);
-                          provider.setSelectedArtistIndex(context,
-                              index: indexOfArtistOnList);
-                          Navigator.pushNamed(
-                            context,
-                            NamedRoutes.barberProfileRoute2,
-                          );
-                        },
-                        child: Container(
-                          margin: EdgeInsets.only(
-                            bottom: 0.5.h,
-                            left: index == 0 ? 0 : 2.5.w,
-                          ),
-                          padding: EdgeInsets.symmetric(horizontal: 3.w),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(1.5.h),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.grey.shade100,
-                                spreadRadius: 0.1,
-                                blurRadius: 20,
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            children: <Widget>[
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(4.h),
-                                child: Container(
-                                  height: 7.h,
-                                  width: 7.h,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Image.network(
-                                    artist.imagePath!,
-                                    fit: BoxFit.cover,
-                                  ),
-                                ),
-                              ),
-                              SizedBox(width: 3.w),
-                              Column(
-                                crossAxisAlignment:
-                                CrossAxisAlignment.start,
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: <Widget>[
-                                  Text(
-                                    artist.name ?? "",
-                                    style: TextStyle(
-                                      fontSize: 11.sp,
-                                      color: ColorsConstant.textDark,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                  Row(
-                                    mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                    children: List<Widget>.generate(
-                                      5,
-                                          (i) => (i >
-                                                  int.parse(artist.rating
-                                                              ?.round()
-                                                              .toString() ??
-                                                          "0") -
-                                                      1)
-                                              ? SvgPicture.asset(
-                                                  ImagePathConstant.starIcon,
-                                                  color:
-                                                      ColorsConstant.greyStar,
-                                                  height: 2.h,
-                                                )
-                                              : SvgPicture.asset(
-                                                  ImagePathConstant.starIcon,
-                                                  color:
-                                                      ColorsConstant.yellowStar,
-                                                  height: 2.h,
-                                                ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        )))
-                    .values
-                    .toList(),
-              ),
-            ),
-          ],
-        ),
-      );
-    });
-  }
-
-  Widget salonDetailOverview() {
-    return Consumer<SalonDetailsProvider>(builder: (context, provider, child) {
-      return Container(
-        padding: EdgeInsets.symmetric(
-          vertical: 1.h,
-          horizontal: 5.w,
-        ),
-        margin: EdgeInsets.symmetric(
-          vertical: 2.h,
-        ),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(1.h),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Container(
-                  width: 50.w,
-                  child: Text(
-                    provider.selectedSalonData.name ?? "",
-                    style: TextStyle(
-                      color: ColorsConstant.textDark,
-                      fontSize: 18.sp,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                Container(
-                  constraints: BoxConstraints(minWidth: 15.w),
-                  padding: EdgeInsets.symmetric(
-                    vertical: 0.8.h,
-                    horizontal: 1.5.h,
-                  ),
-                  decoration: BoxDecoration(
-                    color: ColorsConstant.greenRating,
-                    borderRadius: BorderRadius.circular(0.5.h),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Color(0xFF000000).withOpacity(0.14),
-                        blurRadius: 10,
-                        spreadRadius: 2,
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: <Widget>[
-                      SvgPicture.asset(
-                        ImagePathConstant.starIcon,
-                        color: Colors.white,
-                        height: 2.h,
-                      ),
-                      SizedBox(width: 2.w),
-                      Text(
-                        // TODO:
-                        (provider.selectedSalonData.originalRating ?? 0)
-                            .toStringAsFixed(1),
-
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 12.sp,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: 0.5.h),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  provider.selectedSalonData.salonType ?? "",
-                  style: TextStyle(
-                    color: ColorsConstant.textLight,
-                    fontSize: 11.sp,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                provider.selectedSalonData.discountPercentage==0||provider.selectedSalonData.discountPercentage==null?SizedBox():Container(
-                  constraints: BoxConstraints(minWidth: 15.w),
-                  padding: EdgeInsets.symmetric(
-                    vertical: 0.8.h,
-                    horizontal: 1.5.h,
-                  ),
-                  decoration: BoxDecoration(
-                    color: ColorsConstant.appColor,
-                    borderRadius: BorderRadius.circular(0.5.h),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Color(0xFF000000).withOpacity(0.14),
-                        blurRadius: 10,
-                        spreadRadius: 2,
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: <Widget>[
-                      Text(
-                        // TODO:
-                        provider.selectedSalonData.discountPercentage
-                                .toString() +
-                            "% off",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 12.sp,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            salonAddress(
-              address: provider.selectedSalonData.address?.addressString ?? "",
-              geoPoint: provider.selectedSalonData.address!.geoLocation!,
-            ),
-            salonTiming(),
-            ContactAndInteractionWidget(
-              iconOnePath: ImagePathConstant.phoneIcon,
-              iconTwoPath: ImagePathConstant.shareIcon,
-              iconThreePath: ImagePathConstant.saveIcon,
-              // : ImagePathConstant.saveIconFill,
-              iconFourPath: ImagePathConstant.instagramIcon,
-              onTapIconOne: () => launchUrl(
-                Uri(
-                  scheme: 'tel',
-                  path: StringConstant.generalContantNumber,
-                ),
-              ),
-              onTapIconTwo: () => launchUrl(
-                Uri.parse(
-                  "https://play.google.com/store/apps/details?id=com.naai.flutterApp",
-                ),
-              ),
-              onTapIconThree: () {
-                showSignInDialog(context);
-              },
-              onTapIconFour: () => launchUrl(
-                Uri.parse(provider.selectedSalonData.instagramLink ??
-                    'https://www.instagram.com/naaiindia'),
-              ),
-              backgroundColor: ColorsConstant.lightAppColor,
-            ),
-            SizedBox(height: 2.h),
-            availableStaffList(),
-          ],
-        ),
-      );
-    });
-  }
-
-  Widget salonTiming() {
-    return Consumer<SalonDetailsProvider>(builder: (context, provider, child) {
-      return Padding(
-        padding: EdgeInsets.only(bottom: 3.h),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            TimeDateCard(
-              child: Text.rich(
-                TextSpan(
-                  children: [
-                    TextSpan(
-                      text: StringConstant.timings,
-                      style: TextStyle(
-                        color: ColorsConstant.textDark,
-                        fontSize: 10.sp,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    TextSpan(
-                      text: " | ",
-                      style: TextStyle(
-                        color: ColorsConstant.textLight,
-                        fontSize: 10.sp,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    TextSpan(
-                      text:
-                          "${provider.formatTime(provider.selectedSalonData.timing!.opening ?? 0)} - ${provider.formatTime(provider.selectedSalonData.timing!.closing ?? 0)}",
-                      style: TextStyle(
-                        color: ColorsConstant.textDark,
-                        fontSize: 10.sp,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            SizedBox(height: 2.w),
-            TimeDateCard(
-              child: Text.rich(
-                TextSpan(
-                  children: [
-                    TextSpan(
-                      text: StringConstant.closed,
-                      style: TextStyle(
-                        color: ColorsConstant.textDark,
-                        fontSize: 10.sp,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    TextSpan(
-                      text: "  |  ",
-                      style: TextStyle(
-                        color: ColorsConstant.textDark,
-                        fontSize: 10.sp,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    TextSpan(
-                      text: provider.selectedSalonData.closingDay,
-                      style: TextStyle(
-                        color: ColorsConstant.textDark,
-                        fontSize: 10.sp,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
-    });
-  }
-
-  Widget salonAddress({required String address, required GeoPoint geoPoint}) {
-    return Container(
-      margin: EdgeInsets.symmetric(vertical: 1.5.h),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: <Widget>[
-          Flexible(
-            child: Text(
-              "$address,  ",
-              style: TextStyle(
-                color: ColorsConstant.textLight,
-                fontSize: 11.sp,
-                fontWeight: FontWeight.w400,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          InkWell(
-            onTap: () {
-              navigateTo(
-                geoPoint.latitude,
-                geoPoint.longitude,
-              );
-            },
-            child: Padding(
-              padding: EdgeInsets.only(right: 3.w, bottom: 1.w),
-              child: SvgPicture.asset(
-                ImagePathConstant.goToLocationIcon,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  static void navigateTo(double lat, double lng) async {
-    var uri = Uri.parse("google.navigation:q=$lat,$lng&mode=d");
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri);
-    } else {
-      throw 'Could not launch ${uri.toString()}';
-    }
   }
 }

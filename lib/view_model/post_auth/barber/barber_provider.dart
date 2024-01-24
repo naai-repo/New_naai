@@ -1,3 +1,6 @@
+import 'dart:convert';
+
+import 'package:dio/dio.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:naai/models/artist.dart';
@@ -13,7 +16,10 @@ import 'package:naai/view_model/post_auth/home/home_provider.dart';
 import 'package:naai/view_model/post_auth/salon_details/salon_details_provider.dart';
 import 'package:provider/provider.dart';
 
+import '../../../models/artist_detail.dart';
+import '../../../models/artist_model.dart';
 import '../../../models/salon.dart';
+import '../../../models/salon_detail.dart';
 
 class BarberProvider with ChangeNotifier {
   int _selectedArtistIndex = 0;
@@ -44,19 +50,73 @@ class BarberProvider with ChangeNotifier {
   bool get shouldSetArtistData => _shouldSetArtistData;
 
   TextEditingController get searchController => _searchController;
+  Data? _artistDetails; // Replace ArtistDetails with your actual model
+
+  Data? get artistDetails => _artistDetails;
+
+  ArtistData? artistid;
+  ApiResponse? _salonDetails; // Replace SalonDetails with your actual model
+
+  ApiResponse? get salonDetails => _salonDetails;
+
+  void setSalonDetails(ApiResponse salonDetails) {
+    _salonDetails = salonDetails;
+    notifyListeners();
+  }
+
+  void setArtistDetails(Data artistDetails) {
+    _artistDetails = artistDetails;
+    notifyListeners();
+  }
+  String? Servicetitle;
+  String? salonName2;
 
   void initArtistData(BuildContext context) async {
     if (_shouldSetArtistData) {
       setArtistData(context);
-    } else {
-      getArtistSalonData(context);
-      context.read<SalonDetailsProvider>().initSalonDetailsData(context);
     }
     await Future.wait([
       // getArtistReviewList(context),
       getServiceList(context),
     ]);
     _shouldSetArtistData = true;
+  }
+
+  Future<void> submitReview2( BuildContext context, {
+    required int stars,
+    required String text,
+  }) async {
+    final String apiUrl = 'http://localhost:8800/partner/review/add';
+    final Dio dio = Dio();
+
+    final Map<String, dynamic> requestData = {
+      "title": "Review Salon",
+      "description": text,
+      "salonId": artistDetails?.id,
+      "rating": stars
+    };
+
+    try {
+
+      final response = await dio.post(
+        apiUrl,
+        options: Options(headers: {"Content-Type": "application/json"}),
+        data: json.encode(requestData),
+      );
+
+      if (response.statusCode == 200) {
+        // Review submitted successfully, handle the response data if needed
+        print("Review submitted successfully!");
+        print(response.data);
+      } else {
+        // Failed to submit the review, handle the error
+        print("Failed to submit the review");
+        print(response.data);
+      }
+    } catch (error) {
+      // Handle any exceptions that occurred during the request
+      print("Error: $error");
+    }
   }
 
   /// Filter the [_filteredServiceList] according to the filters that the user
@@ -87,6 +147,8 @@ class BarberProvider with ChangeNotifier {
     }
     notifyListeners();
   }
+
+
 
   /// Set the value of [_selectedGendersFilter] according to the gender filter selected
   /// by user

@@ -5,10 +5,12 @@ import 'package:provider/provider.dart';
 
 class BottomNavigationProvider with ChangeNotifier {
   int _currentScreenIndex = 0;
-  int _onetimeindex = 3;
+  int _onetimeindex = 0;
+  int _extimeindex = 0;
 
   int get currentScreenIndex => _currentScreenIndex;
   int get onetimeindex => _onetimeindex;
+  int get extimeindex => _extimeindex;
 
   void setCurrentScreenIndex({
     required BuildContext context,
@@ -29,6 +31,7 @@ class BottomNavigationProvider with ChangeNotifier {
 
     _currentScreenIndex = indexValue;
     _onetimeindex= indexValue;
+    _extimeindex = indexValue;
     notifyListeners();
   }
 }

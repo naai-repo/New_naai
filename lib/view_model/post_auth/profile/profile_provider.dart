@@ -13,13 +13,34 @@ import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 
-class ProfileProvider with ChangeNotifier {
-  UserModel _userData = UserModel();
-  String _imageUrl = '' ;
-  //============= GETTERS =============//
-  UserModel get userData => _userData;
-  String get imageUrl => _imageUrl;
+import '../../../controller/verifyotp_controller.dart';
+import '../../../models/Profile_model.dart';
+import '../../../utils/access_token.dart';
+import '../../../utils/routing/named_routes.dart';
 
+class ProfileProvider with ChangeNotifier {
+
+
+
+  Data? _userData; // Replace UserProfile with your actual model
+
+  Data? get userData => _userData;
+
+  void setUserData(Data userData) {
+    _userData = userData;
+    notifyListeners();
+  }
+
+
+
+  void resetMobielNumberController(AuthenticationProvider provider) {
+    provider.resetOtpControllers();
+    provider.resetMobielNumberController();
+    notifyListeners();
+  }
+
+}
+/*
   ///Profile photo upload method
   void uploadProfileImage(BuildContext context) async{
 
@@ -44,11 +65,11 @@ class ProfileProvider with ChangeNotifier {
 
     //Get a reference to storage root
     Reference referenceRoot = FirebaseStorage.instance.ref();
-    Reference referenceDirImages = referenceRoot.child('user_images/'+_userData.name!+'_'+_userData.id!); //set to user's name username //user id is intententinally added because their can be same username for diffrent user
+ //   Reference referenceDirImages = referenceRoot.child('user_images/'+_userData.name!+'_'+_userData.id!); //set to user's name username //user id is intententinally added because their can be same username for diffrent user
 
     //Create a reference for the image to be stored
-    Reference referenceImageToUpload =
-        referenceDirImages.child(_userData.name!); //Add +uniqueFileName to child incase you want to store old images
+   // Reference referenceImageToUpload =
+  //      referenceDirImages.child(_userData.name!); //Add +uniqueFileName to child incase you want to store old images
 
     //Handle errors/success
     try {
@@ -105,9 +126,7 @@ class ProfileProvider with ChangeNotifier {
     _imageUrl = context.read<HomeProvider>().userData.image! == '' ? 'https://firebasestorage.googleapis.com/v0/b/naai-5d31f.appspot.com/o/user_images%2Fsample_user_img.jpg?alt=media&token=a4f1602d-f70c-4aea-b6da-ee54f9e4c2d5':context.read<HomeProvider>().userData.image!; //|| context.read<HomeProvider>().userData.image
     notifyListeners();
   }
-
+*/
   /// Handle the logout button click event
-  void handleLogoutClick(BuildContext context) {
-    context.read<AuthenticationProvider>().logout(context);
-  }
-}
+
+

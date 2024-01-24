@@ -12,6 +12,8 @@ import 'package:naai/view_model/post_auth/home/home_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:sizer/sizer.dart';
 
+import '../utils/access_token.dart';
+
 class SplashScreen extends StatefulWidget {
   const SplashScreen({Key? key}) : super(key: key);
 
@@ -23,17 +25,13 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    // getCurrentLocation();
     checkIfUserExists();
   }
 
   void checkIfUserExists() {
     Timer(const Duration(seconds: 2), () async {
-      String uid = await SharedPreferenceHelper.getUserId();
-      if (FirebaseAuth.instance.currentUser != null && uid != '') {
-        context
-            .read<HomeProvider>()
-            .checkUserIdInSharedPref(FirebaseAuth.instance.currentUser!.uid);
+      String? accessToken = await AccessTokenManager.getAccessToken();
+      if (accessToken != null && accessToken.isNotEmpty) {
         Navigator.pushReplacementNamed(
           context,
           NamedRoutes.bottomNavigationRoute,

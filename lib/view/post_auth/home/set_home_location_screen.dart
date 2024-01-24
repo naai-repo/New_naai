@@ -60,15 +60,10 @@ class _SetHomeLocationScreenState extends State<SetHomeLocationScreen> {
               children: <Widget>[
                 IconButton(
                   onPressed: () {
-                    if (provider.userData.homeLocation?.geoLocation == null) {
-                      ReusableWidgets.showFlutterToast(
-                        context,
-                        'Please set your home location before moving forward! to find nearby salons😊',
-                      );
-                    } else {
+
                       provider.clearMapSearchText();
                       Navigator.pop(context);
-                    }
+
                   },
                   splashRadius: 0.1,
                   splashColor: Colors.transparent,
@@ -304,15 +299,10 @@ class _SetHomeLocationScreen2State extends State<SetHomeLocationScreen2> {
               children: <Widget>[
                 IconButton(
                   onPressed: () {
-                    if (provider.userData.homeLocation?.geoLocation == null) {
-                      ReusableWidgets.showFlutterToast(
-                        context,
-                        'Please set your home location before moving forward! to find nearby salons😊',
-                      );
-                    } else {
+
                       provider.clearMapSearchText();
                       Navigator.pop(context);
-                    }
+
                   },
                   splashRadius: 0.1,
                   splashColor: Colors.transparent,

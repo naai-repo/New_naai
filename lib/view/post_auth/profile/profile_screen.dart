@@ -1,8 +1,10 @@
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:dio/dio.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:naai/utils/colors_constant.dart';
 import 'package:naai/utils/image_path_constant.dart';
 import 'package:naai/utils/routing/named_routes.dart';
@@ -10,11 +12,16 @@ import 'package:naai/utils/string_constant.dart';
 import 'package:naai/utils/style_constant.dart';
 import 'package:naai/view/widgets/reusable_widgets.dart';
 import 'package:naai/view_model/post_auth/profile/profile_provider.dart';
+import 'package:naai/view_model/pre_auth/authentication_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:sizer/sizer.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../models/Profile_model.dart';
 import '../../../models/user.dart';
+import '../../../utils/access_token.dart';
+import '../../../utils/loading_indicator.dart';
+import '../../../view_model/pre_auth/loginResult.dart';
 
 class ProfileScreen extends StatefulWidget {
   ProfileScreen({Key? key}) : super(key: key);
@@ -25,37 +32,52 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
 
-  // List<XFile>? _mediaFileList;
-  //
-  // void _setImageFileListFromFile(XFile? value) {
-  //   _mediaFileList = value == null ? null : <XFile>[value];
-  // }
 
   @override
   void initState() {
-    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-      context.read<ProfileProvider>().getUserDataFromUserProvider(context);
-    });
-    super.initState();
+    _getUserDetails();
+//    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+ //     context.read<ProfileProvider>().getUserDataFromUserProvider(context);
+ //   });
+  //  super.initState();
   }
 
-  // Future<void> getLostData() async {
-  //   final ImagePicker picker = ImagePicker();
-  //   final LostDataResponse response = await picker.retrieveLostData();
-  //   if (response.isEmpty) {
-  //     return;
-  //   }
-  //   final XFile? imageFile = response.file;
-  //   if (imageFile != null) {
-  //     _setImageFileListFromFile(imageFile);
-  //   } else {
-  //     print(response.exception);
-  //   }
-  // }
+  Future<void> _getUserDetails() async {
+    final box = await Hive.openBox('userBox');
+    final userId = box.get('userId') ?? '';
+    if (userId.isNotEmpty) {
+      print('Retrieved userId from Hive: $userId');
+      try {
+        final response = await Dio().get(
+          'http://13.235.49.214:8800/customer/user/$userId',
+        );
+
+        if (response.data != null && response.data is Map<String, dynamic>) {
+          ProfileResponse apiResponse = ProfileResponse.fromJson(response.data);
+
+          if (apiResponse != null && apiResponse.data != null) {
+            // Save the user details in the provider
+            context.read<ProfileProvider>().setUserData(apiResponse.data);
+          } else {
+            // Handle the case where the response or data is null
+            print('Failed to fetch user details: Invalid response format');
+          }
+        } else {
+          // Handle the case where the response is null or not of the expected type
+          print('Failed to fetch user details: Invalid response format');
+        }
+      } catch (error) {
+        Loader.hideLoader(context);
+        // Handle the case where the API call was not successful
+        // You can show an error message or take appropriate action
+        print('Failed to fetch user details: $error');
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ProfileProvider>(
+    return Consumer<AuthenticationProvider>(
       builder: (context, provider, child) {
 
         return Scaffold(
@@ -102,11 +124,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   children: [
                                     CircleAvatar(
                                       radius: 7.h,
-                                      backgroundImage: NetworkImage(provider.imageUrl)
+                                     // backgroundImage: NetworkImage(provider.imageUrl)
                                     ),
                                     GestureDetector(
                                       onTap: () {
-                                        context.read<ProfileProvider>().uploadProfileImage(context);
+                                     //   context.read<ProfileProvider>().uploadProfileImage(context);
                                       },
                                       child: Container(
                                         height: 7.h,
@@ -264,7 +286,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       ),
                       onPressed: () {
-                        provider.handleLogoutClick(context);
                        deleteAccountAndUserData(context);
                       },
                     ),
@@ -317,20 +338,47 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  void deleteAccountAndUserData(BuildContext context) async {
+  Future<void> deleteAccountAndUserData(BuildContext context) async {
     try {
-      // Delete user data from Firestore
-      await deleteAccount();
+      Loader.showLoader(context);
+      Dio dio = Dio();
+      dio.interceptors.add(LogInterceptor(requestBody: true, responseBody: true, logPrint: print));
 
-      // Delete the user account from Firebase Authentication
-      await deleteUserAccount();
+      // Retrieve the access token from local storage
+      String? authToken = await AccessTokenManager.getAccessToken();
 
-      print('Account and user data deleted successfully!');
-    } catch (e) {
-      print('Error deleting account and user data: $e');
-      // Handle any errors that might occur during the deletion process
+      if (authToken != null) {
+        dio.options.headers['Authorization'] = 'Bearer $authToken';
+      } else {
+        Loader.hideLoader(context); // Handle the case where the user is not authenticated
+      }
+
+      final response = await dio.get(
+        'http://13.235.49.214:8800/customer/user/delete',
+      );
+
+      Loader.hideLoader(context);
+
+      if (response.statusCode == 200) {
+        await AccessTokenManager.removeAccessToken();
+        print("Account and user data deleted successfully!");
+        print(response.data);
+        Navigator.pushReplacementNamed(
+          context,
+          NamedRoutes.splashRoute,
+        );
+      } else {
+        // Failed to delete account and user data, handle the error
+        print("Failed to delete account and user data");
+        print(response.data);
+      }
+    } catch (error) {
+      Loader.hideLoader(context);
+      // Handle any exceptions that occurred during the request
+      print("Error isss: $error");
     }
   }
+
 
   Widget profileOptions({
     required Function() onTap,
@@ -379,6 +427,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget userDetailsWithEditButton() {
 
     return Consumer<ProfileProvider>(builder: (context, provider, child) {
+      print("name is ${provider.userData?.name?? ''}");
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.start,
@@ -389,12 +438,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Text(provider.userData.name ?? '',
+                  Text( provider.userData?.name?? '',
                       style: StyleConstant.textDark15sp600Style),
                   Text(
-                    provider.userData.phoneNumber ??
-                        provider.userData.gmailId ??
-                        '',
+                        provider.userData?.phoneNumber.toString()?? '',
                     style: TextStyle(
                       color: ColorsConstant.textLight,
                       fontSize: 10.sp,
@@ -448,7 +495,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           //   ),
           // ),
         ],
+
       );
+
     });
   }
 }
@@ -470,10 +519,10 @@ class _ProfileScreen2State extends State<ProfileScreen2> {
 
   @override
   void initState() {
-    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-      context.read<ProfileProvider>().getUserDataFromUserProvider(context);
-    });
-    super.initState();
+  //  WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+  //    context.read<ProfileProvider>().getUserDataFromUserProvider(context);
+  //  });
+  //  super.initState();
   }
 
   // Future<void> getLostData() async {
@@ -571,7 +620,7 @@ class _ProfileScreen2State extends State<ProfileScreen2> {
                                         onPressed: () {
                                           Navigator.pushReplacementNamed(
                                             context,
-                                            NamedRoutes.authenticationRoute2,
+                                              NamedRoutes.authenticationRoute
                                           );
                                         }
                                       ),

@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:naai/models/artist.dart';
@@ -13,6 +14,13 @@ import 'package:naai/view_model/post_auth/explore/explore_provider.dart';
 import 'package:naai/view_model/post_auth/home/home_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:sizer/sizer.dart';
+
+import '../../../models/artist_detail.dart';
+import '../../../models/artist_model.dart';
+import '../../../models/salon_detail.dart';
+import '../../../models/service_response.dart';
+import '../../../utils/loading_indicator.dart';
+import '../../../view_model/post_auth/salon_details/salon_details_provider.dart';
 
 class ExploreStylist extends StatefulWidget {
   const ExploreStylist({Key? key}) : super(key: key);
@@ -33,6 +41,7 @@ class _ExploreStylistState extends State<ExploreStylist>
     });
     super.initState();
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -112,7 +121,7 @@ class _ExploreStylistState extends State<ExploreStylist>
                             GridView.builder(
                               padding: EdgeInsets.zero,
                               shrinkWrap: true,
-                              itemCount: provider.artistList.length,
+                              itemCount: provider.artistList2.length,
                               physics: BouncingScrollPhysics(),
                               gridDelegate:
                                   SliverGridDelegateWithFixedCrossAxisCount(
@@ -120,7 +129,7 @@ class _ExploreStylistState extends State<ExploreStylist>
                                 crossAxisCount: 2,
                               ),
                               itemBuilder: (context, index) {
-                                Artist artist = provider.artistList[index];
+                                ArtistData artist = provider.artistList2[index];
                                 return Container(
                                   margin: EdgeInsets.only(bottom: 2.5.h),
                                   padding: EdgeInsets.only(
@@ -136,14 +145,83 @@ class _ExploreStylistState extends State<ExploreStylist>
                                             BoxConstraints(maxWidth: 30.w),
                                         child: GestureDetector(
                                           behavior: HitTestBehavior.opaque,
-                                          onTap: () {
-                                            context
-                                                .read<BarberProvider>()
-                                                .setArtistDataFromHome(artist);
-                                            Navigator.pushNamed(
-                                              context,
-                                              NamedRoutes.barberProfileRoute,
-                                            );
+                                          onTap: () async {
+                                            SalonDetailsProvider salonDetailsProvider = context.read<SalonDetailsProvider>();
+                                            String artistId = artist.id;
+                                            String salonId = artist.salonId;
+                                            List<Service> services = artist.services;
+
+                                            BarberProvider barberDetailsProvider = context.read<BarberProvider>();
+
+                                            try {
+                                              Loader.showLoader(context);
+
+                                              // Prepare a list of Futures for all API calls
+                                              List<Future<Response<dynamic>>> apiCalls = [
+                                                Dio().get('http://13.235.49.214:8800/partner/artist/single/$artistId'),
+                                                Dio().get('http://13.235.49.214:8800/partner/salon/single/$salonId'),
+                                                // You may want to modify this part based on how you want to handle multiple services
+                                                if (services.isNotEmpty) ...services.map((service) =>
+                                                    Dio().get('http://13.235.49.214:8800/partner/service/single/${service.serviceId}'))
+                                              ];
+
+                                              // Use Future.wait to run multiple async operations concurrently
+                                              List<Response<dynamic>> responses = await Future.wait(apiCalls);
+
+                                              Loader.hideLoader(context);
+
+                                              // Check the responses for each API call
+                                              for (var response in responses) {
+                                                if (response.data != null && response.data is Map<String, dynamic>) {
+                                                  if (response.requestOptions.uri.pathSegments.contains('artist')) {
+                                                    // Process artist API response
+                                                    ArtistResponse apiResponse = ArtistResponse.fromJson(response.data);
+                                                    if (apiResponse != null && apiResponse.data != null) {
+                                                      barberDetailsProvider.setArtistDetails(apiResponse.data);
+                                                    } else {
+                                                      print('Failed to fetch artist details: Invalid response format');
+                                                    }
+                                                  } else if (response.requestOptions.uri.pathSegments.contains('salon')) {
+                                                    // Process salon API response
+                                                    ApiResponse apiResponse = ApiResponse.fromJson(response.data);
+                                                    ApiResponse salonDetails = ApiResponse(
+                                                      status: apiResponse.status,
+                                                      message: apiResponse.message,
+                                                      data: ApiResponseData(
+                                                        data: apiResponse.data.data,
+                                                        artists: apiResponse.data.artists,
+                                                        services: apiResponse.data.services,
+                                                      ),
+                                                    );
+                                                    salonDetailsProvider.setSalonDetails(salonDetails);
+                                                    barberDetailsProvider.setSalonDetails(salonDetails);
+                                                  } else if (response.requestOptions.uri.pathSegments.contains('service')) {
+                                                    ServiceResponse serviceResponse = ServiceResponse.fromJson(response.data);
+                                                    ServiceResponse serviceresponse = ServiceResponse(
+                                                        status: serviceResponse.status,
+                                                        message: serviceResponse.message,
+                                                        data:    serviceResponse.data);
+                                                    salonDetailsProvider.setServiceDetails(serviceresponse);
+                                                    if (serviceResponse != null && serviceResponse.data != null) {
+                                                      // Handle service response
+                                                    } else {
+                                                      print('Failed to fetch service details: Invalid response format');
+                                                    }
+                                                  }
+                                                } else {
+                                                  print('Failed to fetch details: Invalid response format');
+                                                }
+                                              }
+
+                                              // If the API calls are successful, navigate to the next screen
+                                              Navigator.pushNamed(context, NamedRoutes.barberProfileRoute, arguments: artistId);
+                                            } catch (error) {
+                                              Loader.hideLoader(context);
+                                              // Handle the case where the API call was not successful
+                                              // You can show an error message or take appropriate action
+                                              Navigator.pushNamed(context, NamedRoutes.bottomNavigationRoute);
+                                              print('Failed to fetch details: $error');
+                                            }
                                           },
                                           child: Stack(
                                             children: <Widget>[
@@ -161,10 +239,10 @@ class _ExploreStylistState extends State<ExploreStylist>
                                                           padding: EdgeInsets.all(
                                                               0.5.h),
                                                           child: CircleAvatar(
-                                                            radius: 5.h,
-                                                            backgroundImage: NetworkImage(
-                                                              artist.imagePath!,
-                                                            ),
+                                                            radius: 7.h,
+                                                            backgroundImage:
+                                                            NetworkImage(artist.imageUrl)
+                                                            as ImageProvider,
                                                           ),
                                                         ),
                                                         Text(
@@ -180,7 +258,7 @@ class _ExploreStylistState extends State<ExploreStylist>
                                                           ),
                                                         ),
                                                         Text(
-                                                          artist.salonName ?? '',
+                                                          artist.salonId ?? '',
                                                           textAlign:
                                                               TextAlign.center,
                                                           style: TextStyle(
@@ -230,14 +308,7 @@ class _ExploreStylistState extends State<ExploreStylist>
                                                                       width: 1.w),
                                                                 ),
                                                                 TextSpan(
-                                                                  text: provider
-                                                                      .salonData
-                                                                      .firstWhere((element) =>
-                                                                          element
-                                                                              .id ==
-                                                                          artist
-                                                                              .salonId)
-                                                                      .distanceFromUserAsString,
+                                                                  text: artist.distance.toStringAsFixed(2),
                                                                   style:
                                                                       TextStyle(
                                                                     fontWeight:
@@ -278,8 +349,7 @@ class _ExploreStylistState extends State<ExploreStylist>
                                                                 ),
                                                                 TextSpan(
                                                                   text: artist
-                                                                      .rating
-                                                                      .toString(),
+                                                                      .rating.toStringAsFixed(1),
                                                                   style:
                                                                       TextStyle(
                                                                     fontWeight:
@@ -306,8 +376,7 @@ class _ExploreStylistState extends State<ExploreStylist>
                                                   onTap: () {
                                                     if (context
                                                         .read<HomeProvider>()
-                                                        .userData
-                                                        .preferredArtist!
+                                                        .artistList2
                                                         .contains(artist.id)) {
                                                       provider
                                                           .removePreferedArtist(
@@ -324,8 +393,7 @@ class _ExploreStylistState extends State<ExploreStylist>
                                                   child: SvgPicture.asset(
                                                     context
                                                             .read<HomeProvider>()
-                                                            .userData
-                                                            .preferredArtist!
+                                                            .artistList2
                                                             .contains(artist.id)
                                                         ? ImagePathConstant
                                                             .saveIconFill
@@ -333,8 +401,7 @@ class _ExploreStylistState extends State<ExploreStylist>
                                                             .saveIcon,
                                                     color: context
                                                             .read<HomeProvider>()
-                                                            .userData
-                                                            .preferredArtist!
+                                                            .artistList2
                                                             .contains(artist.id)
                                                         ? ColorsConstant.appColor
                                                         : const Color(0xFF212121),
@@ -425,7 +492,7 @@ class _ExploreStylistState extends State<ExploreStylist>
                       style: StyleConstant.searchTextStyle,
                       textInputAction: TextInputAction.done,
                       onChanged: (searchText) =>
-                          provider.filterSalonList(searchText),
+                          provider.filterArtistList(searchText),
                       decoration: StyleConstant.searchBoxInputDecoration(
                         context,
                         hintText: StringConstant.search,
@@ -473,6 +540,7 @@ class _ExploreStylist2State extends State<ExploreStylist2>
     });
     super.initState();
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -552,7 +620,7 @@ class _ExploreStylist2State extends State<ExploreStylist2>
                             GridView.builder(
                               padding: EdgeInsets.zero,
                               shrinkWrap: true,
-                              itemCount: provider.artistList.length,
+                              itemCount: provider.artistList2.length,
                               physics: BouncingScrollPhysics(),
                               gridDelegate:
                               SliverGridDelegateWithFixedCrossAxisCount(
@@ -560,173 +628,236 @@ class _ExploreStylist2State extends State<ExploreStylist2>
                                 crossAxisCount: 2,
                               ),
                               itemBuilder: (context, index) {
-                                Artist artist = provider.artistList[index];
+                                ArtistData artist = provider.artistList2[index];
                                 return Container(
-                                    margin: EdgeInsets.only(bottom: 2.5.h),
-                                    padding: EdgeInsets.only(
-                                      left: index.isEven ? 0 : 2.5.w,
-                                      right: index.isEven ? 2.5.w : 0,
-                                    ),
-                                      child: CurvedBorderedCard(
-                                        borderColor: const Color(0xFFDBDBDB),
-                                        fillColor: Colors.white,
-                                          child: Container(
-                                            padding: EdgeInsets.all(3.w),
-                                            constraints:
-                                            BoxConstraints(maxWidth: 30.w),
-                                            child: GestureDetector(
-                                              behavior: HitTestBehavior.opaque,
-                                              onTap: () {
-                                                context.read<BarberProvider>().setArtistDataFromHome(artist);
-                                                Navigator.pushNamed(context, NamedRoutes.barberProfileRoute2);
-                                              },
-                                              child: Stack(
+                                  margin: EdgeInsets.only(bottom: 2.5.h),
+                                  padding: EdgeInsets.only(
+                                    left: index.isEven ? 0 : 2.5.w,
+                                    right: index.isEven ? 2.5.w : 0,
+                                  ),
+                                  child: CurvedBorderedCard(
+                                    borderColor: const Color(0xFFDBDBDB),
+                                    fillColor: Colors.white,
+                                    child: Container(
+                                      padding: EdgeInsets.all(3.w),
+                                      constraints:
+                                      BoxConstraints(maxWidth: 30.w),
+                                      child: GestureDetector(
+                                        behavior: HitTestBehavior.opaque,
+                                        onTap: () async {
+                                          SalonDetailsProvider salonDetailsProvider = context.read<SalonDetailsProvider>();
+                                          String artistId = artist.id;
+                                          String salonId = artist.salonId;
+                                          List<Service> services = artist.services;
+
+                                          BarberProvider barberDetailsProvider = context.read<BarberProvider>();
+
+                                          try {
+                                            Loader.showLoader(context);
+
+                                            // Prepare a list of Futures for all API calls
+                                            List<Future<Response<dynamic>>> apiCalls = [
+                                              Dio().get('http://13.235.49.214:8800/partner/artist/single/$artistId'),
+                                              Dio().get('http://13.235.49.214:8800/partner/salon/single/$salonId'),
+                                              // You may want to modify this part based on how you want to handle multiple services
+                                              if (services.isNotEmpty) ...services.map((service) =>
+                                                  Dio().get('http://13.235.49.214:8800/partner/service/single/${service.serviceId}'))
+                                            ];
+
+                                            // Use Future.wait to run multiple async operations concurrently
+                                            List<Response<dynamic>> responses = await Future.wait(apiCalls);
+
+                                            Loader.hideLoader(context);
+
+                                            // Check the responses for each API call
+                                            for (var response in responses) {
+                                              if (response.data != null && response.data is Map<String, dynamic>) {
+                                                if (response.requestOptions.uri.pathSegments.contains('artist')) {
+                                                  // Process artist API response
+                                                  ArtistResponse apiResponse = ArtistResponse.fromJson(response.data);
+                                                  if (apiResponse != null && apiResponse.data != null) {
+                                                    barberDetailsProvider.setArtistDetails(apiResponse.data);
+                                                  } else {
+                                                    print('Failed to fetch artist details: Invalid response format');
+                                                  }
+                                                } else if (response.requestOptions.uri.pathSegments.contains('salon')) {
+                                                  // Process salon API response
+                                                  ApiResponse apiResponse = ApiResponse.fromJson(response.data);
+                                                  ApiResponse salonDetails = ApiResponse(
+                                                    status: apiResponse.status,
+                                                    message: apiResponse.message,
+                                                    data: ApiResponseData(
+                                                      data: apiResponse.data.data,
+                                                      artists: apiResponse.data.artists,
+                                                      services: apiResponse.data.services,
+                                                    ),
+                                                  );
+                                                  salonDetailsProvider.setSalonDetails(salonDetails);
+                                                  barberDetailsProvider.setSalonDetails(salonDetails);
+                                                } else if (response.requestOptions.uri.pathSegments.contains('service')) {
+                                                  ServiceResponse serviceResponse = ServiceResponse.fromJson(response.data);
+                                                  ServiceResponse serviceresponse = ServiceResponse(
+                                                      status: serviceResponse.status,
+                                                      message: serviceResponse.message,
+                                                      data:    serviceResponse.data);
+                                                  salonDetailsProvider.setServiceDetails(serviceresponse);
+                                                  if (serviceResponse != null && serviceResponse.data != null) {
+                                                    // Handle service response
+                                                  } else {
+                                                    print('Failed to fetch service details: Invalid response format');
+                                                  }
+                                                }
+                                              } else {
+                                                print('Failed to fetch details: Invalid response format');
+                                              }
+                                            }
+
+                                            // If the API calls are successful, navigate to the next screen
+                                            Navigator.pushNamed(context, NamedRoutes.barberProfileRoute2, arguments: artistId);
+                                          } catch (error) {
+                                            Loader.hideLoader(context);
+                                            // Handle the case where the API call was not successful
+                                            // You can show an error message or take appropriate action
+                                            Navigator.pushNamed(context, NamedRoutes.bottomNavigationRoute2);
+                                            print('Failed to fetch details: $error');
+                                          }
+                                        },
+                                        child: Stack(
+                                          children: <Widget>[
+                                            Padding(
+                                              padding: EdgeInsets.symmetric(
+                                                  horizontal: 4.w),
+                                              child: Column(
+                                                mainAxisAlignment:
+                                                MainAxisAlignment
+                                                    .spaceBetween,
                                                 children: <Widget>[
-                                                  Padding(
-                                                    padding: EdgeInsets.symmetric(
-                                                        horizontal: 4.w),
-                                                    child: Column(
+                                                  Column(
+                                                    children: <Widget>[
+                                                      Padding(
+                                                        padding: EdgeInsets.all(
+                                                            0.5.h),
+                                                        child: CircleAvatar(
+                                                          radius: 7.h,
+                                                          backgroundImage:
+                                                          NetworkImage(artist.imageUrl)
+                                                          as ImageProvider,
+                                                        ),
+                                                      ),
+                                                      Text(
+                                                        artist.name ?? '',
+                                                        textAlign:
+                                                        TextAlign.center,
+                                                        style: TextStyle(
+                                                          color: ColorsConstant
+                                                              .textDark,
+                                                          fontSize: 13.sp,
+                                                          fontWeight:
+                                                          FontWeight.w600,
+                                                        ),
+                                                      ),
+                                                      Text(
+                                                        artist.salonId ?? '',
+                                                        textAlign:
+                                                        TextAlign.center,
+                                                        style: TextStyle(
+                                                          color: ColorsConstant
+                                                              .textLight,
+                                                          fontSize: 10.sp,
+                                                          fontWeight:
+                                                          FontWeight.w500,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  Align(
+                                                    alignment:
+                                                    Alignment.bottomCenter,
+                                                    child: Row(
+                                                      crossAxisAlignment:
+                                                      CrossAxisAlignment
+                                                          .start,
                                                       mainAxisAlignment:
                                                       MainAxisAlignment
                                                           .spaceBetween,
                                                       children: <Widget>[
-                                                        Column(
-                                                          children: <Widget>[
-                                                            Padding(
-                                                              padding: EdgeInsets.all(
-                                                                  0.5.h),
-                                                              child: CircleAvatar(
-                                                                radius: 5.h,
-                                                                backgroundImage: NetworkImage(
-                                                                  artist.imagePath!,
+                                                        Text.rich(
+                                                          TextSpan(
+                                                            children: <
+                                                                InlineSpan>[
+                                                              WidgetSpan(
+                                                                alignment:
+                                                                PlaceholderAlignment
+                                                                    .baseline,
+                                                                baseline:
+                                                                TextBaseline
+                                                                    .ideographic,
+                                                                child:
+                                                                SvgPicture
+                                                                    .asset(
+                                                                  ImagePathConstant
+                                                                      .locationIconAlt,
+                                                                  color: ColorsConstant
+                                                                      .purpleDistance,
+                                                                  height: 2.h,
                                                                 ),
                                                               ),
-                                                            ),
-                                                            Text(
-                                                              artist.name ?? '',
-                                                              textAlign:
-                                                              TextAlign.center,
-                                                              style: TextStyle(
-                                                                color: ColorsConstant
-                                                                    .textDark,
-                                                                fontSize: 13.sp,
-                                                                fontWeight:
-                                                                FontWeight.w600,
+                                                              WidgetSpan(
+                                                                child: SizedBox(
+                                                                    width: 1.w),
                                                               ),
-                                                            ),
-                                                            Text(
-                                                              artist.salonName ?? '',
-                                                              textAlign:
-                                                              TextAlign.center,
-                                                              style: TextStyle(
-                                                                color: ColorsConstant
-                                                                    .textLight,
-                                                                fontSize: 10.sp,
-                                                                fontWeight:
-                                                                FontWeight.w500,
+                                                              TextSpan(
+                                                                text: artist.distance.toStringAsFixed(2),
+                                                                style:
+                                                                TextStyle(
+                                                                  fontWeight:
+                                                                  FontWeight
+                                                                      .w600,
+                                                                  fontSize:
+                                                                  10.sp,
+                                                                  color: ColorsConstant
+                                                                      .purpleDistance,
+                                                                ),
                                                               ),
-                                                            ),
-                                                          ],
+                                                            ],
+                                                          ),
                                                         ),
-                                                        Align(
-                                                          alignment:
-                                                          Alignment.bottomCenter,
-                                                          child: Row(
-                                                            crossAxisAlignment:
-                                                            CrossAxisAlignment
-                                                                .start,
-                                                            mainAxisAlignment:
-                                                            MainAxisAlignment
-                                                                .spaceBetween,
-                                                            children: <Widget>[
-                                                              Text.rich(
-                                                                TextSpan(
-                                                                  children: <
-                                                                      InlineSpan>[
-                                                                    WidgetSpan(
-                                                                      alignment:
-                                                                      PlaceholderAlignment
-                                                                          .baseline,
-                                                                      baseline:
-                                                                      TextBaseline
-                                                                          .ideographic,
-                                                                      child:
-                                                                      SvgPicture
-                                                                          .asset(
-                                                                        ImagePathConstant
-                                                                            .locationIconAlt,
-                                                                        color: ColorsConstant
-                                                                            .purpleDistance,
-                                                                        height: 2.h,
-                                                                      ),
-                                                                    ),
-                                                                    WidgetSpan(
-                                                                      child: SizedBox(
-                                                                          width: 1.w),
-                                                                    ),
-                                                                    TextSpan(
-                                                                      text: provider
-                                                                          .salonData
-                                                                          .firstWhere((element) =>
-                                                                      element
-                                                                          .id ==
-                                                                          artist
-                                                                              .salonId)
-                                                                          .distanceFromUserAsString,
-                                                                      style:
-                                                                      TextStyle(
-                                                                        fontWeight:
-                                                                        FontWeight
-                                                                            .w600,
-                                                                        fontSize:
-                                                                        10.sp,
-                                                                        color: ColorsConstant
-                                                                            .purpleDistance,
-                                                                      ),
-                                                                    ),
-                                                                  ],
+                                                        Text.rich(
+                                                          TextSpan(
+                                                            children: <
+                                                                InlineSpan>[
+                                                              WidgetSpan(
+                                                                alignment:
+                                                                PlaceholderAlignment
+                                                                    .baseline,
+                                                                baseline:
+                                                                TextBaseline
+                                                                    .ideographic,
+                                                                child:
+                                                                SvgPicture
+                                                                    .asset(
+                                                                  ImagePathConstant
+                                                                      .starIcon,
+                                                                  color: ColorsConstant
+                                                                      .greenRating,
                                                                 ),
                                                               ),
-                                                              Text.rich(
-                                                                TextSpan(
-                                                                  children: <
-                                                                      InlineSpan>[
-                                                                    WidgetSpan(
-                                                                      alignment:
-                                                                      PlaceholderAlignment
-                                                                          .baseline,
-                                                                      baseline:
-                                                                      TextBaseline
-                                                                          .ideographic,
-                                                                      child:
-                                                                      SvgPicture
-                                                                          .asset(
-                                                                        ImagePathConstant
-                                                                            .starIcon,
-                                                                        color: ColorsConstant
-                                                                            .greenRating,
-                                                                      ),
-                                                                    ),
-                                                                    WidgetSpan(
-                                                                      child: SizedBox(
-                                                                          width: 1.w),
-                                                                    ),
-                                                                    TextSpan(
-                                                                      text: artist
-                                                                          .rating
-                                                                          .toString(),
-                                                                      style:
-                                                                      TextStyle(
-                                                                        fontWeight:
-                                                                        FontWeight
-                                                                            .w600,
-                                                                        fontSize:
-                                                                        10.sp,
-                                                                        color: ColorsConstant
-                                                                            .greenRating,
-                                                                      ),
-                                                                    ),
-                                                                  ],
+                                                              WidgetSpan(
+                                                                child: SizedBox(
+                                                                    width: 1.w),
+                                                              ),
+                                                              TextSpan(
+                                                                text: artist
+                                                                    .rating.toStringAsFixed(1),
+                                                                style:
+                                                                TextStyle(
+                                                                  fontWeight:
+                                                                  FontWeight
+                                                                      .w600,
+                                                                  fontSize:
+                                                                  10.sp,
+                                                                  color: ColorsConstant
+                                                                      .greenRating,
                                                                 ),
                                                               ),
                                                             ],
@@ -735,32 +866,39 @@ class _ExploreStylist2State extends State<ExploreStylist2>
                                                       ],
                                                     ),
                                                   ),
-                                                  Align(
-                                                    alignment: Alignment.topRight,
-                                                    child: InkWell(
-                                                      onTap: () {
-                                                      showSignInDialog(context);
-                                                      },
-                                                      child: SvgPicture.asset(
-                                                      /*  context
-                                                            .read<HomeProvider>()
-                                                            .userData
-                                                            .preferredArtist!
-                                                            .contains(artist.id)
-                                                        */
-                                                        ImagePathConstant
-                                                            .saveIcon,
-                                                        color: ColorsConstant.appColor,
-                                                          //  : const Color(0xFF212121),
-                                                        height: 3.h,
-                                                      ),
-                                                    ),
-                                                  ),
                                                 ],
                                               ),
                                             ),
-                                          ),
+                                            Align(
+                                              alignment: Alignment.topRight,
+                                              child: InkWell(
+                                                onTap: () {
+                                                showSignInDialog(context);
+                                                },
+                                                child: SvgPicture.asset(
+                                                  context
+                                                      .read<HomeProvider>()
+                                                      .artistList2
+                                                      .contains(artist.id)
+                                                      ? ImagePathConstant
+                                                      .saveIconFill
+                                                      : ImagePathConstant
+                                                      .saveIcon,
+                                                  color: context
+                                                      .read<HomeProvider>()
+                                                      .artistList2
+                                                      .contains(artist.id)
+                                                      ? ColorsConstant.appColor
+                                                      : const Color(0xFF212121),
+                                                  height: 3.h,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
                                         ),
+                                      ),
+                                    ),
+                                  ),
                                 );
                               },
                             ),
@@ -776,74 +914,6 @@ class _ExploreStylist2State extends State<ExploreStylist2>
         ),
       );
     });
-  }
-
-  void showSignInDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          contentPadding: EdgeInsets.all(10.0),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Center(
-                child: Image.asset(
-                    "assets/images/app_logo.png",
-                    height: 60,
-                    width:60
-                ),
-              ),
-              SizedBox(height: 16.0),
-              Align(
-                alignment: Alignment.topLeft,
-                child: Text(
-                  "Please Sign In",
-                  style: TextStyle(
-                    fontSize: 18.0,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              SizedBox(height: 8.0),
-              Text(
-                "You need to sign in first to see our conditionals",
-                style: TextStyle(fontSize: 16.0),
-              ),
-              SizedBox(height: 16.0),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  ElevatedButton(
-                    style: ButtonStyle(
-                      backgroundColor: MaterialStateProperty.all<Color>(Colors.black),
-                      shape: MaterialStateProperty.all<OutlinedBorder>(
-                        const StadiumBorder(),
-                      ),
-                    ),
-                    child: Text("Cancel"),
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                    },
-                  ),
-                  SizedBox(width: 8.0),
-                  TextButton(
-                    child: Text("OK",style: TextStyle( color:Colors.black,)),
-                    onPressed: () {
-                      Navigator.pushNamed(
-                        context,
-                        NamedRoutes.authenticationRoute2,
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
-      },
-    );
   }
 
   Widget titleSearchBarWithLocation() {
@@ -907,7 +977,7 @@ class _ExploreStylist2State extends State<ExploreStylist2>
                       style: StyleConstant.searchTextStyle,
                       textInputAction: TextInputAction.done,
                       onChanged: (searchText) =>
-                          provider.filterSalonList(searchText),
+                          provider.filterArtistList(searchText),
                       decoration: StyleConstant.searchBoxInputDecoration(
                         context,
                         hintText: StringConstant.search,
@@ -931,6 +1001,74 @@ class _ExploreStylist2State extends State<ExploreStylist2>
         ImagePathConstant.appBackgroundImage,
         color: ColorsConstant.graphicFill,
       ),
+    );
+  }
+
+  void showSignInDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          contentPadding: EdgeInsets.all(10.0),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Center(
+                child: Image.asset(
+                    "assets/images/app_logo.png",
+                    height: 60,
+                    width:60
+                ),
+              ),
+              SizedBox(height: 16.0),
+              Align(
+                alignment: Alignment.topLeft,
+                child: Text(
+                  "Please Sign In",
+                  style: TextStyle(
+                    fontSize: 18.0,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              SizedBox(height: 8.0),
+              Text(
+                "You need to sign in first to see our conditionals",
+                style: TextStyle(fontSize: 16.0),
+              ),
+              SizedBox(height: 16.0),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  ElevatedButton(
+                    style: ButtonStyle(
+                      backgroundColor: MaterialStateProperty.all<Color>(Colors.black),
+                      shape: MaterialStateProperty.all<OutlinedBorder>(
+                        const StadiumBorder(),
+                      ),
+                    ),
+                    child: Text("Cancel"),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                  ),
+                  SizedBox(width: 8.0),
+                  TextButton(
+                    child: Text("OK",style: TextStyle( color:Colors.black,)),
+                    onPressed: () {
+                      Navigator.pushNamed(
+                          context,
+                          NamedRoutes.authenticationRoute
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
