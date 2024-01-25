@@ -1,7 +1,9 @@
 import 'dart:io';
 
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:naai/models/user.dart';
 import 'package:naai/services/database.dart';
 import 'package:naai/utils/exception/exception_handling.dart';
@@ -38,8 +40,40 @@ class ProfileProvider with ChangeNotifier {
     provider.resetMobielNumberController();
     notifyListeners();
   }
+  Future<void> getUserDetails(BuildContext context) async {
+    final box = await Hive.openBox('userBox');
+    final userId = box.get('userId') ?? '';
+    if (userId.isNotEmpty) {
+      print('Retrieved userId from Hive: $userId');
+      try {
+        final response = await Dio().get(
+          'http://13.235.49.214:8800/customer/user/$userId',
+        );
 
+        if (response.data != null && response.data is Map<String, dynamic>) {
+          ProfileResponse apiResponse = ProfileResponse.fromJson(response.data);
+
+          if (apiResponse != null && apiResponse.data != null) {
+            // Save the user details in the provider
+            context.read<ProfileProvider>().setUserData(apiResponse.data);
+          } else {
+            // Handle the case where the response or data is null
+            print('Failed to fetch user details: Invalid response format');
+          }
+        } else {
+          // Handle the case where the response is null or not of the expected type
+          print('Failed to fetch user details: Invalid response format');
+        }
+      } catch (error) {
+        Loader.hideLoader(context);
+        // Handle the case where the API call was not successful
+        // You can show an error message or take appropriate action
+        print('Failed to fetch user details: $error');
+      }
+    }
+  }
 }
+
 /*
   ///Profile photo upload method
   void uploadProfileImage(BuildContext context) async{

@@ -20,6 +20,7 @@ import 'package:naai/view_model/post_auth/barber/barber_provider.dart';
 import 'package:naai/view_model/post_auth/explore/explore_provider.dart';
 import 'package:naai/view_model/post_auth/home/home_provider.dart';
 import 'package:provider/provider.dart';
+import '../../../models/Time_Slot_model.dart';
 import '../../../models/artist_detail.dart';
 import '../../../models/artist_services.dart';
 import '../../../models/salon_detail.dart';
@@ -138,6 +139,11 @@ class SalonDetailsProvider with ChangeNotifier {
 
   ApiResponse? get salonDetails => _salonDetails;
 
+  TimeSlotResponse? _timeslot;
+
+  TimeSlotResponse? get timeslot => _timeslot;
+
+
   ServiceResponse? _serviceData;
   ServiceResponse? get serviceData => _serviceData;
 
@@ -152,6 +158,18 @@ class SalonDetailsProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  void setTimeSlot(TimeSlotResponse timeslot) {
+    _timeslot = timeslot;
+    notifyListeners();
+  }
+
+  String? _selectedTime;
+  String? get selectedTime => _selectedTime;
+
+  void setSelectedTime(String time) {
+    _selectedTime = time;
+    notifyListeners();
+  }
   void setServiceDetails(ServiceResponse serviceData) {
     _serviceData = serviceData;
     notifyListeners();
@@ -647,9 +665,7 @@ class SalonDetailsProvider with ChangeNotifier {
     bool selectSlotFinished = false,
   }) {
     if (selectSlotFinished &&
-        artistServiceList!.selectedArtist != null &&
-        _currentBooking.startTime != null &&
-        _currentBooking.endTime != null) {
+        _selectedTime != null) {
       _isOnSelectStaffType = false;
       _isOnSelectSlot = false;
       _isOnPaymentPage = true;
@@ -972,6 +988,8 @@ class SalonDetailsProvider with ChangeNotifier {
     _selectedServices.clear(); // Clear selected services
     _totalPrice = 0; // Reset total price
     _showPrice = 0; // Reset show price
+_selectedDate = null;
+_selectedTime = null;
 
     // Add any other data you want to reset here
 

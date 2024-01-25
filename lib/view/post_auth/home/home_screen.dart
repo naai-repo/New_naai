@@ -113,12 +113,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                             ),
                           //  if (provider.isSearchExpanded)
                             serviceCategories(),
-                            if (provider.lastOrNextBooking.isNotEmpty)
+                        if (provider.upcomingBooking.isNotEmpty)
                               Padding(
                                 padding: EdgeInsets.symmetric(horizontal: 3.w),
                                 child: Visibility(
-                                  visible: provider
-                                      .lastOrNextBooking.last.isUpcoming,
+                                  visible: provider.upcomingBooking.any((booking) => booking.currentBookings.isNotEmpty),
                                   child: MediaQuery.removePadding(
                                     context: context,
                                     removeBottom: true,
@@ -126,18 +125,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                     child: ListView.separated(
                                       shrinkWrap: true,
                                       physics: const NeverScrollableScrollPhysics(),
-                                      itemCount:
-                                          provider.lastOrNextBooking.length,
+                                      itemCount: provider.upcomingBooking.length,
                                       itemBuilder: (context, index) {
                                         return Visibility(
-                                          visible: provider
-                                                  .lastOrNextBooking[index].transactionStatus !=
-                                              null,
+                                          visible: provider.upcomingBooking[index].currentBookings.isNotEmpty,
                                           child: upcomingBookingCard(index),
                                         );
                                       },
-                                      separatorBuilder: (context, index) =>
-                                          SizedBox(height: 2.h),
+                                      separatorBuilder: (context, index) => SizedBox(height: 2.h),
                                     ),
                                   ),
                                   replacement: previousBookingCard(),

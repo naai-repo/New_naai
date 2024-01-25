@@ -33,10 +33,12 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 import 'package:sizer/sizer.dart';
+import '../../../models/allbooking.dart';
 import '../../../models/artist_model.dart';
 import '../../../models/review.dart';
 import '../../../models/salon_model.dart';
 import '../../../models/service_detail.dart';
+import '../../../utils/access_token.dart';
 import '../../pre_auth/loginResult.dart';
 
 class HomeProvider with ChangeNotifier {
@@ -76,6 +78,9 @@ String ?  _addressText;
   List<Booking> _lastOrNextBooking = [];
   List<Booking> _allBookings = [];
 
+  List<AllBooking> _upcomingBooking = [];
+  List<AllBooking> _previousBooking = [];
+
   //============= GETTERS =============//
   List<SalonData> get salonList => _salonList;
   List<SalonData2> get salonList2 => _salonList2;
@@ -93,6 +98,11 @@ String ?  _addressText;
 
   List<Booking> get lastOrNextBooking => _lastOrNextBooking;
   List<Booking> get allBookings => _allBookings;
+
+
+
+  List<AllBooking> get upcomingBooking => _upcomingBooking;
+  List<AllBooking> get previousBooking => _previousBooking;
   int displayedSalonCount = 5; // Number of salons to display initially
   int displayedArtistCount = 5;
   /// Check if there is a [uid] stored in [SharedPreferences] or not.
@@ -255,6 +265,7 @@ String ?  _addressText;
               coords: [currentLocation.longitude, currentLocation.latitude]),
           getTopArtists(
               coords: [currentLocation.longitude, currentLocation.latitude]),
+          getAppointments(),
           //  getDistanceAndRating(coords: [currentLocation.longitude, currentLocation.latitude]),
           //  getArtistRating(coords: [currentLocation.longitude, currentLocation.latitude]),
         ]);
@@ -535,6 +546,50 @@ String ?  _addressText;
           );
         },
       );
+    }
+  }
+
+  Future<void> getAppointments() async {
+    final String apiUrl = 'http://13.235.49.214:8800/appointments/user/bookings';
+    String? bearerToken =  await AccessTokenManager.getAccessToken();
+
+    try {
+      Dio dio = Dio();
+
+      dio.options.headers['Authorization'] = 'Bearer $bearerToken';
+
+      Response response = await dio.get(apiUrl);
+
+      if (response.statusCode == 200) {
+        // Successfully fetched data
+        print('Response: ${response.data}');
+
+        // Parse JSON and convert it into Dart objects
+        AllBooking userBookings = AllBooking.fromJson(response.data);
+
+        // Accessing the parsed data
+        print('User ID: ${userBookings.userId}');
+        print('Current Bookings:');
+        for (var booking in userBookings.currentBookings) {
+          print('${booking.id} - ${booking.bookingDate}');
+        }
+
+        print('Previous Bookings:');
+        for (var booking in userBookings.prevBooking) {
+          print('${booking.id} - ${booking.bookingDate}');
+        }
+
+        print('Coming Bookings:');
+        for (var booking in userBookings.comingBookings) {
+          print('${booking.id} - ${booking.bookingDate}');
+        }
+      } else {
+        // Handle error
+        print('Error: ${response.statusCode}, ${response.data}');
+      }
+    } catch (error) {
+      // Handle DioError or other exceptions
+      print('Error: $error');
     }
   }
 

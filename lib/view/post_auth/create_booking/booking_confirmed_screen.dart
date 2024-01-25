@@ -43,7 +43,7 @@ class BookingConfirmedSreen extends StatelessWidget {
                 ),
                 SizedBox(height: 10.h),
                 Text(
-                  provider.selectedSalonData.name ?? '',
+                  provider.salonDetails!.data.data.name?? '',
                   style: TextStyle(
                     fontSize: 20.sp,
                     fontWeight: FontWeight.w600,
@@ -54,7 +54,7 @@ class BookingConfirmedSreen extends StatelessWidget {
                 SizedBox(
                   width: 75.w,
                   child: Text(
-                    provider.selectedSalonData.address?.addressString ?? '',
+                    provider.salonDetails!.data.data.address ?? '',
                     style: TextStyle(
                       fontSize: 11.sp,
                       color: ColorsConstant.textLight,
@@ -73,8 +73,7 @@ class BookingConfirmedSreen extends StatelessWidget {
                 ),
                 SizedBox(height: 1.h),
                 Text(
-                  provider.convertSecondsToTimeString(
-                      provider.currentBooking.startTime ?? 0),
+                 provider.selectedTime ?? '',
                   style: TextStyle(
                     fontSize: 24.sp,
                     fontWeight: FontWeight.w700,
@@ -84,7 +83,8 @@ class BookingConfirmedSreen extends StatelessWidget {
                 SizedBox(height: 4.h),
                 GestureDetector(
                   onTap: () {
-                    provider.resetCurrentBooking();
+                    provider.setSchedulingStatus(onSelectStaff: true);
+                    provider.resetCurrentBooking2();
                     Navigator.pushNamed(
                       context,
                       NamedRoutes.bottomNavigationRoute,
