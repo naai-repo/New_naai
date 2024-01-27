@@ -36,6 +36,7 @@ import '../../../models/salon_model.dart';
 import '../../../models/service_response.dart';
 import '../../../utils/loading_indicator.dart';
 import '../../../view_model/post_auth/salon_details/salon_details_provider.dart';
+import '../explore/explore_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -51,9 +52,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-     context.read<HomeProvider>().initHome(context);
-   });
+      context.read<HomeProvider>().initHome(context);
+    });
   }
 
   @override
@@ -1164,8 +1166,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   Widget dummyDeal(HomeProvider provider) {
     return GestureDetector(
-      onTap: ()async{
-        Navigator.pushNamed(context, NamedRoutes.exploreRoute);
+      onTap: () async{
+       await  provider.DiscountFilterforWomen(context);
+       Navigator.push(
+         context,
+         MaterialPageRoute(
+           builder: (context) => ExploreScreen3(),
+         ),
+       );
+
       },
       child: Container(
         height: 20.h,
@@ -1232,10 +1241,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       children:[
        GestureDetector(
          onTap: ()async {
-        await   provider.DiscountFilterforMen(context);
-
-        Navigator.pushNamed(context, NamedRoutes.exploreRoute);
-         },
+      await provider.DiscountFilterforMen(context);
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ExploreScreen3(),
+        ),
+      );
+    },
          child: Container(
           height: 20.h,
           width:45.w,
@@ -1299,9 +1312,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
        const Spacer(),
         GestureDetector(
           onTap: () async{
-         await provider.DiscountFilterforMen(context);
-
-            Navigator.pushNamed(context, NamedRoutes.exploreRoute);
+            await provider.DiscountFilterforMen(context);
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ExploreScreen3(),
+              ),
+            );
           },
           child: Container(
             height: 20.h,
@@ -1368,7 +1385,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 }
 
-
+//Continue as a guest
 class HomeScreen2 extends StatefulWidget {
   const HomeScreen2({Key? key}) : super(key: key);
 
@@ -1376,17 +1393,22 @@ class HomeScreen2 extends StatefulWidget {
   State<HomeScreen2> createState() => _HomeScreen2State();
 }
 
-class _HomeScreen2State extends State<HomeScreen2> {
+class _HomeScreen2State extends State<HomeScreen2>with WidgetsBindingObserver {
   @override
   void initState() {
-
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
 
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
       context.read<HomeProvider>().initHome2(context);
     });
-  }
 
+  }
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
 
 
   @override Widget build(BuildContext context) {
@@ -1944,12 +1966,12 @@ class _HomeScreen2State extends State<HomeScreen2> {
                               }
 
                               // If the API calls are successful, navigate to the next screen
-                              Navigator.pushNamed(context, NamedRoutes.barberProfileRoute, arguments: artistId);
+                              Navigator.pushNamed(context, NamedRoutes.barberProfileRoute2, arguments: artistId);
                             } catch (error) {
                               Loader.hideLoader(context);
                               // Handle the case where the API call was not successful
                               // You can show an error message or take appropriate action
-                              Navigator.pushNamed(context, NamedRoutes.bottomNavigationRoute);
+                              Navigator.pushNamed(context, NamedRoutes.bottomNavigationRoute2);
                               print('Failed to fetch details: $error');
                             }
                           },
@@ -2043,12 +2065,12 @@ class _HomeScreen2State extends State<HomeScreen2> {
                               }
 
                               // If the API calls are successful, navigate to the next screen
-                              Navigator.pushNamed(context, NamedRoutes.barberProfileRoute, arguments: artistId);
+                              Navigator.pushNamed(context, NamedRoutes.barberProfileRoute2, arguments: artistId);
                             } catch (error) {
                               Loader.hideLoader(context);
                               // Handle the case where the API call was not successful
                               // You can show an error message or take appropriate action
-                              Navigator.pushNamed(context, NamedRoutes.bottomNavigationRoute);
+                              Navigator.pushNamed(context, NamedRoutes.bottomNavigationRoute2);
                               print('Failed to fetch details: $error');
                             }
                           },
@@ -2489,9 +2511,9 @@ class _HomeScreen2State extends State<HomeScreen2> {
 
     return GestureDetector(
       onTap: () async{
-       await provider.DiscountFilter(context);
+       await provider.DiscountFilterforWomen(context);
 
-        Navigator.pushNamed(context, NamedRoutes.exploreRoute);
+        Navigator.pushNamed(context, NamedRoutes.exploreRoute2);
       },
       child: Container(
         height: 20.h,
@@ -2559,7 +2581,7 @@ class _HomeScreen2State extends State<HomeScreen2> {
         GestureDetector(
           onTap: () async{
           await  provider.DiscountFilterforMen(context);
-          Navigator.pushNamed(context, NamedRoutes.exploreRoute);
+          Navigator.pushNamed(context, NamedRoutes.exploreRoute2);
           },
           child: Container(
             height: 20.h,
@@ -2625,7 +2647,7 @@ class _HomeScreen2State extends State<HomeScreen2> {
         GestureDetector(
           onTap: () async{
            await provider.DiscountFilterforMen(context);
-           Navigator.pushNamed(context, NamedRoutes.bottomNavigationRoute4);
+           Navigator.pushNamed(context, NamedRoutes.exploreRoute2);
           },
           child: Container(
             height: 20.h,
@@ -2692,7 +2714,7 @@ class _HomeScreen2State extends State<HomeScreen2> {
   }
 }
 
-
+//For deny location
 class HomeScreen3 extends StatefulWidget {
   const HomeScreen3({Key? key}) : super(key: key);
 
@@ -3803,10 +3825,10 @@ class _HomeScreen3State extends State<HomeScreen3> {
   Widget dummyDeal(HomeProvider provider) {
 
     return GestureDetector(
-      onTap: () async{
-        await provider.DiscountFilter(context);
+      onTap: () {
+        provider.DiscountFilterforWomen(context);
 
-        Navigator.pushNamed(context, NamedRoutes.exploreRoute2);
+        Navigator.pushNamed(context, NamedRoutes.exploreRoute3);
       },
       child: Container(
         height: 20.h,
@@ -3874,7 +3896,7 @@ class _HomeScreen3State extends State<HomeScreen3> {
         GestureDetector(
           onTap: () async{
             await  provider.DiscountFilterforMen(context);
-            Navigator.pushNamed(context, NamedRoutes.exploreRoute2);
+            Navigator.pushNamed(context, NamedRoutes.exploreRoute3);
           },
           child: Container(
             height: 20.h,

@@ -51,6 +51,16 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
       builder: (context, barberProvider, child) {
         return Consumer<SalonDetailsProvider>(builder: (context, provider, child) {
           BarberProvider barberProvider = context.read<BarberProvider>(); // Use the same instance
+          if (provider.salonDetails!.data.data.discount == 0 ||
+              provider.salonDetails!.data.data.discount == null){
+            myShowPrice = provider.totalPrice;
+          }
+          else{
+            provider.setShowPrice(provider.totalPrice,provider.salonDetails!.data.data.discount!);
+            myShowPrice = provider.showPrice;
+          }
+          bool servicesSelected = provider.barbergetSelectedServices().isNotEmpty;
+
           return Scaffold(
             resizeToAvoidBottomInset: true,
             body: Stack(
@@ -79,11 +89,7 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
                             GestureDetector(
                               behavior: HitTestBehavior.opaque,
                               onTap: () {
-                                barberProvider.clearSearchController();
-                                barberProvider.clearSelectedGendersFilter();
-                                barberProvider
-                                    .clearSelectedServiceCategories();
-                                barberProvider.clearfilteredServiceList();
+                                provider.resetCurrentBooking2();
                                 Navigator.pop(context);
                               },
                               child: Padding(
@@ -143,12 +149,12 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
                 ),
               ],
             ),
-            bottomNavigationBar: Visibility(
-              visible: Provider
-                  .of<SalonDetailsProvider>(context, listen: true)
-                  .totalPrice >
-                  0,
-              child: Container(
+              bottomNavigationBar: Stack(
+                  alignment: Alignment.center,
+                  children: <Widget>[
+                  servicesAndReviewTabBar(),
+              if (servicesSelected)
+          Container(
                 margin: EdgeInsets.only(
                   bottom: 2.h,
                   right: 5.w,
@@ -247,18 +253,28 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
                       ],
                     ),
                     VariableWidthCta(
-                      onTap: () =>
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  CreateBookingScreen2(
-                                    artistName: barberProvider.artist
-                                        .name ??
-                                        '', // Pass the name here
-                                  ),
-                            ),
+                      onTap: () async{
+                        String salonId = provider.salonDetails!.data.data.id;
+                        List<String> selectedServiceIds = provider.barbergetSelectedServices()
+                            .map((service) => service.id)
+                            .toList();
+                        await provider.fetchArtist(context,salonId, selectedServiceIds);
+                        provider.setSchedulingStatus(onSelectStaff: true);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                CreateBookingScreen2(
+                                  artistName: barberProvider.artistDetails!.name,
+                                  artistId: barberProvider.artistDetails!.id,
+                                ),
                           ),
+
+                        );
+                        print('artist id : ${barberProvider.artistDetails!.name}');
+                        print('artist name : ${barberProvider.artistDetails!.id}');
+                        print(' service : ${selectedServiceIds}');
+                        },
                       isActive: true,
                       buttonText: StringConstant.confirmBooking,
                     )
@@ -266,6 +282,7 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
                 ),
               )
                  //   : SizedBox()
+              ],
               ),
           );
         }
@@ -1102,9 +1119,9 @@ print('${barberProvider.Servicetitle}');
 
 class BarberProfileScreen2 extends StatefulWidget {
   BarberProfileScreen2({Key? key}) : super(key: key);
+
   @override
   State<BarberProfileScreen2> createState() => _BarberProfileScreen2State();
-
 }
 
 class _BarberProfileScreen2State extends State<BarberProfileScreen2> {
@@ -1115,11 +1132,8 @@ class _BarberProfileScreen2State extends State<BarberProfileScreen2> {
   @override
   void initState() {
     BarberProvider barberProvider = context.read<BarberProvider>();
-
     super.initState();
-
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -1127,6 +1141,16 @@ class _BarberProfileScreen2State extends State<BarberProfileScreen2> {
       builder: (context, barberProvider, child) {
         return Consumer<SalonDetailsProvider>(builder: (context, provider, child) {
           BarberProvider barberProvider = context.read<BarberProvider>(); // Use the same instance
+          if (provider.salonDetails!.data.data.discount == 0 ||
+              provider.salonDetails!.data.data.discount == null){
+            myShowPrice = provider.totalPrice;
+          }
+          else{
+            provider.setShowPrice(provider.totalPrice,provider.salonDetails!.data.data.discount!);
+            myShowPrice = provider.showPrice;
+          }
+          bool servicesSelected = provider.barbergetSelectedServices().isNotEmpty;
+
           return Scaffold(
             resizeToAvoidBottomInset: true,
             body: Stack(
@@ -1155,11 +1179,7 @@ class _BarberProfileScreen2State extends State<BarberProfileScreen2> {
                             GestureDetector(
                               behavior: HitTestBehavior.opaque,
                               onTap: () {
-                                barberProvider.clearSearchController();
-                                barberProvider.clearSelectedGendersFilter();
-                                barberProvider
-                                    .clearSelectedServiceCategories();
-                                barberProvider.clearfilteredServiceList();
+                                provider.resetCurrentBooking2();
                                 Navigator.pop(context);
                               },
                               child: Padding(
@@ -1219,120 +1239,79 @@ class _BarberProfileScreen2State extends State<BarberProfileScreen2> {
                 ),
               ],
             ),
-            bottomNavigationBar: Visibility(
-                visible: Provider
-                    .of<SalonDetailsProvider>(context, listen: true)
-                    .totalPrice >
-                    0,
-                child: Container(
-                  margin: EdgeInsets.only(
-                    bottom: 2.h,
-                    right: 5.w,
-                    left: 5.w,
-                  ),
-                  padding: EdgeInsets.symmetric(
-                    vertical: 1.h,
-                    horizontal: 3.w,
-                  ),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(1.h),
-                    boxShadow: <BoxShadow>[
-                      BoxShadow(
-                        offset: Offset(0, 2.0),
-                        color: Colors.grey,
-                        spreadRadius: 0.2,
-                        blurRadius: 15,
-                      ),
-                    ],
-                    color: Colors.white,
-                  ),
-                  /*
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: <Widget>[
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Text(
-                          StringConstant.total,
-                          style: TextStyle(
-                            fontWeight: FontWeight.w500,
-                            fontSize: 10.sp,
-                            color: ColorsConstant.textDark,
-                          ),
+            bottomNavigationBar: Stack(
+              alignment: Alignment.center,
+              children: <Widget>[
+                servicesAndReviewTabBar(),
+                if (servicesSelected)
+                  Container(
+                    margin: EdgeInsets.only(
+                      bottom: 2.h,
+                      right: 5.w,
+                      left: 5.w,
+                    ),
+                    padding: EdgeInsets.symmetric(
+                      vertical: 1.h,
+                      horizontal: 3.w,
+                    ),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(1.h),
+                      boxShadow: <BoxShadow>[
+                        BoxShadow(
+                          offset: Offset(0, 2.0),
+                          color: Colors.grey,
+                          spreadRadius: 0.2,
+                          blurRadius: 15,
                         ),
-                        Text(
-                            'Rs. ${context
-                                .read<SalonDetailsProvider>()
-                                .totalPrice}',
-                            style: StyleConstant.textDark15sp600Style),
+                      ],
+                      color: Colors.white,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: <Widget>[
+                        Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Text(
+                              StringConstant.total,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w500,
+                                fontSize: 10.sp,
+                                color: ColorsConstant.textDark,
+                              ),
+                            ),
+                            Text('Rs.${myShowPrice}',
+                                style: StyleConstant.textDark15sp600Style),
+                          ],
+                        ),
+                        provider.salonDetails!.data.data.discount==0||provider.salonDetails!.data.data.discount==null
+                            ?
+                        SizedBox()
+                            : Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            SizedBox(
+                              height: 2.5.h,
+                            ),
+                            Text('${provider.totalPrice}',
+                                style: StyleConstant
+                                    .textDark12sp500StyleLineThrough),
+                          ],
+                        ),
+                        VariableWidthCta(
+                          onTap: () {
+                           showSignInDialog(context);
+                          },
+                          isActive: true,
+                          buttonText: StringConstant.confirmBooking,
+                        )
                       ],
                     ),
-                    VariableWidthCta(
-                      onTap: () =>
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  CreateBookingScreen2(
-                                    artistName: barberProvider.artist
-                                        .name ??
-                                        '', // Pass the name here
-                                  ),
-                            ),
-                          ),
-                      isActive: true,
-                      buttonText: StringConstant.confirmBooking,
-                    )
-                  ],
-                ),
-                */
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: <Widget>[
-                      Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          Text(
-                            StringConstant.total,
-                            style: TextStyle(
-                              fontWeight: FontWeight.w500,
-                              fontSize: 10.sp,
-                              color: ColorsConstant.textDark,
-                            ),
-                          ),
-                          Text('Rs.${myShowPrice}',
-                              style: StyleConstant.textDark15sp600Style),
-                        ],
-                      ),
-                      //  provider.salonDetails!.data.data.discount==0||provider.salonDetails!.data.data.discount==null
-                      //      ?
-                      //   SizedBox():
-                      Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          SizedBox(
-                            height: 2.5.h,
-                          ),
-                          Text('${provider.totalPrice}',
-                              style: StyleConstant
-                                  .textDark12sp500StyleLineThrough),
-                        ],
-                      ),
-                      VariableWidthCta(
-                        onTap: () {
-                          showSignInDialog(context);
-                        },
-                        isActive: true,
-                        buttonText: StringConstant.confirmBooking,
-                      )
-                    ],
-                  ),
-                )
-              //   : SizedBox()
+                  )
+                //   : SizedBox()
+              ],
             ),
           );
         }
@@ -1345,7 +1324,7 @@ class _BarberProfileScreen2State extends State<BarberProfileScreen2> {
     return Consumer<SalonDetailsProvider>(builder: (context, provider, child) {
       BarberProvider barberProvider = context.read<BarberProvider>(); // Use the same instance
       Set<Service2> selectedServices = provider.barbergetSelectedServices();
-
+      print('${barberProvider.Servicetitle}');
       return Column(
         children: <Widget>[
           GestureDetector(
@@ -1396,7 +1375,7 @@ class _BarberProfileScreen2State extends State<BarberProfileScreen2> {
               //  bool isAdded  = provider.salonDetails!.data.services
               //      ?.contains(serviceDetail.id) ??
               //   false;// Assuming paid is a boolean
-              DataService? serviceDetail4;
+
               return GestureDetector(
                 onTap: () {
                   provider.toggleSelectedServicebarber(serviceDetail!);
@@ -1432,7 +1411,7 @@ class _BarberProfileScreen2State extends State<BarberProfileScreen2> {
                             SizedBox(width: 2.w),
                             Expanded(
                               child: Text(
-                                barberProvider.Servicetitle ?? '',
+                                provider.serviceData!.data.serviceTitle ?? '',
                                 style: TextStyle(
                                   color: ColorsConstant.textDark,
                                   fontSize: 10.sp,
@@ -1678,7 +1657,7 @@ class _BarberProfileScreen2State extends State<BarberProfileScreen2> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                AddReviewComponent(reviewForSalon: false),
+                AddReviewComponent2(reviewForSalon: false),
                 Padding(
                   padding: EdgeInsets.only(top: 2.h, bottom: 1.h),
                   child: Text(
@@ -1898,6 +1877,7 @@ class _BarberProfileScreen2State extends State<BarberProfileScreen2> {
   Widget barberOverview() {
     return Consumer2<BarberProvider, ExploreProvider>(
         builder: (context, barberProvider, exploreProvider, child) {
+
           return Column(
             children: <Widget>[
               Row(
@@ -2035,12 +2015,12 @@ class _BarberProfileScreen2State extends State<BarberProfileScreen2> {
                           salonDetailsProvider.setSalonDetails(salonDetails);
 
                           // If the API call is successful, navigate to the SalonDetailsScreen
-                          Navigator.pushNamed(context, NamedRoutes.salonDetailsRoute, arguments: salonId);
+                          Navigator.pushNamed(context, NamedRoutes.salonDetailsRoute2, arguments: salonId);
                         } catch (error) {
                           Loader.hideLoader(context);
                           // Handle the case where the API call was not successful
                           // You can show an error message or take appropriate action
-                          Navigator.pushNamed(context, NamedRoutes.bottomNavigationRoute);
+                          Navigator.pushNamed(context, NamedRoutes.bottomNavigationRoute2);
                           print('Failed to fetch salon details: $error');
                         }
                       },
@@ -2101,7 +2081,20 @@ class _BarberProfileScreen2State extends State<BarberProfileScreen2> {
                       'https://www.instagram.com/naaiindia'),
                 ),
                 onTapIconThree: () {
-                 showSignInDialog(context);
+                  if (context
+                      .read<HomeProvider>()
+                      .artistList2
+                      .contains(barberProvider.artistDetails!.id)) {
+                    exploreProvider.removePreferedArtist(
+                      context,
+                      barberProvider.artistDetails!.id,
+                    );
+                  } else {
+                    exploreProvider.addPreferedArtist(
+                      context,
+                      barberProvider.artistDetails!.id,
+                    );
+                  }
                 },
                 onTapIconFour: () => launchUrl(
                   Uri.parse('https://www.instagram.com/naaiindia'),
@@ -2151,74 +2144,73 @@ class _BarberProfileScreen2State extends State<BarberProfileScreen2> {
       ),
     );
   }
-
-  void showSignInDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          contentPadding: EdgeInsets.all(10.0),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Center(
-                child: Image.asset(
-                    "assets/images/app_logo.png",
-                    height: 60,
-                    width:60
-                ),
-              ),
-              SizedBox(height: 16.0),
-              Align(
-                alignment: Alignment.topLeft,
-                child: Text(
-                  "Please Sign In",
-                  style: TextStyle(
-                    fontSize: 18.0,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              SizedBox(height: 8.0),
-              Text(
-                "You need to sign in first to see our conditionals",
-                style: TextStyle(fontSize: 16.0),
-              ),
-              SizedBox(height: 16.0),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  ElevatedButton(
-                    style: ButtonStyle(
-                      backgroundColor: MaterialStateProperty.all<Color>(Colors.black),
-                      shape: MaterialStateProperty.all<OutlinedBorder>(
-                        const StadiumBorder(),
-                      ),
-                    ),
-                    child: Text("Cancel"),
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                    },
-                  ),
-                  SizedBox(width: 8.0),
-                  TextButton(
-                    child: Text("OK",style: TextStyle( color:Colors.black,)),
-                    onPressed: () {
-                      Navigator.pushNamed(
-                          context,
-                          NamedRoutes.authenticationRoute
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
 }
 
 
+void showSignInDialog(BuildContext context) {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        contentPadding: EdgeInsets.all(10.0),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Center(
+              child: Image.asset(
+                  "assets/images/app_logo.png",
+                  height: 60,
+                  width:60
+              ),
+            ),
+            SizedBox(height: 16.0),
+            Align(
+              alignment: Alignment.topLeft,
+              child: Text(
+                "Please Sign In",
+                style: TextStyle(
+                  fontSize: 18.0,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            SizedBox(height: 8.0),
+            Text(
+              "You need to sign in first to see our conditionals",
+              style: TextStyle(fontSize: 16.0),
+            ),
+            SizedBox(height: 16.0),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                ElevatedButton(
+                  style: ButtonStyle(
+                    backgroundColor: MaterialStateProperty.all<Color>(Colors.black),
+                    shape: MaterialStateProperty.all<OutlinedBorder>(
+                      const StadiumBorder(),
+                    ),
+                  ),
+                  child: Text("Cancel"),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+                SizedBox(width: 8.0),
+                TextButton(
+                  child: Text("OK",style: TextStyle( color:Colors.black,)),
+                  onPressed: () {
+                    Navigator.pushNamed(
+                        context,
+                        NamedRoutes.authenticationRoute
+                    );
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}

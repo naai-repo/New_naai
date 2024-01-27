@@ -29,6 +29,7 @@ import 'package:naai/utils/utility_functions.dart';
 import 'package:naai/view/widgets/reusable_widgets.dart';
 import 'package:naai/view_model/post_auth/explore/explore_provider.dart';
 import 'package:naai/view_model/post_auth/salon_details/salon_details_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
@@ -172,6 +173,41 @@ String ?  _addressText;
     notifyListeners();
   }
   /// Method to trigger all the API functions of home screen
+
+  Future<void> filterArtistList(String searchText) async {
+    try {
+      final response = await Dio().get(
+        'http://13.235.49.214:8800/partner/artist?name=$searchText',
+      );
+
+      if (response.statusCode == 200) {
+        print('Response data: ${response.data}');
+
+        // Check if response.data['data'] is a list
+        if (response.data['data'] is List<dynamic>) {
+          List<ArtistData> filteredList = (response.data['data'] as List<dynamic>).map((artistJson) {
+            return ArtistData.fromJson(artistJson as Map<String, dynamic>);
+          }).toList();
+
+          // Update the artist list in your provider
+          artistList2 = filteredList;
+
+          // Notify listeners that the data has changed
+          notifyListeners();
+        } else {
+          // If response.data['data'] is not a list, handle it accordingly
+          print('Unexpected response format. Expected a list.');
+        }
+      } else {
+        // Handle error response
+        print('Failed to fetch artists. Status code: ${response.statusCode}');
+      }
+    } catch (error) {
+      // Handle Dio errors
+      print('Error fetching artists: $error');
+    }
+  }
+
   Future<String> getAddress(double latitude, double longitude) async {
     try {
       List<Placemark> placemarks = await placemarkFromCoordinates(latitude, longitude);
@@ -182,27 +218,62 @@ String ?  _addressText;
       return "Error: $e";
     }
   }
-  Future<void> DiscountFilter(BuildContext context) async {
 
+  Future<void> DiscountFilterforWomen(BuildContext context) async {
     Loader.showLoader(context);
-      try {
-        Position currentLocation = await Geolocator.getCurrentPosition();
-        print(
-            'Current Location: ${currentLocation.longitude}, ${currentLocation
-                .latitude}');
-        userAddress =
-        await getAddress(currentLocation.latitude, currentLocation.longitude);
-        print('Addressssss: $userAddress');
-        await Future.wait([
-            getDistanceAndRating(coords: [currentLocation.longitude, currentLocation.latitude]),
-          //  getArtistRating(coords: [currentLocation.longitude, currentLocation.latitude]),
-        ]);
-      } catch (e) {
-        Loader.hideLoader(context);
-        print("Error getting location: $e");
-      }
-    Loader.hideLoader(context);
+
+    try {
+      Position currentLocation = await Geolocator.getCurrentPosition();
+      print('Current Location: ${currentLocation.longitude}, ${currentLocation.latitude}');
+      userAddress = await getAddress(currentLocation.latitude, currentLocation.longitude);
+
+      await getDistanceAndRatingForWomen(coords: [currentLocation.longitude, currentLocation.latitude]);
+
+    } catch (e) {
+      Loader.hideLoader(context);
+      print("Error getting location: $e");
+
+      await handleFallbackLocationForWomen(context);
     }
+
+    Loader.hideLoader(context);
+  }
+
+  Future<void> handleFallbackLocationForWomen(BuildContext context) async {
+    Loader.showLoader(context);
+    final box = await Hive.openBox('userBox');
+    double savedLatitude = box.get('savedLatitude') ?? 0.0;
+    double savedLongitude = box.get('savedLongitude') ?? 0.0;
+
+    if (savedLatitude != 0.0 && savedLongitude != 0.0) {
+      print('Using saved coordinates: $savedLongitude, $savedLatitude');
+      userAddress = await getAddress(savedLatitude, savedLongitude);
+
+      await getDistanceAndRatingForWomen(coords:[savedLongitude, savedLatitude]);
+      Loader.hideLoader(context);
+    } else {
+      Loader.hideLoader(context);
+      print('No location information available.');
+    }
+  }
+
+  Future<void> handleFallbackLocationForMen(BuildContext context) async {
+    Loader.showLoader(context);
+    final box = await Hive.openBox('userBox');
+    double savedLatitude = box.get('savedLatitude') ?? 0.0;
+    double savedLongitude = box.get('savedLongitude') ?? 0.0;
+
+    if (savedLatitude != 0.0 && savedLongitude != 0.0) {
+      print('Using saved coordinates: $savedLongitude, $savedLatitude');
+      userAddress = await getAddress(savedLatitude, savedLongitude);
+
+      await getDistanceAndRatingForMen(coords:[savedLongitude, savedLatitude]);
+      Loader.hideLoader(context);
+    } else {
+      Loader.hideLoader(context);
+      print('No location information available.');
+    }
+  }
 
   Future<void> DiscountFilterforMen(BuildContext context) async {
 
@@ -217,74 +288,99 @@ String ?  _addressText;
       print('Addressssss: $userAddress');
       await Future.wait([
         getDistanceAndRatingForMen(coords: [currentLocation.longitude, currentLocation.latitude]),
-        //  getArtistRating(coords: [currentLocation.longitude, currentLocation.latitude]),
       ]);
     } catch (e) {
       Loader.hideLoader(context);
       print("Error getting location: $e");
+      await handleFallbackLocationForMen(context);
     }
     Loader.hideLoader(context);
   }
 
+  bool _locationPopupShown = false;
+  bool get isLocationPopupShown => _locationPopupShown;
+
   Future<void> initHome(BuildContext context) async {
     var _serviceEnabled = await _mapLocation.serviceEnabled();
-    await locationPopUp(context);
+
+    if (!_locationPopupShown) {
+      await locationPopUp(context);
+      _locationPopupShown = true;
+    }
+
     if (!_serviceEnabled) {
       _serviceEnabled = await _mapLocation.requestService();
       if (!_serviceEnabled) return;
     }
-    var _permissionGranted = await _mapLocation.hasPermission();
-    if (_permissionGranted == location.PermissionStatus.denied) {
-      Navigator.pushNamed(context, NamedRoutes.setHomeLocationRoute);
-      return; // Stop further execution
-    }
 
-    if (_permissionGranted != location.PermissionStatus.granted) return;
+    var _permissionGranted = await _mapLocation.hasPermission();
+    if (_permissionGranted != location.PermissionStatus.granted) {
+      // Handle the case when user denies location permission
+      print("User denied permissions to access the device's location.");
+      await loadSavedCoordinates(context); // Load and use saved coordinates
+      return;
+    }
 
     Loader.showLoader(context);
     final box = await Hive.openBox('userBox');
     final userId = box.get('userId') ?? '';
-    if (userId.isNotEmpty) {
-      print('Retrieved userId from Hive: $userId');
-      try {
-        Position currentLocation = await Geolocator.getCurrentPosition();
-        print(
-            'Current Location: ${currentLocation.longitude}, ${currentLocation
-                .latitude}');
-        userAddress =
-        await getAddress(currentLocation.latitude, currentLocation.longitude);
-        print('Addressssss: $userAddress');
+
+    try {
+      Position currentLocation = await Geolocator.getCurrentPosition();
+
+      if (currentLocation != null) {
+        // Use current location if available
+        print('Current Location: ${currentLocation.longitude}, ${currentLocation.latitude}');
+        userAddress = await getAddress(currentLocation.latitude, currentLocation.longitude);
         await updateUserLocation(
           userId: userId,
           coords: [currentLocation.longitude, currentLocation.latitude],
         );
-
-        // Run top salon and top artist requests concurrently
-        await Future.wait([
-          getTopSalons(
-              coords: [currentLocation.longitude, currentLocation.latitude]),
-          getTopArtists(
-              coords: [currentLocation.longitude, currentLocation.latitude]),
-          getAppointments(),
-          //  getDistanceAndRating(coords: [currentLocation.longitude, currentLocation.latitude]),
-          //  getArtistRating(coords: [currentLocation.longitude, currentLocation.latitude]),
-        ]);
-      } catch (e) {
-        Loader.hideLoader(context);
-        print("Error getting location: $e");
+      } else {
+        // Use saved coordinates if current location is not available
+        await loadSavedCoordinates(context); // Load and use saved coordinates
       }
+
+      await Future.wait([
+        getTopSalons(coords: [currentLocation.longitude, currentLocation.latitude]),
+        getTopArtists(coords: [currentLocation.longitude, currentLocation.latitude]),
+        getAppointments(),
+        // Additional asynchronous tasks based on location
+      ]);
+
+    } catch (e) {
+      Loader.hideLoader(context);
+      print("Error getting location: $e");
     }
+
     Loader.hideLoader(context);
   }
-  Future<void> retrieveUserData() async {
+
+  Future<void> loadSavedCoordinates(BuildContext context) async {
     final box = await Hive.openBox('userBox');
     final userId = box.get('userId') ?? '';
-    final latitude = box.get('latitude') ?? 0.0;
-    final longitude = box.get('longitude') ?? 0.0;
+    double savedLatitude = box.get('savedLatitude') ?? 0.0;
+    double savedLongitude = box.get('savedLongitude') ?? 0.0;
 
-    print('Retrieved userId: $userId');
-    print('Retrieved Location: $latitude, $longitude');
+    if (savedLatitude != 0.0 && savedLongitude != 0.0) {
+      print('Using saved coordinates: $savedLongitude, $savedLatitude');
+      userAddress = await getAddress(savedLatitude, savedLongitude);
+      await updateUserLocation(
+        userId: userId,
+        coords: [savedLongitude, savedLatitude],
+      );
+      await Future.wait([
+        getTopSalons(coords: [savedLongitude, savedLatitude]),
+        getTopArtists(coords: [savedLongitude, savedLatitude]),
+        getAppointments(),
+        // Additional asynchronous tasks based on location
+      ]);
+    } else {
+      // Handle the case when both current location and saved coordinates are not available
+      print('No location information available.');
+    }
   }
+
 
   Future<void> updateUserLocation({
     required String userId,
@@ -381,8 +477,8 @@ String ?  _addressText;
     }
   }
 
-  Future<void> getDistanceAndRating({required List<double> coords}) async {
-    final apiUrl = UrlConstants.discountAndRating;
+  Future<void> getDistanceAndRatingForWomen({required List<double> coords}) async {
+    final apiUrl = UrlConstants.discountAndRatingForWomen;
 
     final Map<String, dynamic> requestData = {
       "location": {"type": "Point", "coordinates": coords},
@@ -399,7 +495,7 @@ String ?  _addressText;
 
       if (response.statusCode == 200) {
         salonList2 = SalonApiResponse.fromJson(response.data).data;
-        print("Top Artists: ${response.data}");
+        print("Top salon discount: ${response.data}");
       } else {
         // Handle error response for top artists
         print("Failed to fetch top artists");
@@ -475,7 +571,7 @@ String ?  _addressText;
   Future locationPopUp(BuildContext context) async {
     var _permissionGranted = await _mapLocation.hasPermission();
     if (_permissionGranted == location.PermissionStatus.denied) {
-      await showModalBottomSheet(
+      await showModalBottomSheet(isScrollControlled: true,
         isDismissible: false,
         backgroundColor: Colors.white,
         shape: const RoundedRectangleBorder(
@@ -503,40 +599,187 @@ String ?  _addressText;
                   ),
                   const SizedBox(height: 8.0),
                   const Align(
-                    alignment: Alignment.topLeft,
-                    child: Text(
-                      "To provide you with a personalized experience and show you the best salons nearby,"
-                          "Allow us to access your location to find nearby salons and offer personalized recommendations just for you.",
-                      style: TextStyle(fontSize: 16.0),
+                    alignment: Alignment.center,
+                    child: Center(
+                      child: Text(
+                        "Set your location to Start \n exploring\n salons near you",
+                        style: TextStyle(fontSize: 16.0),
+                        textAlign: TextAlign.center,
+                      ),
                     ),
                   ),
+                  Image.asset('assets/images/loc_image.png'),
                   const SizedBox(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      Expanded(
-                        child: ElevatedButton(
-                          child: const Text(
-                            "Continue",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
+                  Column(
+                    children:[
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Expanded(
+                          child: ElevatedButton(
+                            child: const Text(
+                              "Enable Device Location",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: ColorsConstant.appColor,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: ColorsConstant.appColor,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              side:BorderSide(color: ColorsConstant.appColor),
                             ),
-                          ),
-                          onPressed: () async {
-                            await Geolocator.requestPermission();
-                          //  _mapLocation.requestService();
-                       //    await _mapLocation.requestPermission();
-                              Navigator.pop(context);
+                            onPressed: () async {
+                              await Geolocator.requestPermission();
+                            //  _mapLocation.requestService();
+                         //    await _mapLocation.requestPermission();
+                                Navigator.pop(context);
 
-                          },
+                            },
+                          ),
                         ),
+                      ],
+                    ),
+                      const SizedBox(height: 20),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Expanded(
+                            child: ElevatedButton(
+                              child: const Text(
+                                "Enter your Location Manually",
+                                style: TextStyle(
+                                  color: ColorsConstant.appColor,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
+                              onPressed: () async {
+                                 Navigator.pop(context);
+                                 Navigator.pushNamed(context, NamedRoutes.setHomeLocationRoute);
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                  ],
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      );
+    }
+  }
+
+  Future locationPopUp2(BuildContext context) async {
+    var _permissionGranted = await _mapLocation.hasPermission();
+    if (_permissionGranted == location.PermissionStatus.denied) {
+      await showModalBottomSheet(
+        isScrollControlled: true,
+        isDismissible: false,
+        backgroundColor: Colors.white,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(35),
+            topRight: Radius.circular(35),
+          ),
+        ),
+        context: context,
+        builder: (BuildContext context) {
+          return Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Container(
+              color: Colors.white,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Center(
+                    child: Image.asset(
+                      "assets/images/app_logo.png",
+                      height: 80,
+                      width: 80,
+                    ),
+                  ),
+                  const SizedBox(height: 8.0),
+                  const Align(
+                    alignment: Alignment.center,
+                    child: Center(
+                      child: Text(
+                        "Set your location to Start \n exploring\n salons near you",
+                        style: TextStyle(fontSize: 16.0),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+                  Image.asset('assets/images/loc_image.png'),
+                  const SizedBox(height: 20),
+                  Column(
+                    children:[
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Expanded(
+                            child: ElevatedButton(
+                              child: const Text(
+                                "Enable Device Location",
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: ColorsConstant.appColor,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
+                              onPressed: () async {
+                                await Geolocator.requestPermission();
+                                //  _mapLocation.requestService();
+                                //    await _mapLocation.requestPermission();
+                                Navigator.pop(context);
+
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Expanded(
+                            child: ElevatedButton(
+                              child: const Text(
+                                "Enter your Location Manually",
+                                style: TextStyle(
+                                  color: ColorsConstant.appColor,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
+                              onPressed: () async {
+                                Navigator.pop(context);
+                                Navigator.pushNamed(context, NamedRoutes.setHomeLocationRoute2);
+                              },
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -548,6 +791,7 @@ String ?  _addressText;
       );
     }
   }
+
 
   Future<void> getAppointments() async {
     final String apiUrl = 'http://13.235.49.214:8800/appointments/user/bookings';
@@ -595,50 +839,59 @@ String ?  _addressText;
 
   Future<void> initHome2(BuildContext context) async {
     var _serviceEnabled = await _mapLocation.serviceEnabled();
-    await locationPopUp(context);
+
+    if (!_locationPopupShown) {
+      await locationPopUp2(context);
+      _locationPopupShown = true;
+    }
+
     if (!_serviceEnabled) {
       _serviceEnabled = await _mapLocation.requestService();
       if (!_serviceEnabled) return;
     }
+
     var _permissionGranted = await _mapLocation.hasPermission();
-    if (_permissionGranted == location.PermissionStatus.denied) {
-      Navigator.pushNamed(context, NamedRoutes.setHomeLocationRoute2);
+    if (_permissionGranted != location.PermissionStatus.granted) {
+      // Handle the case when user denies location permission
+      print("User denied permissions to access the device's location.");
+      await loadSavedCoordinates(context); // Load and use saved coordinates
       return;
     }
 
-    if (_permissionGranted != location.PermissionStatus.granted) return;
-
     Loader.showLoader(context);
+    final box = await Hive.openBox('userBox');
+    final userId = box.get('userId') ?? '';
 
-        try {
-          Position currentLocation = await Geolocator.getCurrentPosition();
-          print(
-              'Current Location: ${currentLocation.longitude}, ${currentLocation
-                  .latitude}');
+    try {
+      Position currentLocation = await Geolocator.getCurrentPosition();
 
-          userAddress =
-          await getAddress(currentLocation.latitude, currentLocation.longitude);
-          print('Addressssss: $userAddress');
-          await updateUserLocation(
-            userId: '659e565fedf72717a11caf27',
-            coords: [currentLocation.longitude, currentLocation.latitude],
-          );
+      if (currentLocation != null) {
+        // Use current location if available
+        print('Current Location: ${currentLocation.longitude}, ${currentLocation.latitude}');
+        userAddress = await getAddress(currentLocation.latitude, currentLocation.longitude);
+        await updateUserLocation(
+          userId: userId,
+          coords: [currentLocation.longitude, currentLocation.latitude],
+        );
+      } else {
+        // Use saved coordinates if current location is not available
+        await loadSavedCoordinates(context); // Load and use saved coordinates
+      }
 
-          // Run top salon and top artist requests concurrently
-          await Future.wait([
-            getTopSalons(
-                coords: [currentLocation.longitude, currentLocation.latitude]),
-            getTopArtists(
-                coords: [currentLocation.longitude, currentLocation.latitude]),
-            //  getDistanceAndRating(coords: [currentLocation.longitude, currentLocation.latitude]),
-            //  getArtistRating(coords: [currentLocation.longitude, currentLocation.latitude]),
-          ]);
-        } catch (e) {
-          Loader.hideLoader(context);
-          print("Error getting location: $e");
-        }
-    Loader.hideLoader(context);
+      await Future.wait([
+        getTopSalons(coords: [currentLocation.longitude, currentLocation.latitude]),
+        getTopArtists(coords: [currentLocation.longitude, currentLocation.latitude]),
+        getAppointments(),
+        // Additional asynchronous tasks based on location
+      ]);
+
+    } catch (e) {
+      Loader.hideLoader(context);
+      print("Error getting location: $e");
     }
+
+    Loader.hideLoader(context);
+  }
 
 
   /// Fetch the user details from [FirebaseFirestore]
@@ -784,10 +1037,6 @@ String ?  _addressText;
     */
     var _permissionGranted = await _mapLocation.hasPermission();
     if (_permissionGranted == location.PermissionStatus.denied) {
-      ReusableWidgets.showFlutterToast(
-        context,
-        'Location permission is required to proceed to find nearby salons and offer personalized recommendations just for you.😊',
-      );
       LatLng dummyLocation = LatLng(28.7383,77.0822); // Set your desired dummy location
       await mapController.animateCamera(
         CameraUpdate.newCameraPosition(
@@ -832,10 +1081,6 @@ String ?  _addressText;
 
     var _permissionGranted = await _mapLocation.hasPermission();
     if (_permissionGranted == location.PermissionStatus.denied) {
-      ReusableWidgets.showFlutterToast(
-        context,
-        'Location permission is required to proceed to find nearby salons and offer personalized recommendations just for you.😊2',
-      );
       LatLng dummyLocation = LatLng(28.7383,77.0822); // Set your desired dummy location
       await mapController.animateCamera(
         CameraUpdate.newCameraPosition(
@@ -1160,7 +1405,9 @@ String ?  _addressText;
     }
     var _permissionGranted = await _mapLocation.hasPermission();
     if (_permissionGranted == location.PermissionStatus.denied) {
-      _permissionGranted = await _mapLocation.requestPermission();
+      await openAppSettings();
+      throw Exception('Location permission denied');
+
     }
 
     var _locationData = await _mapLocation.getLocation();

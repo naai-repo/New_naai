@@ -18,6 +18,7 @@ class RatingBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final formattedRating = double.parse(rating.toStringAsFixed(1));
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: 3.w,
@@ -31,7 +32,7 @@ class RatingBox extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: <Widget>[
           Text(
-            '$rating',
+            '$formattedRating',
             style: TextStyle(
               fontSize: fontSize ?? 11.5.sp,
               fontWeight: fontWeight ?? FontWeight.w600,

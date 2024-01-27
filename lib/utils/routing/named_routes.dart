@@ -14,6 +14,7 @@ class NamedRoutes {
 
   static const String exploreRoute = '/explore';
   static const String exploreRoute2 = '/explore2';
+  static const String exploreRoute3 = '/explore3';
 
   static const String exploreStylistRoute = '/explore-stylist';
   static const String exploreStylistRoute2 = '/explore-stylist2';

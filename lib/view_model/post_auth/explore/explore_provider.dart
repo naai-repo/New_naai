@@ -113,8 +113,9 @@ class ExploreProvider with ChangeNotifier {
     }
     var _permissionGranted = await _mapLocation.hasPermission();
     if (_permissionGranted == location.PermissionStatus.denied) {
-      initHome3(context);
-      return; // Stop further execution
+      print("User denied permissions to access the device's location.");
+      await loadSavedCoordinates(context);
+      return;
     }
 
     if (_permissionGranted != location.PermissionStatus.granted) return;
@@ -127,52 +128,86 @@ class ExploreProvider with ChangeNotifier {
       print('Retrieved userId from Hive: $userId');
       try {
         Position currentLocation = await Geolocator.getCurrentPosition();
-        print('Current Location: ${currentLocation.longitude}, ${currentLocation.latitude}');
 
-        // Update user location
-        await updateUserLocation(
-          userId: userId,
-          coords: [currentLocation.longitude, currentLocation.latitude],
-        );
+        if (currentLocation != null) {
+          // Use current location if available
+          print('Current Location: ${currentLocation.longitude}, ${currentLocation.latitude}');
+          userAddress = await getAddress(currentLocation.latitude, currentLocation.longitude);
+          await updateUserLocation(
+            userId: userId,
+            coords: [currentLocation.longitude, currentLocation.latitude],
+          );
+        } else {
+          // Use saved coordinates if current location is not available
+          await loadSavedCoordinates(context); // Load and use saved coordinates
+        }
 
-        // Run top salon and top artist requests concurrently
         await Future.wait([
           getTopSalons(coords: [currentLocation.longitude, currentLocation.latitude]),
           getTopArtists(coords: [currentLocation.longitude, currentLocation.latitude]),
-       //   getDistanceAndRating(coords: [currentLocation.longitude, currentLocation.latitude]),
-       //   getArtistRating(coords: [currentLocation.longitude, currentLocation.latitude]),
-        ]);
+         ]);
 
       } catch (e) {
         print("Error getting location: $e");
       }
     }
-
     Loader.hideLoader(context);
   }
-  Future<void> initHome3(BuildContext context) async {
 
-    print('Addressssss: $userAddress');
-    await updateUserLocation(
-      userId: '659e565fedf72717a11caf27',
-      coords: [77.1025, 28.7041],
-    );
-    await Future.wait([
-      getTopSalons(
-          coords: [77.1025, 28.7041]),
-      getTopArtists(
-          coords: [77.1025, 28.7041]),
-    ]);
+  Future<void> loadSavedCoordinates(BuildContext context) async {
+    final box = await Hive.openBox('userBox');
+    final userId = box.get('userId') ?? '';
+    double savedLatitude = box.get('savedLatitude') ?? 0.0;
+    double savedLongitude = box.get('savedLongitude') ?? 0.0;
+
+    if (savedLatitude != 0.0 && savedLongitude != 0.0) {
+      print('Using saved coordinates: $savedLongitude, $savedLatitude');
+      userAddress = await getAddress(savedLatitude, savedLongitude);
+      await updateUserLocation(
+        userId: userId,
+        coords: [savedLongitude, savedLatitude],
+      );
+      await Future.wait([
+        getTopSalons(coords: [savedLongitude, savedLatitude]),
+        getTopArtists(coords: [savedLongitude, savedLatitude]),
+      ]);
+    } else {
+      // Handle the case when both current location and saved coordinates are not available
+      print('No location information available.');
+    }
   }
+
+  Future<void> loadSavedCoordinatesForFilter(BuildContext context) async {
+    final box = await Hive.openBox('userBox');
+    final userId = box.get('userId') ?? '';
+    double savedLatitude = box.get('savedLatitude') ?? 0.0;
+    double savedLongitude = box.get('savedLongitude') ?? 0.0;
+
+    if (savedLatitude != 0.0 && savedLongitude != 0.0) {
+      print('Using saved coordinates: $savedLongitude, $savedLatitude');
+      userAddress = await getAddress(savedLatitude, savedLongitude);
+      await updateUserLocation(
+        userId: userId,
+        coords: [savedLongitude, savedLatitude],
+      );
+      await Future.wait([
+        getDistanceAndRating(coords: [savedLongitude, savedLatitude]),
+        getArtistRating(coords: [savedLongitude, savedLatitude]),
+      ]);
+    } else {
+      // Handle the case when both current location and saved coordinates are not available
+      print('No location information available.');
+    }
+  }
+
+
   Future<void> OnlyArtist(BuildContext context) async {
 
     Loader.showLoader(context);
-    final loginResult = Provider.of<LoginResultProvider>(context, listen: false).loginResult;
-
-    if (loginResult != null && loginResult['status'] == 'success') {
-      final userId = loginResult['userId'];
-      print('userId: $userId');
-
+    final box = await Hive.openBox('userBox');
+    final userId = box.get('userId') ?? '';
+    if (userId.isNotEmpty) {
+      print('Retrieved userId from Hive: $userId');
       try {
         Position currentLocation = await Geolocator.getCurrentPosition();
         print('Current Location: ${currentLocation.longitude}, ${currentLocation.latitude}');
@@ -196,52 +231,6 @@ class ExploreProvider with ChangeNotifier {
 
     Loader.hideLoader(context);
   }
-  Future<void> initHome2(BuildContext context) async {
-
-    var _serviceEnabled = await _mapLocation.serviceEnabled();
-    if (!_serviceEnabled) {
-      _serviceEnabled = await _mapLocation.requestService();
-      if (!_serviceEnabled) return;
-    }
-    var _permissionGranted = await _mapLocation.hasPermission();
-    if (_permissionGranted == location.PermissionStatus.denied) {
-      initHome3(context);
-      return; // Stop further execution
-    }
-
-    if (_permissionGranted != location.PermissionStatus.granted) return;
-
-    Loader.showLoader(context);
-
-    try {
-      Position currentLocation = await Geolocator.getCurrentPosition();
-      print(
-          'Current Location: ${currentLocation.longitude}, ${currentLocation
-              .latitude}');
-
-      userAddress =
-      await getAddress(currentLocation.latitude, currentLocation.longitude);
-      print('Addressssss: $userAddress');
-      await updateUserLocation(
-        userId: '659e565fedf72717a11caf27',
-        coords: [currentLocation.longitude, currentLocation.latitude],
-      );
-
-      // Run top salon and top artist requests concurrently
-      await Future.wait([
-        getTopSalons(
-            coords: [currentLocation.longitude, currentLocation.latitude]),
-        getTopArtists(
-            coords: [currentLocation.longitude, currentLocation.latitude]),
-        //  getDistanceAndRating(coords: [currentLocation.longitude, currentLocation.latitude]),
-        //  getArtistRating(coords: [currentLocation.longitude, currentLocation.latitude]),
-      ]);
-    } catch (e) {
-      Loader.hideLoader(context);
-      print("Error getting location: $e");
-    }
-    Loader.hideLoader(context);
-  }
 
   Future<void> Filter(BuildContext context) async {
 
@@ -252,22 +241,25 @@ class ExploreProvider with ChangeNotifier {
       print('Retrieved userId from Hive: $userId');
       try {
         Position currentLocation = await Geolocator.getCurrentPosition();
-        print('Current Location: ${currentLocation.longitude}, ${currentLocation.latitude}');
-        // Update user location
-        await updateUserLocation(
-          userId: userId,
-          coords: [currentLocation.longitude, currentLocation.latitude],
-        );
-
-        // Run top salon and top artist requests concurrently
+        if (currentLocation != null) {
+          print(
+              'Current Location: ${currentLocation.longitude}, ${currentLocation
+                  .latitude}');
+          // Update user location
+          await updateUserLocation(
+            userId: userId,
+            coords: [currentLocation.longitude, currentLocation.latitude],
+          );
+        }else{
+          await loadSavedCoordinatesForFilter(context);
+        }
         await Future.wait([
-       //   getTopSalons(coords: [currentLocation.longitude, currentLocation.latitude]),
-        //  getTopArtists(coords: [currentLocation.longitude, currentLocation.latitude]),
             getDistanceAndRating(coords: [currentLocation.longitude, currentLocation.latitude]),
              getArtistRating(coords: [currentLocation.longitude, currentLocation.latitude]),
         ]);
 
       } catch (e) {
+
         print("Error getting location: $e");
       }
     }
@@ -373,7 +365,7 @@ class ExploreProvider with ChangeNotifier {
   }
 
   Future<void> getDistanceAndRating({required List<double> coords}) async {
-    final apiUrl = UrlConstants.discountAndRating;
+    final apiUrl = UrlConstants.discountAndRatingForWomen;
 
     final Map<String, dynamic> requestData = {
       "location": {"type": "Point", "coordinates": coords},

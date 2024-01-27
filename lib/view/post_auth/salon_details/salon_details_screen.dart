@@ -679,7 +679,7 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
                             SalonDetailsProvider salonDetailsProvider = context.read<SalonDetailsProvider>();
                             String artistId = artist.id;
                             String salonId = artist.salonId;
-                           List<ArtistService> services = artist.services;
+                           List<ArtistService2> services = artist.services;
                             BarberProvider barberDetailsProvider = context.read<BarberProvider>();
 
                             try {
@@ -1786,8 +1786,8 @@ class _SalonDetailsScreen2State extends State<SalonDetailsScreen2> {
   }
 
   Widget availableStaffList() {
-    return Consumer<SalonDetailsProvider>(
-      builder: (context, provider, child) {
+    return Consumer2<SalonDetailsProvider, HomeProvider>(
+      builder: (context, provider,homeprovider, child) {
         return Padding(
           padding: EdgeInsets.only(top: 2.h),
           child: Column(
@@ -1814,39 +1814,80 @@ class _SalonDetailsScreen2State extends State<SalonDetailsScreen2> {
                         borderRadius: BorderRadius.circular(1.5.h),
                         child: GestureDetector(
                           onTap: () async {
+                            SalonDetailsProvider salonDetailsProvider = context.read<SalonDetailsProvider>();
                             String artistId = artist.id;
+                            String salonId = artist.salonId;
+                            List<ArtistService2> services = artist.services;
                             BarberProvider barberDetailsProvider = context.read<BarberProvider>();
 
                             try {
                               Loader.showLoader(context);
-                              final response = await Dio().get(
-                                'http://13.235.49.214:8800/partner/artist/single/$artistId',
-                              );
+
+                              // Prepare a list of Futures for all API calls
+                              List<Future<Response<dynamic>>> apiCalls = [
+                                Dio().get('http://13.235.49.214:8800/partner/artist/single/$artistId'),
+                                Dio().get('http://13.235.49.214:8800/partner/salon/single/$salonId'),
+                                // You may want to modify this part based on how you want to handle multiple services
+                                if (services.isNotEmpty) ...services.map((service) =>
+                                    Dio().get('http://13.235.49.214:8800/partner/service/single/${service.serviceId}'))
+                              ];
+
+                              // Use Future.wait to run multiple async operations concurrently
+                              List<Response<dynamic>> responses = await Future.wait(apiCalls);
+
                               Loader.hideLoader(context);
 
-                              if (response.data != null && response.data is Map<String, dynamic>) {
-                                ArtistResponse apiResponse = ArtistResponse.fromJson(response.data);
-
-                                if (apiResponse != null && apiResponse.data != null) {
-                                  // Save the artist details in the provider
-                                  barberDetailsProvider.setArtistDetails(apiResponse.data);
-
-                                  // If the API call is successful, navigate to the BarberProfileRoute
-                                  Navigator.pushNamed(context, NamedRoutes.barberProfileRoute2, arguments: artistId);
+                              // Check the responses for each API call
+                              for (var response in responses) {
+                                if (response.data != null && response.data is Map<String, dynamic>) {
+                                  if (response.requestOptions.uri.pathSegments.contains('artist')) {
+                                    // Process artist API response
+                                    ArtistResponse apiResponse = ArtistResponse.fromJson(response.data);
+                                    if (apiResponse != null && apiResponse.data != null) {
+                                      barberDetailsProvider.setArtistDetails(apiResponse.data);
+                                    } else {
+                                      print('Failed to fetch artist details: Invalid response format');
+                                    }
+                                  } else if (response.requestOptions.uri.pathSegments.contains('salon')) {
+                                    // Process salon API response
+                                    ApiResponse apiResponse = ApiResponse.fromJson(response.data);
+                                    ApiResponse salonDetails = ApiResponse(
+                                      status: apiResponse.status,
+                                      message: apiResponse.message,
+                                      data: ApiResponseData(
+                                        data: apiResponse.data.data,
+                                        artists: apiResponse.data.artists,
+                                        services: apiResponse.data.services,
+                                      ),
+                                    );
+                                    salonDetailsProvider.setSalonDetails(salonDetails);
+                                    barberDetailsProvider.setSalonDetails(salonDetails);
+                                  } else if (response.requestOptions.uri.pathSegments.contains('service')) {
+                                    ServiceResponse serviceResponse = ServiceResponse.fromJson(response.data);
+                                    ServiceResponse serviceresponse = ServiceResponse(
+                                        status: serviceResponse.status,
+                                        message: serviceResponse.message,
+                                        data:    serviceResponse.data);
+                                    salonDetailsProvider.setServiceDetails(serviceresponse);
+                                    if (serviceResponse != null && serviceResponse.data != null) {
+                                      // Handle service response
+                                    } else {
+                                      print('Failed to fetch service details: Invalid response format');
+                                    }
+                                  }
                                 } else {
-                                  // Handle the case where the response or data is null
-                                  print('Failed to fetch artist details: Invalid response format');
+                                  print('Failed to fetch details: Invalid response format');
                                 }
-                              } else {
-                                // Handle the case where the response is null or not of the expected type
-                                print('Failed to fetch artist details: Invalid response format');
                               }
+
+                              // If the API calls are successful, navigate to the next screen
+                              Navigator.pushNamed(context, NamedRoutes.barberProfileRoute, arguments: artistId);
                             } catch (error) {
                               Loader.hideLoader(context);
                               // Handle the case where the API call was not successful
                               // You can show an error message or take appropriate action
-                              Navigator.pushNamed(context, NamedRoutes.bottomNavigationRoute2);
-                              print('Failed to fetch artist details: $error');
+                              Navigator.pushNamed(context, NamedRoutes.bottomNavigationRoute);
+                              print('Failed to fetch details: $error');
                             }
                           },
                           child: Container(

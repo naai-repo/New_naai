@@ -64,7 +64,7 @@ class Artist2 {
   String name;
   double rating;
   String salonId;
-  List<ArtistService> services;
+  List<ArtistService2> services;
   int phoneNumber;
   bool availability;
   bool live;
@@ -109,7 +109,7 @@ class Artist2 {
     name: json["name"] ?? '',
     rating: (json["rating"] ?? 0).toDouble(),
     salonId: json["salonId"] ?? '',
-    services: List<ArtistService>.from(json["services"]?.map((x) => ArtistService.fromJson(x)) ?? []),
+    services: List<ArtistService2>.from(json["services"]?.map((x) => ArtistService2.fromJson(x)) ?? []),
     phoneNumber: json["phoneNumber"] ?? 0,
     availability: json["availability"] ?? false,
     live: json["live"] ?? false,
@@ -186,18 +186,18 @@ class Location {
 
 
 
-class ArtistService {
+class ArtistService2 {
   String serviceId;
   int price;
   String id;
 
-  ArtistService({
+  ArtistService2({
     required this.serviceId,
     required this.price,
     required this.id,
   });
 
-  factory ArtistService.fromJson(Map<String, dynamic> json) => ArtistService(
+  factory ArtistService2.fromJson(Map<String, dynamic> json) => ArtistService2(
     serviceId: json["serviceId"]?? '',
     price: json["price"],
     id: json["_id"]?? '',

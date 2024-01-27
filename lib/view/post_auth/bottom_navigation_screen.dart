@@ -278,7 +278,7 @@ class BottomNavigationScreen3 extends StatefulWidget {
 class _BottomNavigationScreen3State extends State<BottomNavigationScreen3>
     with WidgetsBindingObserver {
   late List<Widget> _screens = [
-    HomeScreen4(),
+    HomeScreen(),
     ExploreScreen(),
     MapScreen(),
     ProfileScreen(),
@@ -405,7 +405,7 @@ class BottomNavigationScreen4 extends StatefulWidget {
 class _BottomNavigationScreen4State extends State<BottomNavigationScreen4>
     with WidgetsBindingObserver {
   late List<Widget> _screens = [
-    HomeScreen3(),
+    HomeScreen2(),
     ExploreScreen2(),
     MapScreen(),
     ProfileScreen2(),

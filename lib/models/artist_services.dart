@@ -51,18 +51,28 @@ class ArtistServiceList {
   List<String> services;
   ArtistService? selectedArtist; // Add this property
 
+  Map<String, ArtistService?> selectedArtistMap;
+
 
   ArtistServiceList({
     required this.artistsProvidingServices,
     required this.services,
+
+    required this.selectedArtistMap,
   });
 
   factory ArtistServiceList.fromJson(Map<String, dynamic> json) {
+
+    final selectedArtistMap = <String, ArtistService?>{};
+    for (var serviceId in json['services']) {
+      selectedArtistMap[serviceId] = null;
+    }
     return ArtistServiceList(
       artistsProvidingServices: (json['artistsProvidingServices'] as List<dynamic>)
           .map((artist) => ArtistService.fromJson(artist))
           .toList(),
       services: (json['services'] as List<dynamic>).map((service) => service.toString()).toList(),
+      selectedArtistMap: selectedArtistMap,
     );
   }
 

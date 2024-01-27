@@ -177,6 +177,7 @@ class SalonDetailsProvider with ChangeNotifier {
 
   ArtistServiceList? artistServiceList;
 
+  ArtistServiceList? artistServiceList2;
 
   Future<void> fetchArtistListAndNavigate(context, String salonId, List<String> selectedServiceIds) async {
     try {
@@ -215,6 +216,32 @@ class SalonDetailsProvider with ChangeNotifier {
           );
         }
       } else {
+        // Handle other status codes
+        print('Failed to fetch artist list: ${response.statusCode}');
+      }
+    } catch (error) {
+      Loader.hideLoader(context);
+      // Handle errors
+      print('Failed to fetch artist list: $error');
+    }
+  }
+
+  Future<void> fetchArtist(context, String salonId, List<String> selectedServiceIds) async {
+    try {
+      Loader.showLoader(context);
+      final response = await Dio().post(
+        'http://13.235.49.214:8800/appointments/singleArtist/list',
+        data: {
+          "salonId": salonId,
+          "services": selectedServiceIds,
+        },
+      );
+      Loader.hideLoader(context);
+
+      if (response.statusCode == 200) {
+        artistServiceList = ArtistServiceList.fromJson(response.data);
+        }
+       else {
         // Handle other status codes
         print('Failed to fetch artist list: ${response.statusCode}');
       }
@@ -320,6 +347,10 @@ class SalonDetailsProvider with ChangeNotifier {
 
   Set<Service2> barbergetSelectedServices() => _barberselectedServices;
 
+  List<Object> allSelectedServices = [];
+
+
+
   void toggleSelectedService(DataService service) {
     if (_selectedServices.contains(service)) {
       _selectedServices.remove(service);
@@ -339,7 +370,7 @@ class SalonDetailsProvider with ChangeNotifier {
     } else {
       _barberselectedServices.add(service);
     }
-    _totalPrice = calculateTotalPrice();
+    _totalPrice = calculateTotalbarberPrice();
     // Recalculate show price if a discount is applied
     setShowPrice(_totalPrice, _salonDetails?.data.data.discount ?? 0);
 
@@ -369,6 +400,12 @@ class SalonDetailsProvider with ChangeNotifier {
   double calculateTotalPrice() {
     // Calculate total price by summing up the base prices of selected services
     return _selectedServices.fold(0.0, (sum, service) => sum + service.basePrice);
+  }
+
+
+  double calculateTotalbarberPrice() {
+    // Calculate total price by summing up the base prices of selected services
+    return _barberselectedServices.fold(0.0, (sum, service) => sum + service.price);
   }
   /// Get details related to a given service.
   dynamic getServiceDetails({
@@ -669,7 +706,8 @@ class SalonDetailsProvider with ChangeNotifier {
       _isOnSelectStaffType = false;
       _isOnSelectSlot = false;
       _isOnPaymentPage = true;
-    } else if (selectStaffFinished && artistServiceList!.selectedArtist != null) {
+    } else if (selectStaffFinished && artistServiceList!.selectedArtist != null || getSelectedServices().every((service) =>
+    artistServiceList!.selectedArtistMap[service.id]?.artist != null)) {
       _isOnSelectStaffType = false;
       _isOnSelectSlot = true;
       _isOnPaymentPage = false;
@@ -986,8 +1024,9 @@ class SalonDetailsProvider with ChangeNotifier {
   }
   void resetCurrentBooking2() {
     _selectedServices.clear(); // Clear selected services
-    _totalPrice = 0; // Reset total price
-    _showPrice = 0; // Reset show price
+    _barberselectedServices.clear();
+  //  _totalPrice = 0; // Reset total price
+  //  _showPrice = 0; // Reset show price
 _selectedDate = null;
 _selectedTime = null;
 
