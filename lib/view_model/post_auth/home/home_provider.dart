@@ -1419,6 +1419,7 @@ String ?  _addressText;
 
 
 
+
   /// Animate the map to given [latLng]
   Future<void> animateToPosition(LatLng latLng) async {
     await _controller.animateCamera(
