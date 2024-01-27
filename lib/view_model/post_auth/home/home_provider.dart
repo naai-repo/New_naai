@@ -1410,6 +1410,7 @@ String ?  _addressText;
 
     }
 
+
     var _locationData = await _mapLocation.getLocation();
 
     return LatLng(_locationData.latitude!, _locationData.longitude!);
