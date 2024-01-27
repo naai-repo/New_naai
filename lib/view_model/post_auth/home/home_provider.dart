@@ -1416,6 +1416,9 @@ String ?  _addressText;
     return LatLng(_locationData.latitude!, _locationData.longitude!);
   }
 
+
+
+
   /// Animate the map to given [latLng]
   Future<void> animateToPosition(LatLng latLng) async {
     await _controller.animateCamera(
