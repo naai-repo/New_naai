@@ -139,7 +139,7 @@ class RoutingFunctions {
   static Route createRoute(Widget widget) {
     return PageRouteBuilder(
       pageBuilder: (context, animation, secondaryAnimation) => widget,
-      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      transitionsBuilder: (context, animation, secondaryAnimation, child){
         var begin = Offset(0, 0);
         var end = Offset.zero;
         var curve = Curves.ease;

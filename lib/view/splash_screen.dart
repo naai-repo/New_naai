@@ -27,20 +27,14 @@ class _SplashScreenState extends State<SplashScreen> {
     super.initState();
     checkIfUserExists();
   }
-
+  
   void checkIfUserExists() {
     Timer(const Duration(seconds: 2), () async {
       String? accessToken = await AccessTokenManager.getAccessToken();
       if (accessToken != null && accessToken.isNotEmpty) {
-        Navigator.pushReplacementNamed(
-          context,
-          NamedRoutes.bottomNavigationRoute,
-        );
+        Navigator.pushReplacementNamed(context,NamedRoutes.bottomNavigationRoute);
       } else {
-        Navigator.pushReplacementNamed(
-          context,
-          NamedRoutes.authenticationRoute,
-        );
+        Navigator.pushReplacementNamed(context,NamedRoutes.authenticationRoute);
       }
     });
   }

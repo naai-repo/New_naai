@@ -53,6 +53,7 @@ class DatabaseService {
 
   /// Check if a document field with this userId exists or not.
   /// Returns [true] if the document field exists, otherwise returns [false]
+  
   Future createNewField({required String uid, required String field, required String defaultValue}) async{
     DocumentReference docRef  = await userCollection.doc(uid);
     DocumentSnapshot snapshot = await docRef.get();

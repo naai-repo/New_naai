@@ -22,10 +22,10 @@ class BottomNavigationScreen extends StatefulWidget {
 
 class _BottomNavigationScreenState extends State<BottomNavigationScreen>
     with WidgetsBindingObserver {
-  late List<Widget> _screens = [
-    HomeScreen(),
-    ExploreScreen(),
-    MapScreen(),
+  final List<Widget> _screens = [
+    const HomeScreen(),
+    const ExploreScreen(),
+    const MapScreen(),
     ProfileScreen(),
   ];
 
