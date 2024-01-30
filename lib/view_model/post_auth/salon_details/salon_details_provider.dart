@@ -22,6 +22,7 @@ import 'package:naai/view_model/post_auth/home/home_provider.dart';
 import 'package:provider/provider.dart';
 import '../../../models/Time_Slot_model.dart';
 import '../../../models/artist_detail.dart';
+import '../../../models/artist_request.dart';
 import '../../../models/artist_services.dart';
 import '../../../models/salon_detail.dart';
 import '../../../models/service_response.dart';
@@ -35,6 +36,18 @@ class SalonDetailsProvider with ChangeNotifier {
   List<ServiceDetail> _serviceList = [];
   DataService? serviceDetail;
   // List<Review> _salonReviewList = [];
+  ArtistRequest? _apiAResponse;
+
+  // Method to set API A response
+  void setApiAResponse(ArtistRequest response) {
+    _apiAResponse = response;
+    notifyListeners();
+  }
+
+  // Method to get API A response
+  ArtistRequest? getApiAResponse() {
+    return _apiAResponse;
+  }
   List<ServiceDetail> _filteredServiceList = [];
   List<Artist> _artistList = [];
   DateTime? _selectedDate;
@@ -153,6 +166,9 @@ class SalonDetailsProvider with ChangeNotifier {
 
   Data? salonid;
 
+  List<ServiceResponse> _serviceDetailsList = [];
+  List<ServiceResponse>  get serviceDetailsList => _serviceDetailsList;
+
   void setSalonDetails(ApiResponse salonDetails) {
     _salonDetails = salonDetails;
     notifyListeners();
@@ -162,7 +178,10 @@ class SalonDetailsProvider with ChangeNotifier {
     _timeslot = timeslot;
     notifyListeners();
   }
-
+  void setServiceDetailsList(List<ServiceResponse> serviceDetailsList) {
+    _serviceDetailsList = serviceDetailsList;
+    notifyListeners();
+  }
   String? _selectedTime;
   String? get selectedTime => _selectedTime;
 
@@ -193,7 +212,7 @@ class SalonDetailsProvider with ChangeNotifier {
 
       if (response.statusCode == 200) {
         artistServiceList = ArtistServiceList.fromJson(response.data);
-        // Check the length of selectedServiceIds
+ print('response is :-${response.data}');
         if (selectedServiceIds.length == 1) {
           // Navigate to createBookingRoute if there is only one service
           Navigator.pushNamed(
@@ -239,6 +258,7 @@ class SalonDetailsProvider with ChangeNotifier {
       Loader.hideLoader(context);
 
       if (response.statusCode == 200) {
+        print('response is ${response.data}');
         artistServiceList = ArtistServiceList.fromJson(response.data);
         }
        else {

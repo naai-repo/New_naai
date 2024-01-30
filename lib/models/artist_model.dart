@@ -39,6 +39,7 @@ class ArtistData {
   final double score;
   final String imageKey;
   final String imageUrl;
+  String  salonName ;
 
   ArtistData({
     required this.id,
@@ -57,6 +58,7 @@ class ArtistData {
     required this.score,
     required this.imageKey,
     required this.imageUrl,
+    required this.salonName
   });
 
   factory ArtistData.fromJson(Map<String, dynamic> json) {
@@ -64,6 +66,7 @@ class ArtistData {
       id: json['_id'] ?? '',
       name: json['name'] ?? '',
       rating: (json['rating'] as num).toDouble(),
+      salonName: json['salonName'] ?? '',
       salonId: json['salonId'] ?? '',
       services: (json['services'] as List<dynamic>)
           .map((service) => Service.fromJson(service))
@@ -80,6 +83,13 @@ class ArtistData {
       imageKey: json["imageKey"]?? '',
       imageUrl: json["imageUrl"]?? '',
     );
+  }
+  @override
+  String toString() {
+    return 'ArtistData{id: $id, name: $name, rating: $rating, salonId: $salonId, services: $services, location: $location, phoneNumber: $phoneNumber, availability: $availability, live: $live, createdAt: $createdAt, updatedAt: $updatedAt, bookings: $bookings, distance: $distance, score: $score, imageKey: $imageKey, imageUrl: $imageUrl , salonName: $salonName}';
+  }
+  void setSalonName(String name){
+    this.salonName = name;
   }
 }
 

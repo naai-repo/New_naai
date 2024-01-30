@@ -51,6 +51,8 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
       builder: (context, barberProvider, child) {
         return Consumer<SalonDetailsProvider>(builder: (context, provider, child) {
           BarberProvider barberProvider = context.read<BarberProvider>(); // Use the same instance
+          HomeProvider home = context.read<HomeProvider>(); // Use the same instance
+
           if (provider.salonDetails!.data.data.discount == 0 ||
               provider.salonDetails!.data.data.discount == null){
             myShowPrice = provider.totalPrice;
@@ -256,7 +258,7 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
                       onTap: () async{
                         String salonId = provider.salonDetails!.data.data.id;
                         List<String> selectedServiceIds = provider.barbergetSelectedServices()
-                            .map((service) => service.id)
+                            .map((service) => service.serviceId)
                             .toList();
                         await provider.fetchArtist(context,salonId, selectedServiceIds);
                         provider.setSchedulingStatus(onSelectStaff: true);
@@ -267,7 +269,7 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
                                 CreateBookingScreen2(
                                   artistName: barberProvider.artistDetails!.name,
                                   artistId: barberProvider.artistDetails!.id,
-                                ),
+                                    ),
                           ),
 
                         );
@@ -294,8 +296,8 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
   Widget servicesTab() {
     return Consumer<SalonDetailsProvider>(builder: (context, provider, child) {
       BarberProvider barberProvider = context.read<BarberProvider>(); // Use the same instance
+      HomeProvider homeProvider = context.read<HomeProvider>();
       Set<Service2> selectedServices = provider.barbergetSelectedServices();
-print('${barberProvider.Servicetitle}');
       return Column(
         children: <Widget>[
           GestureDetector(
@@ -341,8 +343,8 @@ print('${barberProvider.Servicetitle}');
                       context.read<BarberProvider>().artistDetails!.services.length,
                   itemBuilder: (context, index) {
                     Data? serviceDetail3 =  context.read<BarberProvider>().artistDetails;
-                    Service2? serviceDetail  =
-                        context.read<BarberProvider>().artistDetails!.services[index];
+                    Service2? serviceDetail  = context.read<BarberProvider>().artistDetails!.services[index];
+
                   //  bool isAdded  = provider.salonDetails!.data.services
                   //      ?.contains(serviceDetail.id) ??
                  //   false;// Assuming paid is a boolean
@@ -382,7 +384,7 @@ print('${barberProvider.Servicetitle}');
                                   SizedBox(width: 2.w),
                                   Expanded(
                                     child: Text(
-                                      provider.serviceData!.data.serviceTitle ?? '',
+                                      homeProvider.serviceDetailsMap[serviceDetail.serviceId]?.data.serviceTitle ?? '',
                                       style: TextStyle(
                                         color: ColorsConstant.textDark,
                                         fontSize: 10.sp,

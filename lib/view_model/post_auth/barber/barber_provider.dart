@@ -20,6 +20,7 @@ import '../../../models/artist_detail.dart';
 import '../../../models/artist_model.dart';
 import '../../../models/salon.dart';
 import '../../../models/salon_detail.dart';
+import '../../../models/service_response.dart';
 
 class BarberProvider with ChangeNotifier {
   int _selectedArtistIndex = 0;
@@ -53,6 +54,7 @@ class BarberProvider with ChangeNotifier {
   Data? _artistDetails; // Replace ArtistDetails with your actual model
 
   Data? get artistDetails => _artistDetails;
+  Map<String, ServiceResponse> serviceDetailsMap = {}; // Use a map to store service details
 
   ArtistData? artistid;
   ApiResponse? _salonDetails; // Replace SalonDetails with your actual model

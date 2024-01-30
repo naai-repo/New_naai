@@ -11,13 +11,11 @@ String timeSlotResponseToJson(TimeSlotResponse data) => json.encode(data.toJson(
 class TimeSlotResponse {
   String salonId;
   List<TimeSlotResponseTimeSlot> timeSlots;
- // ArtistsTimeSlots artistsTimeSlots;
   List<List<String>> timeSlotsVisible;
 
   TimeSlotResponse({
     required this.salonId,
     required this.timeSlots,
-  //  required this.artistsTimeSlots,
     required this.timeSlotsVisible,
   });
 
@@ -25,7 +23,7 @@ class TimeSlotResponse {
     salonId: json["salonId"],
     timeSlots: List<TimeSlotResponseTimeSlot>.from(json["timeSlots"].map((x) => TimeSlotResponseTimeSlot.fromJson(x))),
   //  artistsTimeSlots: ArtistsTimeSlots.fromJson(json["artistsTimeSlots"]),
-    timeSlotsVisible: List<List<String>>.from(json["timeSlotsVisible"].map((x) => List<String>.from(x.map((x) => x)))),
+    timeSlotsVisible: List<List<String>>.from(json["timeSlotsVisible"].map((x) => List<String>.from(x))),
   );
 
   Map<String, dynamic> toJson() => {

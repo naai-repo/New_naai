@@ -37,20 +37,26 @@ import 'package:sizer/sizer.dart';
 import '../../../models/allbooking.dart';
 import '../../../models/artist_model.dart';
 import '../../../models/review.dart';
+import '../../../models/salon_detail.dart';
 import '../../../models/salon_model.dart';
 import '../../../models/service_detail.dart';
+import '../../../models/service_response.dart';
 import '../../../utils/access_token.dart';
 import '../../pre_auth/loginResult.dart';
 
 class HomeProvider with ChangeNotifier {
   bool _changedLocation = false;
   final Dio dio = Dio();
- // Use the phone number from the response
+
   final _mapLocation = location.Location();
   late LatLng _userCurrentLatLng;
+  List<String> salonNames = [];
 
   String userAddress = 'No Location Found';
 
+  String formatBookingDate(DateTime date) {
+    return DateFormat('dd-MM-yy').format(date);
+  }
 
   location.Location get mapLocation => _mapLocation;
   LatLng get userCurrentLatLng => _userCurrentLatLng;
@@ -79,8 +85,8 @@ String ?  _addressText;
   List<Booking> _lastOrNextBooking = [];
   List<Booking> _allBookings = [];
 
-  List<AllBooking> _upcomingBooking = [];
-  List<AllBooking> _previousBooking = [];
+  List<CurrentBooking> _upcomingBooking = [];
+  List<PrevBooking> _previousBooking = [];
 
   //============= GETTERS =============//
   List<SalonData> get salonList => _salonList;
@@ -102,8 +108,8 @@ String ?  _addressText;
 
 
 
-  List<AllBooking> get upcomingBooking => _upcomingBooking;
-  List<AllBooking> get previousBooking => _previousBooking;
+  List<CurrentBooking> get upcomingBooking => _upcomingBooking;
+  List<PrevBooking> get previousBooking => _previousBooking;
   int displayedSalonCount = 5; // Number of salons to display initially
   int displayedArtistCount = 5;
   /// Check if there is a [uid] stored in [SharedPreferences] or not.
@@ -151,7 +157,8 @@ String ?  _addressText;
     _salonList2 = value;
     notifyListeners();
   }
-
+  TextEditingController get salonSearchController => _salonSearchController;
+  TextEditingController _salonSearchController = TextEditingController();
   set artistList2(List<ArtistData> value) {
     _artistList2 = value;
     notifyListeners();
@@ -446,10 +453,9 @@ String ?  _addressText;
       print("Dio error for top salons: $e");
     }
   }
-
+  ArtistData?  artist;
   Future<void> getTopArtists({required List<double> coords}) async {
     final apiUrl = UrlConstants.topArtist;
-
     final Map<String, dynamic> requestData = {
       "location": {"type": "Point", "coordinates": coords},
     };
@@ -464,18 +470,46 @@ String ?  _addressText;
       );
 
       if (response.statusCode == 200) {
-        artistList2 = ArtistApiResponse.fromJson(response.data).data;
-        print("Top Artists: ${response.data}");
+
+
+        print("Response of artist:- ${ArtistApiResponse.fromJson(response.data)}");
+        ArtistApiResponse artistApiResponse = ArtistApiResponse.fromJson(response.data);
+        print('Response of artist2:-${artistApiResponse.data} ');
+        for (var artistData in artistApiResponse.data) {
+          var salonId = artistData.salonId;
+
+          print('Salon id of artist :-$salonId');
+
+          var salonResponse = await Dio().get(
+              'http://13.235.49.214:8800/partner/salon/single/$salonId');
+
+          dynamic apiResponse = ApiResponse
+              .fromJson(salonResponse.data)
+              .data
+              .data
+              .name;
+          dynamic artistSalonName;
+          salonNames.add(apiResponse);
+
+          print('responseeeeeeeeee :- $apiResponse');
+          dynamic SalonNames ;
+          artistData.setSalonName(apiResponse) ;
+          print('Artist Salon Name is :- $artistSalonName');
+          SalonNames = artistSalonName;
+
+          print("SalonName in home screen :- $SalonNames");
+        }
+        artistList2 = artistApiResponse.data;
       } else {
-        // Handle error response for top artists
         print("Failed to fetch top artists");
         print(response.data);
       }
     } catch (e) {
-      // Handle Dio errors for top artists
       print("Dio error for top artists: $e");
     }
   }
+  Map<String, ServiceResponse> serviceDetailsMap = {}; // Use a map to store service details
+
 
   Future<void> getDistanceAndRatingForWomen({required List<double> coords}) async {
     final apiUrl = UrlConstants.discountAndRatingForWomen;
@@ -525,7 +559,7 @@ String ?  _addressText;
 
       if (response.statusCode == 200) {
         salonList2 = SalonApiResponse.fromJson(response.data).data;
-        print("Top Artists: ${response.data}");
+        print("Top Salon: ${response.data}");
       } else {
         // Handle error response for top artists
         print("Failed to fetch top artists");
@@ -801,7 +835,7 @@ String ?  _addressText;
       Dio dio = Dio();
 
       dio.options.headers['Authorization'] = 'Bearer $bearerToken';
-
+print('token is :- $bearerToken');
       Response response = await dio.get(apiUrl);
 
       if (response.statusCode == 200) {
@@ -811,29 +845,76 @@ String ?  _addressText;
         // Parse JSON and convert it into Dart objects
         AllBooking userBookings = AllBooking.fromJson(response.data);
 
+        // Populate previous and upcoming bookings lists
+        _previousBooking.addAll(userBookings.prevBooking);
+        _upcomingBooking.addAll(userBookings.comingBookings);
+
+        for (var booking in userBookings.comingBookings) {
+          var salonId = booking.salonId;
+
+          var salonResponse = await Dio().get('http://13.235.49.214:8800/partner/salon/single/$salonId');
+
+          // Check if the salonResponse is not null and contains the expected data
+          if (salonResponse.statusCode == 200 && salonResponse.data != null) {
+            dynamic apiResponse = ApiResponse.fromJson(salonResponse.data).data.data.name;
+
+            // Set the salonName property
+            booking.salonName = apiResponse;
+            booking.setSalonName(apiResponse);
+            print('Salon name for booking ${booking.id}: ${booking.salonName}');
+          } else {
+            // Handle the case where the response is null or doesn't contain the expected data
+            print('Error fetching salon name for booking ${booking.id}');
+          }
+        }
+
+        for (var booking in userBookings.prevBooking) {
+          var salonId = booking.salonId;
+
+          var salonResponse = await Dio().get('http://13.235.49.214:8800/partner/salon/single/$salonId');
+
+          // Check if the salonResponse is not null and contains the expected data
+          if (salonResponse.statusCode == 200 && salonResponse.data != null) {
+            dynamic apiResponse = ApiResponse.fromJson(salonResponse.data).data.data.name;
+
+            // Set the salonName property
+            booking.salonName = apiResponse;
+            booking.setSalonName(apiResponse);
+            print('Salon name for booking ${booking.id}: $apiResponse');
+          } else {
+            // Handle the case where the response is null or doesn't contain the expected data
+            print('Error fetching salon name for booking ${booking.id}');
+          }
+        }
         // Accessing the parsed data
         print('User ID: ${userBookings.userId}');
         print('Current Bookings:');
         for (var booking in userBookings.currentBookings) {
           print('${booking.id} - ${booking.bookingDate}');
+          print('timeslot  for current start :- ${booking.timeSlot.start}');
+          print('timeslot for current start :- ${booking.timeSlot.start}');
         }
 
         print('Previous Bookings:');
         for (var booking in userBookings.prevBooking) {
           print('${booking.id} - ${booking.bookingDate}');
+          print('timeslot  for prev start :- ${booking.timeSlot.start}');
+          print('timeslot for prev start :- ${booking.timeSlot.start}');
         }
 
         print('Coming Bookings:');
         for (var booking in userBookings.comingBookings) {
           print('${booking.id} - ${booking.bookingDate}');
+          print('timeslot  for coming start :- ${booking.timeSlot.start}');
+          print('timeslot for coming start :- ${booking.timeSlot.start}');
         }
       } else {
         // Handle error
-        print('Error: ${response.statusCode}, ${response.data}');
+        print('Error issssssssss: ${response.statusCode}, ${response.data}');
       }
     } catch (error) {
       // Handle DioError or other exceptions
-      print('Error: $error');
+      print('Error issssssssssss: $error');
     }
   }
 
@@ -860,7 +941,7 @@ String ?  _addressText;
 
     Loader.showLoader(context);
     final box = await Hive.openBox('userBox');
-    final userId = box.get('userId') ?? '';
+    final userId = box.get('userId') ?? '654a925f1c6156295deed42d';
 
     try {
       Position currentLocation = await Geolocator.getCurrentPosition();
@@ -1335,7 +1416,7 @@ String ?  _addressText;
                   userId: userId,
                   coords: [coordinates.longitude, coordinates.latitude],
                 );
-                Loader.hideLoader(context);
+
                 await Future.wait([
                   getTopSalons(
                       coords: [coordinates.longitude, coordinates.latitude]),
@@ -1344,6 +1425,7 @@ String ?  _addressText;
                   //  getDistanceAndRating(coords: [currentLocation.longitude, currentLocation.latitude]),
                   //  getArtistRating(coords: [currentLocation.longitude, currentLocation.latitude]),
                 ]);
+                Loader.hideLoader(context);
                 Navigator.pushNamed(
                     context, NamedRoutes.bottomNavigationRoute4);
               },
@@ -1398,27 +1480,57 @@ String ?  _addressText;
 
   /// Method to fetch the current location of the user using [location] package
   Future<LatLng> fetchCurrentLocation(BuildContext context) async {
-    var _serviceEnabled = await _mapLocation.serviceEnabled();
+    try {
+      var _serviceEnabled = await _mapLocation.serviceEnabled();
 
-    if (!_serviceEnabled) {
-      _serviceEnabled = await _mapLocation.requestService();
+      if (!_serviceEnabled) {
+        _serviceEnabled = await _mapLocation.requestService();
+      }
+
+      var _permissionGranted = await _mapLocation.hasPermission();
+      if (_permissionGranted == location.PermissionStatus.denied) {
+        await showLocationPermissionDialog(context);
+        throw Exception('Location permission denied');
+      }
+
+      var _locationData = await _mapLocation.getLocation();
+
+      return LatLng(_locationData.latitude!, _locationData.longitude!);
+    } catch (e) {
+      print('Error fetching location: $e');
+      // Handle the error as needed
+      return LatLng(28.7383,77.0822); // Return a default location or handle differently
     }
-    var _permissionGranted = await _mapLocation.hasPermission();
-    if (_permissionGranted == location.PermissionStatus.denied) {
-      await openAppSettings();
-      throw Exception('Location permission denied');
-
-    }
-
-
-    var _locationData = await _mapLocation.getLocation();
-
-    return LatLng(_locationData.latitude!, _locationData.longitude!);
   }
 
-
-
-
+  Future<void> showLocationPermissionDialog(BuildContext context) async {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          content: SingleChildScrollView(
+            child: ListBody(
+              children: <Widget>[
+                Text('It looks like you have turned off permissions required for this feature.It can be enabled under Phone Settings > Apps > NAAI > Permission'),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: Text('Go To\nSETTINGS',
+              style: TextStyle(color:ColorsConstant.appColor),
+              ),
+              onPressed: () {
+                Navigator.of(context).pop();
+                openAppSettings();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   /// Animate the map to given [latLng]
   Future<void> animateToPosition(LatLng latLng) async {
@@ -1471,7 +1583,7 @@ String ?  _addressText;
   }) {
     DateTime dateTime =
     DateTime.parse(dateTimeString ?? DateTime.now().toString());
-    _lastOrNextBooking[index].bookingCreatedFor ?? DateTime.now().toString();
+    _upcomingBooking[index].bookingDate ?? DateTime.now().toString();
     if (getFormattedDate) {
       return DateFormat('MMM dd').format(dateTime);
     } else if (getAbbreviatedDay) {

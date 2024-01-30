@@ -51,7 +51,7 @@ class _ExploreScreenState extends State<ExploreScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ExploreProvider>(builder: (context, provider, child) {
+    return Consumer2<ExploreProvider,HomeProvider>(builder: (context, provider, provider2,child) {
       return Scaffold(
         body: Stack(
           children: <Widget>[
@@ -61,7 +61,7 @@ class _ExploreScreenState extends State<ExploreScreen>
               slivers: <Widget>[
                 ReusableWidgets.transparentFlexibleSpace(),
                 titleSearchBarWithLocation(),
-                provider.salonData2.length == 0
+                provider2.salonList2.length == 0
                     ? SliverFillRemaining(
                         child: Container(
                           color: Colors.white,
@@ -135,11 +135,11 @@ class _ExploreScreenState extends State<ExploreScreen>
                                     child: ListView.builder(
                                       shrinkWrap: true,
                                       scrollDirection: Axis.horizontal,
-                                      itemCount: provider.artistList2.length,
+                                      itemCount: provider2.artistList2.length,
                                       physics: BouncingScrollPhysics(),
                                       itemBuilder: (context, index) {
                                         ArtistData artist =
-                                            provider.artistList2[index];
+                                            provider2.artistList2[index];
                                         return artistCard(
                                           artist,
                                           index,
@@ -304,7 +304,7 @@ class _ExploreScreenState extends State<ExploreScreen>
                                     itemBuilder: (context, index) =>
                                         salonCard(index),
                                     itemCount:
-                                        provider.salonData2.length
+                                        provider2.salonList2.length
                                   )
                                 ],
                               ),
@@ -324,7 +324,7 @@ class _ExploreScreenState extends State<ExploreScreen>
     ArtistData artist,
     int index,
   ) {
-    return Consumer<ExploreProvider>(builder: (context, provider, child) {
+    return Consumer2<ExploreProvider,HomeProvider>(builder: (context, provider,provider2, child) {
       return Padding(
         padding: EdgeInsets.only(right: 4.w),
           child: CurvedBorderedCard(
@@ -420,6 +420,7 @@ class _ExploreScreenState extends State<ExploreScreen>
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: <Widget>[
+
                           Column(
                             children: <Widget>[
                               Padding(
@@ -443,37 +444,12 @@ class _ExploreScreenState extends State<ExploreScreen>
                                 ),
                               ),
                               Text(
-                                artist.salonId ?? '',
+                                artist.salonName ?? '',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   color: ColorsConstant.textLight,
                                   fontSize: 10.sp,
                                   fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              Text.rich(
-                                TextSpan(
-                                  children: <InlineSpan>[
-                                    WidgetSpan(
-                                      alignment: PlaceholderAlignment.baseline,
-                                      baseline: TextBaseline.ideographic,
-                                      child: SvgPicture.asset(
-                                        ImagePathConstant.starIcon,
-                                        color: ColorsConstant.greenRating,
-                                      ),
-                                    ),
-                                    WidgetSpan(
-                                      child: SizedBox(width: 1.w),
-                                    ),
-                                    TextSpan(
-                                      text: artist.rating.toStringAsFixed(1),
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 10.sp,
-                                        color: ColorsConstant.greenRating,
-                                      ),
-                                    ),
-                                  ],
                                 ),
                               ),
                             ],
@@ -500,7 +476,7 @@ class _ExploreScreenState extends State<ExploreScreen>
                                         child: SizedBox(width: 1.w),
                                       ),
                                       TextSpan(
-                                      text: '',
+                                      text: artist.distance.toStringAsFixed(2),
                                         style: TextStyle(
                                           fontWeight: FontWeight.w600,
                                           fontSize: 10.sp,
@@ -589,66 +565,71 @@ class _ExploreScreenState extends State<ExploreScreen>
   }
 
   Widget titleSearchBarWithLocation() {
-    return MediaQuery.removePadding(
-      context: context,
-      removeTop: true,
-      child: SliverAppBar(
-        elevation: 10,
-        automaticallyImplyLeading: false,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(3.h),
-            topRight: Radius.circular(3.h),
-          ),
-        ),
-        backgroundColor: Colors.white,
-        pinned: true,
-        floating: true,
-        title: GestureDetector(
-          onTap: () => FocusManager.instance.primaryFocus!.unfocus(),
-          child: Container(
-            padding: EdgeInsets.only(top: 3.h),
-            child: Text(
-              StringConstant.exploreSalons,
-              style: StyleConstant.headingTextStyle,
-            ),
-          ),
-        ),
-        centerTitle: false,
-        bottom: PreferredSize(
-          preferredSize: Size.fromHeight(13.h),
-          child: Consumer<ExploreProvider>(builder: (context, provider, child) {
-            return TabBar(
-              controller: homeScreenController,
-              indicatorColor: Colors.white,
-              tabs: <Widget>[
-                GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () => FocusManager.instance.primaryFocus!.unfocus(),
-                  child: Padding(
-                    padding: EdgeInsets.only(top: 4.3.h, bottom: 2.h),
-                    child: TextFormField(
-                      controller: provider.salonSearchController,
-                      cursorColor: ColorsConstant.appColor,
-                      style: StyleConstant.searchTextStyle,
-                      textInputAction: TextInputAction.done,
-                      onChanged: (searchText) =>
-                          provider.filterArtistList(searchText),
-                      decoration: StyleConstant.searchBoxInputDecoration(
-                        context,
-                        hintText: StringConstant.search,
-                      ),
-                    ),
+    return Consumer2<ExploreProvider, HomeProvider>(
+        builder: (context, provider, provider2, child) {
+          return MediaQuery.removePadding(
+            context: context,
+            removeTop: true,
+            child: SliverAppBar(
+              elevation: 10,
+              automaticallyImplyLeading: false,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(3.h),
+                  topRight: Radius.circular(3.h),
+                ),
+              ),
+              backgroundColor: Colors.white,
+              pinned: true,
+              floating: true,
+              title: GestureDetector(
+                onTap: () => FocusManager.instance.primaryFocus!.unfocus(),
+                child: Container(
+                  padding: EdgeInsets.only(top: 3.h),
+                  child: Text(
+                    StringConstant.exploreSalons,
+                    style: StyleConstant.headingTextStyle,
                   ),
                 ),
-              ],
-            );
-          }),
-        ),
-      ),
-    );
+              ),
+              centerTitle: false,
+              bottom: PreferredSize(
+                preferredSize: Size.fromHeight(13.h),
+                child: Consumer<ExploreProvider>(
+                    builder: (context, provider, child) {
+                      return TabBar(
+                        controller: homeScreenController,
+                        indicatorColor: Colors.white,
+                        tabs: <Widget>[
+                          GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: () =>
+                                FocusManager.instance.primaryFocus!.unfocus(),
+                            child: Padding(
+                              padding: EdgeInsets.only(top: 4.3.h, bottom: 2.h),
+                              child: TextFormField(
+                                controller: provider2.salonSearchController,
+                                cursorColor: ColorsConstant.appColor,
+                                style: StyleConstant.searchTextStyle,
+                                textInputAction: TextInputAction.done,
+                                onChanged: (searchText) =>
+                                    provider2.filterArtistList(searchText),
+                                decoration: StyleConstant
+                                    .searchBoxInputDecoration(
+                                  context,
+                                  hintText: StringConstant.search,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    }),
+              ),
+            ),
+          );
+        });
   }
-
   Widget salonCard(int index) {
     return Consumer2<ExploreProvider,HomeProvider>(
       builder: (context, provider,homeprovider, child) {
@@ -703,7 +684,7 @@ class _ExploreScreenState extends State<ExploreScreen>
                         autoPlayInterval: Duration(seconds: 3),
                         autoPlayAnimationDuration: Duration(milliseconds: 800),
                         autoPlayCurve: Curves.fastOutSlowIn),
-                    items: (provider.salonData2[index].images ?? <ImageData>[]) // Use an empty list if images is null
+                    items: (provider.salonData2[index].images ?? <ImageData>[] ) // Use an empty list if images is null
                         .map((ImageData imageUrl) {
                       return Builder(
                         builder: (BuildContext context) {
@@ -1058,11 +1039,11 @@ class _ExploreScreen2State extends State<ExploreScreen2>
                               child: ListView.builder(
                                 shrinkWrap: true,
                                 scrollDirection: Axis.horizontal,
-                                itemCount: provider.artistList2.length,
+                                itemCount: provider2.artistList2.length,
                                 physics: BouncingScrollPhysics(),
                                 itemBuilder: (context, index) {
                                   ArtistData artist =
-                                  provider.artistList2[index];
+                                  provider2.artistList2[index];
                                   return artistCard(
                                     artist,
                                     index,
@@ -1366,37 +1347,12 @@ class _ExploreScreen2State extends State<ExploreScreen2>
                               ),
                             ),
                             Text(
-                              artist.salonId ?? '',
+                              artist.salonName ?? '',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 color: ColorsConstant.textLight,
                                 fontSize: 10.sp,
                                 fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            Text.rich(
-                              TextSpan(
-                                children: <InlineSpan>[
-                                  WidgetSpan(
-                                    alignment: PlaceholderAlignment.baseline,
-                                    baseline: TextBaseline.ideographic,
-                                    child: SvgPicture.asset(
-                                      ImagePathConstant.starIcon,
-                                      color: ColorsConstant.greenRating,
-                                    ),
-                                  ),
-                                  WidgetSpan(
-                                    child: SizedBox(width: 1.w),
-                                  ),
-                                  TextSpan(
-                                    text: artist.rating.toStringAsFixed(1),
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 10.sp,
-                                      color: ColorsConstant.greenRating,
-                                    ),
-                                  ),
-                                ],
                               ),
                             ),
                           ],
@@ -1423,7 +1379,7 @@ class _ExploreScreen2State extends State<ExploreScreen2>
                                       child: SizedBox(width: 1.w),
                                     ),
                                     TextSpan(
-                                      text: '',
+                                      text: artist.distance.toStringAsFixed(2),
                                       style: TextStyle(
                                         fontWeight: FontWeight.w600,
                                         fontSize: 10.sp,

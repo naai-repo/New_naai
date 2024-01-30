@@ -502,6 +502,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 }
 
+//Continue as guest
 class ProfileScreen2 extends StatefulWidget {
   ProfileScreen2({Key? key}) : super(key: key);
 
@@ -511,34 +512,10 @@ class ProfileScreen2 extends StatefulWidget {
 
 class _ProfileScreen2State extends State<ProfileScreen2> {
 
-  // List<XFile>? _mediaFileList;
-  //
-  // void _setImageFileListFromFile(XFile? value) {
-  //   _mediaFileList = value == null ? null : <XFile>[value];
-  // }
 
   @override
   void initState() {
-  //  WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-  //    context.read<ProfileProvider>().getUserDataFromUserProvider(context);
-  //  });
-  //  super.initState();
   }
-
-  // Future<void> getLostData() async {
-  //   final ImagePicker picker = ImagePicker();
-  //   final LostDataResponse response = await picker.retrieveLostData();
-  //   if (response.isEmpty) {
-  //     return;
-  //   }
-  //   final XFile? imageFile = response.file;
-  //   if (imageFile != null) {
-  //     _setImageFileListFromFile(imageFile);
-  //   } else {
-  //     print(response.exception);
-  //   }
-  // }
-
   @override
   Widget build(BuildContext context) {
     return Consumer<ProfileProvider>(
@@ -617,7 +594,8 @@ class _ProfileScreen2State extends State<ProfileScreen2> {
                                               const StadiumBorder(),
                                             ),
                                           ),
-                                        onPressed: () {
+                                        onPressed: () async{
+                                          await saveIsGuestStatus(false);
                                           Navigator.pushReplacementNamed(
                                             context,
                                               NamedRoutes.authenticationRoute
@@ -641,5 +619,14 @@ class _ProfileScreen2State extends State<ProfileScreen2> {
         );
       },
     );
+  }
+  Future<void> saveIsGuestStatus(bool isGuest) async {
+    final box = await Hive.openBox('userBox');
+    box.put('isGuest', isGuest);
+  }
+
+  Future<bool> getIsGuestStatus() async {
+    final box = await Hive.openBox('userBox');
+    return box.get('isGuest', defaultValue: true) ?? true;
   }
 }

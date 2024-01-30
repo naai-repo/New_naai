@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:developer';
 import 'dart:ffi';
 import 'package:dio/dio.dart';
@@ -26,13 +27,15 @@ import 'package:sizer/sizer.dart';
 import 'package:syncfusion_flutter_datepicker/datepicker.dart';
 import 'package:intl/intl.dart';
 
-import '../../../models/Profile_model.dart';
 import '../../../models/Time_Slot_model.dart';
+import '../../../models/artist_detail.dart';
+import '../../../models/artist_request.dart';
 import '../../../models/artist_services.dart';
 import '../../../models/service_detail.dart';
 import '../../../utils/access_token.dart';
 import '../../../utils/loading_indicator.dart';
 import '../../../utils/routing/named_routes.dart';
+import '../../../view_model/post_auth/barber/barber_provider.dart';
 import '../../../view_model/pre_auth/loginResult.dart';
 import 'booking_confirmed_screen.dart';
 
@@ -249,13 +252,15 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
                             ),
                             VariableWidthCta(
                               onTap: () async {
-                                if (provider.artistServiceList!.selectedArtist != null){
-                                provider.setSchedulingStatus(
-                                selectStaffFinished: true);
+                                if (provider.artistServiceList!.selectedArtist != null) {
+                                  provider.setSchedulingStatus(selectStaffFinished: true);
                                 }
-                                if (provider.getSelectedServices().every((service) =>
-                                provider.artistServiceList!.selectedArtistMap[service.id]?.artist !=
-                                    null)) {
+
+                                List<String> selectedServiceIds = provider.getSelectedServices()
+                                    .map((service) => service.id)
+                                    .toList();
+                                if (selectedServiceIds.isNotEmpty &&
+                                    provider.getSelectedServices().every((service) => provider.artistServiceList!.selectedArtistMap[service.id]?.artist != null)) {
                                   provider.setSchedulingStatus(selectStaffFinished: true);
                                 }
                                 if(provider.selectedTime != null) {
@@ -1012,78 +1017,123 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
                                 initialDisplayDate: DateTime.now().toLocal(),
                                 showNavigationArrow: true,
                                 enablePastDates: false,
-                                onSelectionChanged: (DateRangePickerSelectionChangedArgs args) async{
+
+                                onSelectionChanged: (DateRangePickerSelectionChangedArgs args) async {
                                   provider.setSelectedDate(args.value);
                                   Navigator.pop(context);
-                                  if (provider.selectedDate != null && provider.salonDetails != null) {
-                                    DateTime selectedDate = provider.selectedDate!;
-                                    String formattedDate = DateFormat('MM-dd-yyyy').format(selectedDate);
-                                    List<Map<String, String>> requests = [];
-                                    List<String> selectedServiceIds = provider.getSelectedServices()
+
+                                  if (provider.selectedDate != null &&
+                                      provider.salonDetails != null) {
+                                    DateTime selectedDate = provider
+                                        .selectedDate!;
+                                    String formattedDate = DateFormat(
+                                        'MM-dd-yyyy').format(selectedDate);
+
+                                    List<String> selectedServiceIds = provider
+                                        .getSelectedServices()
                                         .map((service) => service.id)
                                         .toList();
-                                      for (String serviceId in selectedServiceIds) {
-                                        String selectedArtistId = provider.artistServiceList!.selectedArtist?.artistId ??
-                                            (provider.artistServiceList!.selectedArtistMap[serviceId]?.artistId ?? '');
-                                        requests.add({
-                                        "service": serviceId,
-                                        "artist": selectedArtistId,
-                                      });
-                                    }
-                                    Map<String, dynamic> requestBody = {
-                                      "salonId": provider.salonDetails!.data.data.id ?? "",
-                                      "requests": requests,
-                                      "date": formattedDate,
-                                    };
-                                    print('salonid is : ${provider.salonDetails!.data.data.id ?? ""}');
-                                    print('request is :$requests');
-                                    print('date is : $formattedDate');
-                                    try {
-                                      // Create Dio instance
-                                      Loader.showLoader(context);
-                                      Dio dio = Dio();
-                                      dio.interceptors.add(LogInterceptor(requestBody: true, responseBody: true, logPrint: print));
+                                    ArtistService? selectedArtist = provider
+                                        .artistServiceList!.selectedArtistMap[
+                                    selectedServiceIds.first] ??
+                                        provider.artistServiceList!
+                                            .selectedArtist;
 
-                                      // Retrieve the access token from local storage
-                                      String? authToken = await AccessTokenManager.getAccessToken();
+                                    if (selectedServiceIds.isNotEmpty &&
+                                        selectedArtist != null) {
+                                      ArtistRequest apiAResponse =
+                                      await callApiA(
+                                          selectedServiceIds, selectedArtist);
 
-                                      if (authToken != null) {
-                                        dio.options.headers['Authorization'] = 'Bearer $authToken';
-                                      } else {
-                                        Loader.hideLoader(context); // Handle the case where the user is not authenticated
-                                      }
-                                      // Make the request
-                                      Response response = await dio.post(
-                                        'http://13.235.49.214:8800/appointments/schedule',
-                                        data: requestBody,
-                                      );
-                                      Loader.hideLoader(context);
-                                      // Handle the response
-                                      print(response.data);
-                                      // TODO: Process the response as needed
+                                      List<Map<String,
+                                          dynamic>> requestsB = apiAResponse
+                                          .requests.map((request) {
+                                        return {
+                                          "service": request.service,
+                                          "artist": request.artist,
+                                        };
+                                      }).toList();
 
-                                      if (response.statusCode == 200) {
-                                        TimeSlotResponse timeSlotResponse = TimeSlotResponse.fromJson(response.data);
-                                        provider.setTimeSlot(timeSlotResponse);
-                                        print("Time Slot Response: $timeSlotResponse");
-                                        // TODO: Process the response as needed
-                                      } else {
-                                        // Handle the error
-                                        print("Failed to fetch time slots");
-                                        print(response.data);
+                                      Map<String, dynamic> requestBodyB = {
+                                        "salonId": provider.salonDetails!.data
+                                            .data.id ?? "",
+                                        "requests": requestsB,
+                                        "date": formattedDate,
+                                      };
+
+                                      try {
+                                        Loader.showLoader(context);
+                                        Dio dio = Dio();
+                                        dio.interceptors.add(LogInterceptor(
+                                            requestBody: true,
+                                            responseBody: true,
+                                            logPrint: print));
+
+                                        String? authToken = await AccessTokenManager
+                                            .getAccessToken();
+
+                                        if (authToken != null) {
+                                          dio.options.headers['Authorization'] =
+                                          'Bearer $authToken';
+                                        } else {
+                                          Loader.hideLoader(context);
+                                          print('Error: Auth token is null');
+                                          return; // Handle the case where the user is not authenticated
+                                        }
+
+                                        Map<String, dynamic> requestBodyB = {
+                                          "salonId": provider.salonDetails!.data
+                                              .data.id ?? "",
+                                          "requests": requestsB,
+                                          "date": formattedDate,
+                                        };
+
+                                        print('Request Body: $requestBodyB');
+
+                                        Response response = await dio.post(
+                                          'http://13.235.49.214:8800/appointments/schedule',
+                                          data: requestBodyB,
+                                        );
+                                        Loader.hideLoader(context);
+                                        print(
+                                            'Response Data: ${response.data}');
+
+                                        if (response.statusCode == 200) {
+                                          try {
+                                            // Check if the response data is a string indicating an error
+                                            if (response.data is String) {
+                                              // Handle the case where the artist ID is not valid
+                                              print(
+                                                  "Artist ID is not valid: ${response
+                                                      .data}");
+                                              // TODO: Handle this scenario appropriately
+                                            } else {
+                                              // Parse the response as TimeSlotResponse
+                                              TimeSlotResponse timeSlotResponse = TimeSlotResponse
+                                                  .fromJson(response.data);
+                                              provider.setTimeSlot(
+                                                  timeSlotResponse);
+                                            }
+                                          } catch (error) {
+                                            print(
+                                                'Error parsing response: $error');
+                                            // TODO: Handle errors appropriately
+                                          }
+                                        } else {
+                                          print("Failed to fetch time slots");
+                                          print(response.data);
+                                          // TODO: Handle errors appropriately
+                                        }
+                                      }catch (error) {
+                                        print(
+                                            'Error parsing response: $error');
                                         // TODO: Handle errors appropriately
                                       }
-
-                                    } catch (error) {
-                                      Loader.hideLoader(context);
-                                      // Handle errors
-                                      print('Error is $error');
-                                      // TODO: Handle errors appropriately
                                     }
                                   }
                                 },
                                 selectionMode: DateRangePickerSelectionMode.single,
-                              ),
+                                  ),
                             ),
                           );
                         },
@@ -1193,6 +1243,7 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
       },
     );
   }
+
   Widget schedulingStatus() {
     return Consumer<SalonDetailsProvider>(
       builder: (context, provider, child) {
@@ -1651,11 +1702,72 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
                 ),
               ),
             ),
+
           ],
         );
       },
     );
   }
+
+  Future<ArtistRequest> callApiA(List<String> selectedServiceIds, ArtistService selectedArtist) async {
+    try {
+      // Create Dio instance
+      Dio dio = Dio();
+      dio.interceptors.add(LogInterceptor(requestBody: true, responseBody: true, logPrint: print));
+
+      // Retrieve the access token from local storage
+      String? authToken = await AccessTokenManager.getAccessToken();
+
+      if (authToken != null) {
+        dio.options.headers['Authorization'] = 'Bearer $authToken';
+      } else {
+        // Handle the case where the user is not authenticated
+        throw Exception('User is not authenticated');
+      }
+
+      // Create the request body for API A
+      Map<String, dynamic> requestBody = {
+        "services": selectedServiceIds,
+        "artist": {
+          "artistId": selectedArtist.artistId,
+          "artist": selectedArtist.artist,
+          "serviceList": selectedArtist.serviceList.map((service) {
+            return {
+              "serviceId": service.serviceId,
+              "price": service.price,
+              "_id": service.id,
+            };
+          }).toList(),
+          "rating": selectedArtist.rating,
+        },
+      };
+
+      // Make the request to API A
+      Response responseA = await dio.post(
+        'http://13.235.49.214:8800/appointments/singleArtist/request',
+        data: requestBody,
+      );
+
+      // Handle the response from API A
+      print(responseA.data);
+
+      if (responseA.statusCode == 200) {
+        ArtistRequest artistRequest = ArtistRequest.fromJson(responseA.data);
+        return artistRequest;
+      } else {
+        // Handle the error from API A
+        print("Failed to fetch artist requests from API A");
+        print(responseA.data);
+        throw Exception('Failed to fetch artist requests from API A');
+      }
+    } catch (error) {
+      // Handle errors
+      print('Error in API A: $error');
+      throw error;
+    }
+  }
+
+
   Widget selectInsideStaffCard() {
     return Consumer<SalonDetailsProvider>(
       builder: (context, provider, child) {
@@ -1988,9 +2100,9 @@ class _CreateBookingScreen2State extends State<CreateBookingScreen2> {
 
   @override
   void initState() {
- //   WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-  //    context.read<ProfileProvider>().getUserDataFromUserProvider(context);
-  //  });
+    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+      context.read<ProfileProvider>().getUserDetails(context);
+    });
     super.initState();
   }
 
@@ -2312,7 +2424,8 @@ class _CreateBookingScreen2State extends State<CreateBookingScreen2> {
 
   Widget paymentComponent() {
     return Consumer2<SalonDetailsProvider, ProfileProvider>(
-      builder: (context, provider, profileProvider,child) {
+      builder: (context, provider, profileProvider, child) {
+        Data? serviceDetail3 =  context.read<BarberProvider>().artistDetails;
         return Column(
           children: <Widget>[
             Container(
@@ -2386,14 +2499,14 @@ class _CreateBookingScreen2State extends State<CreateBookingScreen2> {
                                     Row(
                                       children: <Widget>[
                                         SvgPicture.asset(
-                                          element.targetGender == Gender.MEN
+                                          serviceDetail3!.targetGender == Gender.MEN
                                               ? ImagePathConstant.manIcon
                                               : ImagePathConstant.womanIcon,
                                           height: 3.h,
                                         ),
                                         SizedBox(width: 2.w),
                                         Text(
-                                          element.serviceTitle ?? '',
+                                          serviceDetail3!.name ?? '',
                                           style: TextStyle(
                                             fontSize: 12.sp,
                                             color: ColorsConstant.textDark,
@@ -2403,7 +2516,7 @@ class _CreateBookingScreen2State extends State<CreateBookingScreen2> {
                                     ),
                                     SizedBox(height: 1.w),
                                     Text(
-                                      widget.artistName??
+                                     widget.artistName ??
                                           '',
                                       style: TextStyle(
                                         fontSize: 10.sp,
@@ -2528,6 +2641,54 @@ class _CreateBookingScreen2State extends State<CreateBookingScreen2> {
                         ],
                       ),
                     ),
+                    // Container(
+                    //   margin: EdgeInsets.only(bottom: 2.w),
+                    //   child: Row(
+                    //     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    //     crossAxisAlignment: CrossAxisAlignment.start,
+                    //     children: <Widget>[
+                    //       Row(
+                    //         children: <Widget>[
+                    //           Text(
+                    //             StringConstant.tax,
+                    //             style: TextStyle(
+                    //               fontSize: 10.sp,
+                    //               fontWeight: FontWeight.w500,
+                    //               color: ColorsConstant.textDark,
+                    //             ),
+                    //           ),
+                    //           Text(
+                    //             ' ${StringConstant.gst} 18%',
+                    //             style: TextStyle(
+                    //               fontSize: 12.sp,
+                    //               fontWeight: FontWeight.w500,
+                    //               color: Color(0xFF47CB7C),
+                    //             ),
+                    //           ),
+                    //         ],
+                    //       ),
+                    //       Row(
+                    //         children: <Widget>[
+                    //           Text(
+                    //             '+',
+                    //             style: TextStyle(
+                    //               fontSize: 12.sp,
+                    //               color: ColorsConstant.textLight,
+                    //             ),
+                    //           ),
+                    //           Text(
+                    //             ' ₹ ${provider.totalPrice * 0.18}',
+                    //             style: TextStyle(
+                    //               fontSize: 12.sp,
+                    //               fontWeight: FontWeight.w500,
+                    //               color: ColorsConstant.textDark,
+                    //             ),
+                    //           ),
+                    //         ],
+                    //       ),
+                    //     ],
+                    //   ),
+                    // ),
                   ],
                 ),
               ),
@@ -2817,7 +2978,7 @@ class _CreateBookingScreen2State extends State<CreateBookingScreen2> {
                                     String formattedDate = DateFormat('MM-dd-yyyy').format(selectedDate);
                                     List<Map<String, String>> requests = [];
                                     List<String> selectedServiceIds = provider.barbergetSelectedServices()
-                                        .map((service) => service.id)
+                                        .map((service) => service.serviceId)
                                         .toList();
                                     String selectedArtistId = widget.artistId ?? "";
                                     for (String serviceId in selectedServiceIds) {
@@ -2848,11 +3009,18 @@ class _CreateBookingScreen2State extends State<CreateBookingScreen2> {
                                       } else {
                                         Loader.hideLoader(context); // Handle the case where the user is not authenticated
                                       }
+                                      Map<String, dynamic> requestBody = {
+                                        "salonId": provider.salonDetails!.data.data.id ?? "",
+                                        "requests": requests,
+                                        "date": formattedDate,
+                                      };
+                                      print("request body is :- $requestBody");
                                       // Make the request
                                       Response response = await dio.post(
-                                        'http://13.235.49.214:8800/appointments/schedule',
+                                        'http://13.235.49.214:8800/appointments/schedule?page=1&limit=10',
                                         data: requestBody,
-                                      );
+                                        );
+
                                       Loader.hideLoader(context);
                                       // Handle the response
                                       print(response.data);
@@ -4432,6 +4600,11 @@ class _CreateBookingScreen3State extends State<CreateBookingScreen3> {
                                       } else {
                                        Loader.hideLoader(context); // Handle the case where the user is not authenticated
                                       }
+                                      Map<String, dynamic> requestBody = {
+                                        "salonId": provider.salonDetails!.data.data.id ?? "",
+                                        "requests": requests,
+                                        "date": formattedDate,
+                                      };
                                       // Make the request
                                       Response response = await dio.post(
                                         'http://13.235.49.214:8800/appointments/schedule',

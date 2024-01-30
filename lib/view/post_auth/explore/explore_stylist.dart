@@ -45,7 +45,7 @@ class _ExploreStylistState extends State<ExploreStylist>
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ExploreProvider>(builder: (context, provider, child) {
+    return Consumer2<ExploreProvider,HomeProvider>(builder: (context, provider,provider2, child) {
       return Scaffold(
         body: Stack(
           children: <Widget>[
@@ -121,7 +121,7 @@ class _ExploreStylistState extends State<ExploreStylist>
                             GridView.builder(
                               padding: EdgeInsets.zero,
                               shrinkWrap: true,
-                              itemCount: provider.artistList2.length,
+                              itemCount: provider2.artistList2.length,
                               physics: BouncingScrollPhysics(),
                               gridDelegate:
                                   SliverGridDelegateWithFixedCrossAxisCount(
@@ -129,7 +129,7 @@ class _ExploreStylistState extends State<ExploreStylist>
                                 crossAxisCount: 2,
                               ),
                               itemBuilder: (context, index) {
-                                ArtistData artist = provider.artistList2[index];
+                                ArtistData artist = provider2.artistList2[index];
                                 return Container(
                                   margin: EdgeInsets.only(bottom: 2.5.h),
                                   padding: EdgeInsets.only(
@@ -258,7 +258,7 @@ class _ExploreStylistState extends State<ExploreStylist>
                                                           ),
                                                         ),
                                                         Text(
-                                                          artist.salonId ?? '',
+                                                          artist.salonName?? '',
                                                           textAlign:
                                                               TextAlign.center,
                                                           style: TextStyle(
@@ -432,7 +432,7 @@ class _ExploreStylistState extends State<ExploreStylist>
   }
 
   Widget titleSearchBarWithLocation() {
-    return Consumer<ExploreProvider>(builder: (context, provider, child) {
+    return Consumer2<ExploreProvider, HomeProvider>(builder: (context, provider,provider2, child) {
       return MediaQuery.removePadding(
         context: context,
         removeTop: true,
@@ -492,7 +492,7 @@ class _ExploreStylistState extends State<ExploreStylist>
                       style: StyleConstant.searchTextStyle,
                       textInputAction: TextInputAction.done,
                       onChanged: (searchText) =>
-                          provider.filterArtistList(searchText),
+                          provider2.filterArtistList(searchText),
                       decoration: StyleConstant.searchBoxInputDecoration(
                         context,
                         hintText: StringConstant.search,
@@ -544,7 +544,7 @@ class _ExploreStylist2State extends State<ExploreStylist2>
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ExploreProvider>(builder: (context, provider, child) {
+    return Consumer2<ExploreProvider,HomeProvider>(builder: (context, provider,provider2, child) {
       return Scaffold(
         body: Stack(
           children: <Widget>[
@@ -620,7 +620,7 @@ class _ExploreStylist2State extends State<ExploreStylist2>
                             GridView.builder(
                               padding: EdgeInsets.zero,
                               shrinkWrap: true,
-                              itemCount: provider.artistList2.length,
+                              itemCount: provider2.artistList2.length,
                               physics: BouncingScrollPhysics(),
                               gridDelegate:
                               SliverGridDelegateWithFixedCrossAxisCount(
@@ -628,7 +628,7 @@ class _ExploreStylist2State extends State<ExploreStylist2>
                                 crossAxisCount: 2,
                               ),
                               itemBuilder: (context, index) {
-                                ArtistData artist = provider.artistList2[index];
+                                ArtistData artist = provider2.artistList2[index];
                                 return Container(
                                   margin: EdgeInsets.only(bottom: 2.5.h),
                                   padding: EdgeInsets.only(
@@ -757,7 +757,7 @@ class _ExploreStylist2State extends State<ExploreStylist2>
                                                         ),
                                                       ),
                                                       Text(
-                                                        artist.salonId ?? '',
+                                                        artist.salonName ?? '',
                                                         textAlign:
                                                         TextAlign.center,
                                                         style: TextStyle(
@@ -917,7 +917,7 @@ class _ExploreStylist2State extends State<ExploreStylist2>
   }
 
   Widget titleSearchBarWithLocation() {
-    return Consumer<ExploreProvider>(builder: (context, provider, child) {
+    return Consumer2<ExploreProvider,HomeProvider>(builder: (context, provider,provider2, child) {
       return MediaQuery.removePadding(
         context: context,
         removeTop: true,
@@ -977,7 +977,7 @@ class _ExploreStylist2State extends State<ExploreStylist2>
                       style: StyleConstant.searchTextStyle,
                       textInputAction: TextInputAction.done,
                       onChanged: (searchText) =>
-                          provider.filterArtistList(searchText),
+                          provider2.filterArtistList(searchText),
                       decoration: StyleConstant.searchBoxInputDecoration(
                         context,
                         hintText: StringConstant.search,
