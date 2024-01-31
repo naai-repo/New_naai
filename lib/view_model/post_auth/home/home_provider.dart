@@ -845,6 +845,8 @@ print('token is :- $bearerToken');
         // Parse JSON and convert it into Dart objects
         AllBooking userBookings = AllBooking.fromJson(response.data);
 
+        _upcomingBooking.clear();
+        _previousBooking.clear();
         // Populate previous and upcoming bookings lists
         _previousBooking.addAll(userBookings.prevBooking);
         _upcomingBooking.addAll(userBookings.comingBookings);

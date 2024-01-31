@@ -638,7 +638,7 @@ class _ExploreScreenState extends State<ExploreScreen>
           color: Colors.white,
           child: GestureDetector(
             onTap: () async {
-              String salonId =  provider.salonData2[index].id ?? '';
+              String salonId =  homeprovider.salonList2[index].id ?? '';
               SalonDetailsProvider salonDetailsProvider = context.read<SalonDetailsProvider>();
 
               try {
@@ -684,7 +684,7 @@ class _ExploreScreenState extends State<ExploreScreen>
                         autoPlayInterval: Duration(seconds: 3),
                         autoPlayAnimationDuration: Duration(milliseconds: 800),
                         autoPlayCurve: Curves.fastOutSlowIn),
-                    items: (provider.salonData2[index].images ?? <ImageData>[] ) // Use an empty list if images is null
+                    items: (homeprovider.salonList2[index].images ?? <ImageData>[] ) // Use an empty list if images is null
                         .map((ImageData imageUrl) {
                       return Builder(
                         builder: (BuildContext context) {
@@ -766,7 +766,7 @@ class _ExploreScreenState extends State<ExploreScreen>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
                       Text(
-                        provider.salonData2[index].name ?? '',
+                        homeprovider.salonList2[index].name ?? '',
                         style: TextStyle(
                           color: ColorsConstant.textDark,
                           fontSize: 15.sp,
@@ -774,7 +774,7 @@ class _ExploreScreenState extends State<ExploreScreen>
                         ),
                       ),
                       Text(
-                        '${provider.salonData2[index].address}',
+                        '${homeprovider.salonList2[index].address}',
                         style: TextStyle(
                           color: ColorsConstant.greySalonAddress,
                           fontSize: 11.sp,
@@ -787,17 +787,17 @@ class _ExploreScreenState extends State<ExploreScreen>
                           ColorfulInformationCard(
                             imagePath: ImagePathConstant.locationIconAlt,
                             text:
-                                '${provider.salonData2[index].distance.toStringAsFixed(2)}',
+                                '${homeprovider.salonList2[index].distance.toStringAsFixed(2)}',
                             color: ColorsConstant.purpleDistance,
                           ),
                           SizedBox(width: 3.w),
                           ColorfulInformationCard(
                             imagePath: ImagePathConstant.starIcon,
-                            text: '${provider.salonData2[index].rating.toStringAsFixed(1)}',
+                            text: '${homeprovider.salonList2[index].rating.toStringAsFixed(1)}',
                             color: ColorsConstant.greenRating,
                           ),
                           SizedBox(width: 3.w),
-                          provider.salonData2[index].discount == 0 ||provider.salonData2[index].discount==null?SizedBox():Container(
+                          homeprovider.salonList2[index].discount == 0 ||homeprovider.salonList2[index].discount==null?SizedBox():Container(
                             constraints: BoxConstraints(minWidth: 13.w),
                             padding: EdgeInsets.symmetric(
                               vertical: 0.3.h,
@@ -818,7 +818,7 @@ class _ExploreScreenState extends State<ExploreScreen>
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: <Widget>[
                                 Text(
-                                  '${provider.salonData2[index].discount} %off',
+                                  '${homeprovider.salonList2[index].discount} %off',
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontSize: 10.sp,
@@ -857,7 +857,7 @@ class _ExploreScreenState extends State<ExploreScreen>
                                 ),
                               ),
                               TextSpan(
-                                text: '${provider.salonData2[index].timing.opening} - ${provider.salonData2[index].timing.closing}',
+                                text: '${homeprovider.salonList2[index].timing.opening} - ${homeprovider.salonList2[index].timing.closing}',
                                 style: TextStyle(
                                   color: ColorsConstant.textDark,
                                   fontSize: 10.sp,
@@ -890,8 +890,7 @@ class _ExploreScreenState extends State<ExploreScreen>
                                 ),
                               ),
                               TextSpan(
-                                text: provider
-                                    .salonData2[index].closedOn,
+                                text: homeprovider.salonList2[index].closedOn,
                                 style: TextStyle(
                                   color: ColorsConstant.textDark,
                                   fontSize: 10.sp,
@@ -905,7 +904,7 @@ class _ExploreScreenState extends State<ExploreScreen>
                     ],
                   ),
                   SizedBox(height: 1.2.h),
-                  index == (provider.salonData2.length - 1)
+                  index == (homeprovider.salonList2.length - 1)
                       ? SizedBox(height: 10.h)
                       : Divider(
                           thickness: 1,

@@ -114,7 +114,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                             ),
                           //  if (provider.isSearchExpanded)
                             serviceCategories(),
-                       if (provider.upcomingBooking.isNotEmpty)
+                       if (provider.previousBooking.isNotEmpty)
                               Padding(
                                 padding: EdgeInsets.symmetric(horizontal: 3.w),
                                 child: Visibility(

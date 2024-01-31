@@ -162,8 +162,6 @@ class TimeSlot {
 }
 
 
-
-
 class PrevBooking {
   TimeSlot timeSlot;
   String id;

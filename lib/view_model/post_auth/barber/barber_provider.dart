@@ -21,6 +21,7 @@ import '../../../models/artist_model.dart';
 import '../../../models/salon.dart';
 import '../../../models/salon_detail.dart';
 import '../../../models/service_response.dart';
+import '../../../utils/access_token.dart';
 
 class BarberProvider with ChangeNotifier {
   int _selectedArtistIndex = 0;
@@ -88,18 +89,27 @@ class BarberProvider with ChangeNotifier {
     required int stars,
     required String text,
   }) async {
-    final String apiUrl = 'http://localhost:8800/partner/review/add';
-    final Dio dio = Dio();
+    String apiUrl = 'http://13.235.49.214:8800/partner/review/add';
 
     final Map<String, dynamic> requestData = {
-      "title": "Review Salon",
+      "title": "Review Artist",
       "description": text,
-      "salonId": artistDetails?.id,
+      "artistId": artistDetails?.id,
       "rating": stars
     };
 
     try {
+      Loader.showLoader(context);
+      Dio dio = Dio();
+      dio.interceptors.add(LogInterceptor(requestBody: true, responseBody: true, logPrint: print));
 
+      String? authToken = await AccessTokenManager.getAccessToken();
+
+      if (authToken != null) {
+        dio.options.headers['Authorization'] = 'Bearer $authToken';
+      } else {
+        Loader.hideLoader(context); // Handle the case where the user is not authenticated
+      }
       final response = await dio.post(
         apiUrl,
         options: Options(headers: {"Content-Type": "application/json"}),
@@ -110,12 +120,15 @@ class BarberProvider with ChangeNotifier {
         // Review submitted successfully, handle the response data if needed
         print("Review submitted successfully!");
         print(response.data);
+        Loader.hideLoader(context);
       } else {
+        Loader.hideLoader(context);
         // Failed to submit the review, handle the error
         print("Failed to submit the review");
         print(response.data);
       }
     } catch (error) {
+      Loader.hideLoader(context);
       // Handle any exceptions that occurred during the request
       print("Error: $error");
     }

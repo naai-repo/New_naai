@@ -825,7 +825,7 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
                             SizedBox(height: 1.h),
                             _buildTimeSlotCategory([540,570,600,630,660,690,720], "Morning", provider),
                             _buildTimeSlotCategory([750,780,810,840,870,900,930,960], "Afternoon", provider),
-                            _buildTimeSlotCategory([990,1020,1050, 1080,1110,1140,1170,1200], "Evening", provider),
+                            _buildTimeSlotCategory([990,1020,1050, 1080,1110,1140,1170,1200,1230,1260], "Evening", provider),
                             SizedBox(height: 1.h),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.end,
@@ -1031,8 +1031,9 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
 
                                     List<String> selectedServiceIds = provider
                                         .getSelectedServices()
-                                        .map((service) => service.id)
-                                        .toList();
+                                        ?.map((service) => service.id)
+                                        ?.toList() ?? [];
+
                                     ArtistService? selectedArtist = provider
                                         .artistServiceList!.selectedArtistMap[
                                     selectedServiceIds.first] ??
@@ -1111,8 +1112,7 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
                                               // Parse the response as TimeSlotResponse
                                               TimeSlotResponse timeSlotResponse = TimeSlotResponse
                                                   .fromJson(response.data);
-                                              provider.setTimeSlot(
-                                                  timeSlotResponse);
+                                              provider.setTimeSlot(timeSlotResponse);
                                             }
                                           } catch (error) {
                                             print(
@@ -2484,8 +2484,8 @@ class _CreateBookingScreen2State extends State<CreateBookingScreen2> {
                       ),
                     ),
                     SizedBox(height: 1.h),
-                    ...( provider.getSelectedServices().map(
-                          (element) => Container(
+                    ...(provider.selectedServices.map(
+                          (element) =>Container(
                         margin: EdgeInsets.symmetric(vertical: 2.w),
                         child: Column(
                           children: [
@@ -2499,14 +2499,14 @@ class _CreateBookingScreen2State extends State<CreateBookingScreen2> {
                                     Row(
                                       children: <Widget>[
                                         SvgPicture.asset(
-                                          serviceDetail3!.targetGender == Gender.MEN
+                                          element.targetGender == Gender.MEN
                                               ? ImagePathConstant.manIcon
                                               : ImagePathConstant.womanIcon,
                                           height: 3.h,
                                         ),
                                         SizedBox(width: 2.w),
                                         Text(
-                                          serviceDetail3!.name ?? '',
+                                          element.serviceTitle ?? '',
                                           style: TextStyle(
                                             fontSize: 12.sp,
                                             color: ColorsConstant.textDark,
@@ -2778,7 +2778,7 @@ class _CreateBookingScreen2State extends State<CreateBookingScreen2> {
                             SizedBox(height: 1.h),
                             _buildTimeSlotCategory([540,570,600,630,660,690,720], "Morning", provider),
                             _buildTimeSlotCategory([750,780,810,840,870,900,930,960], "Afternoon", provider),
-                            _buildTimeSlotCategory([990,1020,1050, 1080,1110,1140,1170,1200], "Evening", provider),
+                            _buildTimeSlotCategory([990,1020,1050, 1080,1110,1140,1170,1200,1230,1260], "Evening", provider),
                             SizedBox(height: 1.h),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.end,
@@ -4369,7 +4369,7 @@ class _CreateBookingScreen3State extends State<CreateBookingScreen3> {
                             SizedBox(height: 1.h),
                             _buildTimeSlotCategory([540,570,600,630,660,690,720], "Morning", provider),
                             _buildTimeSlotCategory([750,780,810,840,870,900,930,960], "Afternoon", provider),
-                            _buildTimeSlotCategory([990,1020,1050, 1080,1110,1140,1170,1200], "Evening", provider),
+                            _buildTimeSlotCategory([990,1020,1050, 1080,1110,1140,1170,1200,1230,1260], "Evening", provider),
                             SizedBox(height: 1.h),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.end,

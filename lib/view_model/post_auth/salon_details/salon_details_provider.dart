@@ -37,6 +37,15 @@ class SalonDetailsProvider with ChangeNotifier {
   DataService? serviceDetail;
   // List<Review> _salonReviewList = [];
   ArtistRequest? _apiAResponse;
+  List<TimeService> _selectedbarberServices = [];
+
+  List<TimeService> get selectedServices => _selectedbarberServices;
+
+  // Add a method to set selected services
+  void setSelectedServices(List<TimeService> services) {
+    _selectedbarberServices = services;
+    notifyListeners();
+  }
 
   // Method to set API A response
   void setApiAResponse(ArtistRequest response) {
@@ -272,46 +281,43 @@ class SalonDetailsProvider with ChangeNotifier {
     }
   }
 
-
   Future<void> submitReview2( BuildContext context, {
     required int stars,
     required String text,
   }) async {
-    final Dio dio = Dio();
+    String apiUrl = 'http://13.235.49.214:8800/partner/review/add';
 
     final Map<String, dynamic> requestData = {
       "title": "Review Salon",
       "description": text,
-      "salonId": salonid,
+      "salonId": salonDetails!.data.data.id,
       "rating": stars
     };
 
     try {
       Loader.showLoader(context);
+      Dio dio = Dio();
+      dio.interceptors.add(LogInterceptor(requestBody: true, responseBody: true, logPrint: print));
 
       String? authToken = await AccessTokenManager.getAccessToken();
 
-      if (authToken == null) {
-        Loader.hideLoader(context);
-        print("Access token not found. User may not be authenticated.");
-        // Handle the case where the user is not authenticated
-        return;
+      if (authToken != null) {
+        dio.options.headers['Authorization'] = 'Bearer $authToken';
+      } else {
+        Loader.hideLoader(context); // Handle the case where the user is not authenticated
       }
-
-      // Include Bearer token in the headers
-      dio.options.headers["Authorization"] = "Bearer $authToken";
-
-
       final response = await dio.post(
-        'http://13.235.49.214:8800/partner/review/add',
+        apiUrl,
         options: Options(headers: {"Content-Type": "application/json"}),
         data: json.encode(requestData),
       );
-      Loader.hideLoader(context);
+      print('Request is :- $requestData');
       if (response.statusCode == 200) {
+
         // Review submitted successfully, handle the response data if needed
         print("Review submitted successfully!");
         print(response.data);
+        Loader.hideLoader(context);
       } else {
         Loader.hideLoader(context);
         // Failed to submit the review, handle the error
@@ -341,26 +347,6 @@ class SalonDetailsProvider with ChangeNotifier {
 
   String? Servicetitle;
 
-  Future<void> fetchData() async {
-    try {
-      final response = await Dio().get(
-        'http://13.235.49.214:8800/partner/service/single/${salonid!.salonId}',
-      );
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> data = response.data['data'];
-        final String title = data['serviceTitle'];
-        Servicetitle = title;
-        print('titleis $title');
-      } else {
-        // Handle other status codes
-        print('Failed to fetch service title: ${response.statusCode}');
-      }
-    } catch (error) {
-      // Handle errors
-      print('Failed to fetch service title: $error');
-    }
-  }
   Set<DataService> _selectedServices = Set<DataService>();
   Set<Service2> _barberselectedServices = Set<Service2>();
   Set<DataService> getSelectedServices() => _selectedServices;
