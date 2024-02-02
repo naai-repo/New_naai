@@ -114,7 +114,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                             ),
                           //  if (provider.isSearchExpanded)
                             serviceCategories(),
-                       if (provider.previousBooking.isNotEmpty)
+                       if (provider.upcomingBooking.isNotEmpty)
                               Padding(
                                 padding: EdgeInsets.symmetric(horizontal: 3.w),
                                 child: Visibility(
@@ -182,14 +182,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   BookedSalonAndArtistName(
                     headerText: StringConstant.salon,
                     headerIconPath: ImagePathConstant.salonChairIcon,
-                    nameText: provider.previousBooking.isNotEmpty ? provider.previousBooking.first.salonId ?? '' : '',
+                    nameText:  provider.previousBooking.first.salonName ?? '' ,
                   ),
                   Visibility(
-                    visible: provider.artistList.isNotEmpty,
+                    visible: provider.artistList2.isNotEmpty,
                     child: BookedSalonAndArtistName(
                       headerText: StringConstant.artist,
                       headerIconPath: ImagePathConstant.artistIcon,
-                      nameText: provider.previousBooking.isNotEmpty ? provider.previousBooking.first.salonId ?? '' : '',
+                      nameText:  provider.previousBooking.first.artistServiceMap.first.artistName ?? '',
                     ),
                   ),
                 ],
@@ -211,7 +211,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   physics: const NeverScrollableScrollPhysics(),
                   scrollDirection: Axis.horizontal,
                   itemBuilder: (context, index) => Text(
-                    provider.previousBooking.first.artistServiceMap.first.serviceId?[index] ??
+                    provider.previousBooking.first.artistServiceMap.first.serviceName?[index] ??
                         '',
                     style: TextStyle(
                       fontWeight: FontWeight.w500,
@@ -219,8 +219,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       color: const Color(0xFF212121),
                     ),
                   ),
-                  separatorBuilder: (context, index) => const Text(', '),
-                  itemCount: provider.previousBooking.first.artistServiceMap.first.serviceId?.length??
+                  separatorBuilder: (context, index) => const Text(''),
+                  itemCount: provider.previousBooking.first.artistServiceMap.first.serviceName?.length??
                       0,
                 ),
               ),
@@ -229,8 +229,42 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 children: <Widget>[
                   RedButtonWithText(
                     buttonText: StringConstant.bookAgain,
-                    onTap: () => provider.populateBookingData(context, 0),
-                    padding: EdgeInsets.symmetric(
+                    onTap: () async {
+                      String salonId = provider.previousBooking.first.salonId;
+                      SalonDetailsProvider salonDetailsProvider = context.read<SalonDetailsProvider>();
+
+                      try {
+                        Loader.showLoader(context);
+                        final response = await Dio().get(
+                          'http://13.235.49.214:8800/partner/salon/single/$salonId',
+                        );
+                        Loader.hideLoader(context);
+
+                        ApiResponse apiResponse = ApiResponse.fromJson(response.data);
+                        ApiResponse salonDetails = ApiResponse(
+                          status: apiResponse.status,
+                          message: apiResponse.message,
+                          data: ApiResponseData(
+                            data: apiResponse.data.data,
+                            artists: apiResponse.data.artists,
+                            services: apiResponse.data.services,
+                          ),
+                        );
+
+                        // Pass the salonDetails to SalonDetailsProvider
+                        salonDetailsProvider.setSalonDetails(salonDetails);
+
+                        // If the API call is successful, navigate to the SalonDetailsScreen
+                        Navigator.pushNamed(context, NamedRoutes.salonDetailsRoute, arguments: salonId);
+                      } catch (error) {
+                        Loader.hideLoader(context);
+                        // Handle the case where the API call was not successful
+                        // You can show an error message or take appropriate action
+                        Navigator.pushNamed(context, NamedRoutes.bottomNavigationRoute);
+                        print('Failed to fetch salon details: $error');
+                      }
+                    },
+                     padding: EdgeInsets.symmetric(
                       horizontal: 5.w,
                       vertical: 1.h,
                     ),
@@ -268,7 +302,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       return GestureDetector(
         onTap: () => Navigator.pushNamed(
           context,
-          NamedRoutes.appointmentDetailsRoute,
+          NamedRoutes.appointmentDetailsRoute2,
+          arguments: 0,
         ),
         child: Container(
           padding: EdgeInsets.all(1.5.h),
@@ -1550,7 +1585,7 @@ class _HomeScreen2State extends State<HomeScreen2>with WidgetsBindingObserver {
                 children: <Widget>[
                   RedButtonWithText(
                     buttonText: StringConstant.bookAgain,
-                    onTap: () => provider.populateBookingData(context, 0),
+                    onTap: (){},
                     padding: EdgeInsets.symmetric(
                       horizontal: 5.w,
                       vertical: 1.h,
@@ -2873,7 +2908,7 @@ class _HomeScreen3State extends State<HomeScreen3> {
                 children: <Widget>[
                   RedButtonWithText(
                     buttonText: StringConstant.bookAgain,
-                    onTap: () => provider.populateBookingData(context, 0),
+                    onTap: () {},
                     padding: EdgeInsets.symmetric(
                       horizontal: 5.w,
                       vertical: 1.h,
@@ -4194,7 +4229,7 @@ class _HomeScreen4State extends State<HomeScreen4> with WidgetsBindingObserver {
                 children: <Widget>[
                   RedButtonWithText(
                     buttonText: StringConstant.bookAgain,
-                    onTap: () => provider.populateBookingData(context, 0),
+                    onTap: () {},
                     padding: EdgeInsets.symmetric(
                       horizontal: 5.w,
                       vertical: 1.h,

@@ -50,7 +50,6 @@ class CurrentBooking {
   int v;
   String? bookingType;
   String?  salonName ;
-
   CurrentBooking({
     required this.timeSlot,
     required this.id,
@@ -109,6 +108,8 @@ class ArtistServiceMap {
   String serviceId;
   String id;
   String? chosenBy;
+  String ? artistName;
+  String? serviceName;
 
   ArtistServiceMap({
     required this.timeSlot,
@@ -116,6 +117,8 @@ class ArtistServiceMap {
     required this.serviceId,
     required this.id,
     this.chosenBy,
+    this.artistName,
+    this.serviceName,
   });
 
   factory ArtistServiceMap.fromJson(Map<String, dynamic> json) => ArtistServiceMap(
@@ -124,15 +127,23 @@ class ArtistServiceMap {
     serviceId: json["serviceId"],
     id: json["_id"],
     chosenBy: json["chosenBy"],
+    artistName: json["artistName"],
   );
-
   Map<String, dynamic> toJson() => {
     "timeSlot": timeSlot.toJson(),
     "artistId": artistId,
     "serviceId": serviceId,
     "_id": id,
     "chosenBy": chosenBy,
+    "artistName": artistName,
+    "serviceName": serviceName,
   };
+  void setartistName(String name){
+    this.artistName = name;
+  }
+  void setserviceName(String name){
+    this.serviceName = name;
+  }
 }
 class TimeSlot {
   String start;

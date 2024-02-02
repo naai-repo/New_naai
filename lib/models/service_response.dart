@@ -24,7 +24,7 @@ class ServiceData {
   final String serviceTitle;
   final String description;
   final String targetGender;
-  final List<String> salonIds;
+  final String salonId;
   final int avgTime;
   final int basePrice;
   final DateTime createdAt;
@@ -37,7 +37,7 @@ class ServiceData {
     required this.serviceTitle,
     required this.description,
     required this.targetGender,
-    required this.salonIds,
+    required this.salonId,
     required this.avgTime,
     required this.basePrice,
     required this.createdAt,
@@ -52,7 +52,7 @@ class ServiceData {
       serviceTitle: json['serviceTitle'] ?? '',
       description: json['description'] ?? '',
       targetGender: json['targetGender'] ?? '',
-      salonIds: List<String>.from(json['salonIds'] ?? []),
+      salonId: json['salonId'] ?? [],
       avgTime: json['avgTime'] ?? 0,
       basePrice: json['basePrice'] ?? 0,
       createdAt: DateTime.parse(json['createdAt'] ?? ''),

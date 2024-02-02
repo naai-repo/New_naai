@@ -41,7 +41,6 @@ class SalonDetailsProvider with ChangeNotifier {
 
   List<TimeService> get selectedServices => _selectedbarberServices;
 
-  // Add a method to set selected services
   void setSelectedServices(List<TimeService> services) {
     _selectedbarberServices = services;
     notifyListeners();
@@ -285,51 +284,66 @@ class SalonDetailsProvider with ChangeNotifier {
     required int stars,
     required String text,
   }) async {
-    String apiUrl = 'http://13.235.49.214:8800/partner/review/add';
+      String apiUrl = 'http://13.235.49.214:8800/partner/review/add';
 
-    final Map<String, dynamic> requestData = {
-      "title": "Review Salon",
-      "description": text,
-      "salonId": salonDetails!.data.data.id,
-      "rating": stars
-    };
+      String? salonId = salonDetails?.data.data.id;
 
-    try {
-      Loader.showLoader(context);
-      Dio dio = Dio();
-      dio.interceptors.add(LogInterceptor(requestBody: true, responseBody: true, logPrint: print));
-
-      String? authToken = await AccessTokenManager.getAccessToken();
-
-      if (authToken != null) {
-        dio.options.headers['Authorization'] = 'Bearer $authToken';
-      } else {
-        Loader.hideLoader(context); // Handle the case where the user is not authenticated
+      // If salonId is null or empty, get it from the first booking in home provider
+      if (salonId == null || salonId.isEmpty) {
+        HomeProvider homeProvider = Provider.of<HomeProvider>(context, listen: false);
+        if (homeProvider.previousBooking.isNotEmpty) {
+          salonId = homeProvider.previousBooking.first.salonId;
+        }
       }
-      final response = await dio.post(
-        apiUrl,
-        options: Options(headers: {"Content-Type": "application/json"}),
-        data: json.encode(requestData),
-      );
-      print('Request is :- $requestData');
-      if (response.statusCode == 200) {
 
-        // Review submitted successfully, handle the response data if needed
-        print("Review submitted successfully!");
-        print(response.data);
-        Loader.hideLoader(context);
-      } else {
-        Loader.hideLoader(context);
-        // Failed to submit the review, handle the error
-        print("Failed to submit the review");
-        print(response.data);
+      if (salonId == null || salonId.isEmpty) {
+        // Handle the case where salonId is still null or empty
+        print("Salon ID is null or empty");
+        return;
       }
-    } catch (error) {
-      Loader.hideLoader(context);
-      // Handle any exceptions that occurred during the request
-      print("Error: $error");
+
+      final Map<String, dynamic> requestData = {
+        "title": "Review Salon",
+        "description": text,
+        "salonId": salonId,
+        "rating": stars,
+      };
+
+      try {
+        Loader.showLoader(context);
+        Dio dio = Dio();
+        dio.interceptors.add(LogInterceptor(requestBody: true, responseBody: true, logPrint: print));
+
+        String? authToken = await AccessTokenManager.getAccessToken();
+
+        if (authToken != null) {
+          dio.options.headers['Authorization'] = 'Bearer $authToken';
+        } else {
+          Loader.hideLoader(context); // Handle the case where the user is not authenticated
+        }
+        final response = await dio.post(
+          apiUrl,
+          options: Options(headers: {"Content-Type": "application/json"}),
+          data: json.encode(requestData),
+        );
+        print('Request is :- $requestData');
+        if (response.statusCode == 200) {
+          // Review submitted successfully, handle the response data if needed
+          print("Review submitted successfully!");
+          print(response.data);
+          Loader.hideLoader(context);
+        } else {
+          Loader.hideLoader(context);
+          // Failed to submit the review, handle the error
+          print("Failed to submit the review");
+          print(response.data);
+        }
+      } catch (error) {
+        Loader.hideLoader(context);
+        // Handle any exceptions that occurred during the request
+        print("Error: $error");
+      }
     }
-  }
 
 
   void setApiResponse(ApiResponse apiResponse) {
@@ -347,9 +361,9 @@ class SalonDetailsProvider with ChangeNotifier {
 
   String? Servicetitle;
 
-  Set<DataService> _selectedServices = Set<DataService>();
+  Set<ServicesWithoutSubCategory> _selectedServices = Set<ServicesWithoutSubCategory>();
   Set<Service2> _barberselectedServices = Set<Service2>();
-  Set<DataService> getSelectedServices() => _selectedServices;
+  Set<ServicesWithoutSubCategory> getSelectedServices() => _selectedServices;
 
   Set<Service2> barbergetSelectedServices() => _barberselectedServices;
 
@@ -357,7 +371,7 @@ class SalonDetailsProvider with ChangeNotifier {
 
 
 
-  void toggleSelectedService(DataService service) {
+  void toggleSelectedService(ServicesWithoutSubCategory service) {
     if (_selectedServices.contains(service)) {
       _selectedServices.remove(service);
     } else {
@@ -738,13 +752,13 @@ class SalonDetailsProvider with ChangeNotifier {
     _filteredServiceList.addAll(_serviceList);
   }
 
-  DataService? _selectedService;
+  ServicesWithoutSubCategory? _selectedService;
 
-  DataService? get selectedService => _selectedService;
+  ServicesWithoutSubCategory? get selectedService => _selectedService;
 
   void setSelectedService2(String serviceId) {
     // Find the service with the given id in salonDetails
-    DataService? selectedService = salonDetails?.data.services.firstWhereOrNull(
+    ServicesWithoutSubCategory? selectedService = salonDetails?.data.services.servicesWithoutSubCategory.firstWhereOrNull(
           (service) => service.id == serviceId,
     );
 

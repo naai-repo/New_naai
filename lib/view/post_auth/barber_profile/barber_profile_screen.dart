@@ -344,11 +344,6 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
                   itemBuilder: (context, index) {
                     Data? serviceDetail3 =  context.read<BarberProvider>().artistDetails;
                     Service2? serviceDetail  = context.read<BarberProvider>().artistDetails!.services[index];
-
-                  //  bool isAdded  = provider.salonDetails!.data.services
-                  //      ?.contains(serviceDetail.id) ??
-                 //   false;// Assuming paid is a boolean
-
                     return GestureDetector(
                       onTap: () {
                         provider.toggleSelectedServicebarber(serviceDetail!);
@@ -376,7 +371,7 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
                               child: Row(
                                 children: <Widget>[
                                   SvgPicture.asset(
-                                    serviceDetail3!.targetGender == Gender.MEN
+                                    serviceDetail3!.targetGender == 'male'
                                         ? ImagePathConstant.manIcon
                                         : ImagePathConstant.womanIcon,
                                     height: 4.h,

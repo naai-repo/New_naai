@@ -22,6 +22,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../models/artist_detail.dart';
 import '../../../models/artist_model.dart';
 import '../../../models/salon_detail.dart';
+import '../../../models/salon_detail.dart';
 import '../../../models/service_response.dart';
 import '../../../utils/enums.dart';
 import '../../../utils/loading_indicator.dart';
@@ -362,7 +363,7 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
    Widget servicesTab() {
     return Consumer<SalonDetailsProvider>(builder: (context, provider, child) {
     //  List<DataService> selectedServices = [];
-      Set<DataService> selectedServices = provider.getSelectedServices();
+      Set<ServicesWithoutSubCategory> selectedServices = provider.getSelectedServices();
 
       return Column(
         children: <Widget>[
@@ -397,7 +398,7 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
             ),
           ),
           SizedBox(height: 1.h),
-          provider.salonDetails!.data.services.length == 0
+          provider.salonDetails!.data.services.servicesWithoutSubCategory.length == 0
               ? Container(
             height: 10.h,
             child: Center(
@@ -408,10 +409,10 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
             padding: EdgeInsets.zero,
             shrinkWrap: true,
             physics: NeverScrollableScrollPhysics(),
-            itemCount: provider.salonDetails!.data.services.length,
+            itemCount: provider.salonDetails!.data.services.servicesWithoutSubCategory.length,
             itemBuilder: (context, index) {
-              DataService? serviceDetail =
-              provider.salonDetails!.data.services[index];
+              ServicesWithoutSubCategory? serviceDetail =
+              provider.salonDetails!.data.services.servicesWithoutSubCategory[index];
               return GestureDetector(
                 onTap: () {
                  //logic for to tap and checked the checkbox
@@ -440,7 +441,7 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
                         child: Row(
                           children: <Widget>[
                             SvgPicture.asset(
-                              serviceDetail.targetGender == Gender.MEN
+                              serviceDetail.targetGender == 'male'
                                   ? ImagePathConstant.manIcon
                                   : ImagePathConstant.womanIcon,
                               height: 4.h,
@@ -679,7 +680,7 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
                             SalonDetailsProvider salonDetailsProvider = context.read<SalonDetailsProvider>();
                             String artistId = artist.id;
                             String salonId = artist.salonId;
-                           List<ArtistService2> services = artist.services;
+                           List<dynamic> services = artist.services;
                             BarberProvider barberDetailsProvider = context.read<BarberProvider>();
 
                             try {
@@ -1500,7 +1501,7 @@ class _SalonDetailsScreen2State extends State<SalonDetailsScreen2> {
   Widget servicesTab() {
     return Consumer<SalonDetailsProvider>(builder: (context, provider, child) {
       //  List<DataService> selectedServices = [];
-      Set<DataService> selectedServices = provider.getSelectedServices();
+      Set<ServicesWithoutSubCategory> selectedServices = provider.getSelectedServices();
 
       return Column(
         children: <Widget>[
@@ -1535,7 +1536,7 @@ class _SalonDetailsScreen2State extends State<SalonDetailsScreen2> {
             ),
           ),
           SizedBox(height: 1.h),
-          provider.salonDetails!.data.services.length == 0
+          provider.salonDetails!.data.services.servicesWithoutSubCategory.length == 0
               ? Container(
             height: 10.h,
             child: Center(
@@ -1546,10 +1547,10 @@ class _SalonDetailsScreen2State extends State<SalonDetailsScreen2> {
             padding: EdgeInsets.zero,
             shrinkWrap: true,
             physics: NeverScrollableScrollPhysics(),
-            itemCount: provider.salonDetails!.data.services.length,
+            itemCount: provider.salonDetails!.data.services.servicesWithoutSubCategory.length,
             itemBuilder: (context, index) {
-              DataService? serviceDetail =
-              provider.salonDetails!.data.services[index];
+              ServicesWithoutSubCategory? serviceDetail =
+              provider.salonDetails!.data.services.servicesWithoutSubCategory[index];
               return GestureDetector(
                 onTap: () {
                   //logic for to tap and checked the checkbox
@@ -1817,7 +1818,7 @@ class _SalonDetailsScreen2State extends State<SalonDetailsScreen2> {
                             SalonDetailsProvider salonDetailsProvider = context.read<SalonDetailsProvider>();
                             String artistId = artist.id;
                             String salonId = artist.salonId;
-                            List<ArtistService2> services = artist.services;
+                            List<dynamic> services = artist.services;
                             BarberProvider barberDetailsProvider = context.read<BarberProvider>();
 
                             try {

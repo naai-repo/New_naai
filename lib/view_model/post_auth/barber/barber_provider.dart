@@ -91,6 +91,22 @@ class BarberProvider with ChangeNotifier {
   }) async {
     String apiUrl = 'http://13.235.49.214:8800/partner/review/add';
 
+    String? artistId = artistDetails?.id;
+
+    // If salonId is null or empty, get it from the first booking in home provider
+    if (artistId == null || artistId.isEmpty) {
+      HomeProvider homeProvider = Provider.of<HomeProvider>(context, listen: false);
+      if (homeProvider.previousBooking.isNotEmpty) {
+        artistId = homeProvider.previousBooking.first.artistServiceMap.first.artistId;
+      }
+    }
+
+    if (artistId == null || artistId.isEmpty) {
+      // Handle the case where salonId is still null or empty
+      print("Salon ID is null or empty");
+      return;
+    }
+
     final Map<String, dynamic> requestData = {
       "title": "Review Artist",
       "description": text,

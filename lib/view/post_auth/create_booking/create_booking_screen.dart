@@ -2506,7 +2506,7 @@ class _CreateBookingScreen2State extends State<CreateBookingScreen2> {
                                         ),
                                         SizedBox(width: 2.w),
                                         Text(
-                                          element.serviceTitle ?? '',
+                                          element.serviceTitle,
                                           style: TextStyle(
                                             fontSize: 12.sp,
                                             color: ColorsConstant.textDark,
@@ -2517,7 +2517,7 @@ class _CreateBookingScreen2State extends State<CreateBookingScreen2> {
                                     SizedBox(height: 1.w),
                                     Text(
                                      widget.artistName ??
-                                          '',
+                                          'jsdv skljdk',
                                       style: TextStyle(
                                         fontSize: 10.sp,
                                         color: ColorsConstant.textDark,
@@ -2909,24 +2909,6 @@ class _CreateBookingScreen2State extends State<CreateBookingScreen2> {
       ),
     );
   }
-  bool isTimeSlotInCategory(TimeSlotResponseTimeSlot element, String category, SalonDetailsProvider provider) {
-    // Implement your logic to check if the time slot belongs to the specified category (morning, afternoon, evening, night)
-    // Return true if in the category, false otherwise
-    // Example: return element.key == 1 && category == "Morning";
-    // Adjust this logic based on your data structure
-    switch (category) {
-      case "Morning":
-        return element.key >= 1 && element.key <= 5;
-      case "Afternoon":
-        return element.key >= 6 && element.key <= 10;
-      case "Evening":
-        return element.key >= 11 && element.key <= 14;
-      case "Night":
-        return element.key >= 15 && element.key <= 18;
-      default:
-        return false;
-    }
-  }
 
   Widget slotSelectionWidget() {
     return Consumer<SalonDetailsProvider>(
@@ -3029,6 +3011,7 @@ class _CreateBookingScreen2State extends State<CreateBookingScreen2> {
                                       if (response.statusCode == 200) {
                                         TimeSlotResponse timeSlotResponse = TimeSlotResponse.fromJson(response.data);
                                         provider.setTimeSlot(timeSlotResponse);
+                                        provider.setSelectedServices(timeSlotResponse.timeSlots[0].order.map((order) => order.service).toList());
                                         print("Time Slot Response: $timeSlotResponse");
                                         // TODO: Process the response as needed
                                       } else {
@@ -3682,64 +3665,6 @@ class _CreateBookingScreen3State extends State<CreateBookingScreen3> {
                             children: <Widget>[
                               salonOverviewCard(),
                               SizedBox(height: 2.h),
-                              //Code for MultiService
-                              /*
-                              if (provider.isOnPaymentPage) paymentComponent() else Column(
-                                      children: <Widget>[
-                                        schedulingStatus(),
-                                        SizedBox(height: 2.h),
-                                        if (provider.isOnSelectStaffType)
-                                          Padding(
-                                            padding: EdgeInsets.symmetric(horizontal:2.h),
-                                            child: selectSingleStaffCard(),
-                                          ),
-                                        if (provider.isOnSelectStaffType  && !singleStaffListExpanded  )
-                                            Padding(
-                                              padding: EdgeInsets.symmetric(
-                                                  horizontal: 2.h),
-                                              child: Container(
-                                                width: double.infinity,
-                                                decoration: BoxDecoration(
-                                                  borderRadius: BorderRadius
-                                                      .circular(2.w),
-                                                  color: const Color(
-                                                      0xffFFB6C1),
-                                                ),
-                                                child: const Center(
-                                                  child: Text(
-                                                    StringConstant.Staff,
-                                                    style: TextStyle(
-                                                      fontWeight: FontWeight
-                                                          .w500,
-                                                      //     fontSize: 10.sp,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                        if (provider.isOnSelectStaffType)
-                                        SizedBox(height: 2.h),
-                                        if (provider.isOnSelectStaffType)
-                                        authenticationOptionsDivider(),
-                                        if (provider.isOnSelectStaffType)
-                                        Padding(
-                                          padding: EdgeInsets.all(2.h),
-                                          child: selectMingleStaffCard(),
-                                        ),
-                                        if (provider.isOnSelectSlot)
-                                          slotSelectionWidget(),
-                                      ],
-                                    ),
-                              SizedBox(height: 35.h),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              */
                               provider.isOnPaymentPage
                                   ? paymentComponent()
                                   : Column(
@@ -4499,24 +4424,6 @@ class _CreateBookingScreen3State extends State<CreateBookingScreen3> {
         ),
       ),
     );
-  }
-  bool isTimeSlotInCategory(TimeSlotResponseTimeSlot element, String category, SalonDetailsProvider provider) {
-    // Implement your logic to check if the time slot belongs to the specified category (morning, afternoon, evening, night)
-    // Return true if in the category, false otherwise
-    // Example: return element.key == 1 && category == "Morning";
-    // Adjust this logic based on your data structure
-    switch (category) {
-      case "Morning":
-        return element.key >= 1 && element.key <= 5;
-      case "Afternoon":
-        return element.key >= 6 && element.key <= 10;
-      case "Evening":
-        return element.key >= 11 && element.key <= 14;
-      case "Night":
-        return element.key >= 15 && element.key <= 18;
-      default:
-        return false;
-    }
   }
 
   Widget slotSelectionWidget() {

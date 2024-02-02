@@ -121,6 +121,9 @@ class RoutingFunctions {
       case NamedRoutes.appointmentDetailsRoute:
         target = AppointmentDetails(index: settings.arguments as int);
         break;
+      case NamedRoutes.appointmentDetailsRoute2:
+        target = AppointmentDetails2(index: settings.arguments as int);
+        break;
       case NamedRoutes.bookingHistoryRoute:
         target = BookingHistoryScreen();
         break;
