@@ -60,7 +60,7 @@ class SalonDetailsProvider with ChangeNotifier {
   int _selectedSalonIndex = 0;
   double _totalPrice = 0;
   double _showPrice = 0;
-
+  
   Booking _currentBooking = Booking();
 
   // TODO: Change this to [false] once multiple artist booking method is finished
@@ -408,6 +408,7 @@ class SalonDetailsProvider with ChangeNotifier {
     return _barberselectedServices.fold(0.0, (sum, service) => sum + service.price);
   }
   /// Get details related to a given service.
+ 
   dynamic getServiceDetails({
     required String serviceId,
     bool getServiceName = false,
@@ -660,7 +661,7 @@ class SalonDetailsProvider with ChangeNotifier {
 
     notifyListeners();
   }
-
+   
   /// For a given seconds data which signifies total seconds passed in a day till now,
   /// get the corresponding time stamp of it.
   /// Note: 12:00 AM is considered as 0 seconds

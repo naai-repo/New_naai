@@ -68,6 +68,7 @@ class BarberProvider with ChangeNotifier {
     _artistDetails = artistDetails;
     notifyListeners();
   }
+
   String? Servicetitle;
   String? salonName2;
 
@@ -82,7 +83,8 @@ class BarberProvider with ChangeNotifier {
     _shouldSetArtistData = true;
   }
 
-  Future<void> submitReview2( BuildContext context, {
+  Future<void> submitReview2(
+    BuildContext context, {
     required int stars,
     required String text,
   }) async {
@@ -97,7 +99,6 @@ class BarberProvider with ChangeNotifier {
     };
 
     try {
-
       final response = await dio.post(
         apiUrl,
         options: Options(headers: {"Content-Type": "application/json"}),
@@ -147,8 +148,6 @@ class BarberProvider with ChangeNotifier {
     }
     notifyListeners();
   }
-
-
 
   /// Set the value of [_selectedGendersFilter] according to the gender filter selected
   /// by user
@@ -306,8 +305,22 @@ class BarberProvider with ChangeNotifier {
     _selectedServiceCategories.clear();
     notifyListeners();
   }
-  void clearfilteredServiceList () {
+
+  void clearfilteredServiceList() {
     _filteredServiceList.clear();
+    notifyListeners();
+  }
+}
+
+class FilterBarbers with ChangeNotifier {
+  int _selectedindex = 0;
+  final List<String> _filterTypes = ['Price','Category','Rating','Discount','Salon Type','Distance'];
+
+  int get getSelectdIndex => _selectedindex;
+  List<String> get getFilterTypes => _filterTypes;
+
+  void changeIndex(int idx) {
+    _selectedindex = idx;
     notifyListeners();
   }
 }

@@ -39,6 +39,17 @@ class ExploreProvider with ChangeNotifier {
   bool _applyServiceFilter = false;
   Services _appliedServiceFilter = Services.HAIR;
 
+  //discounts
+  int _selectedDiscountIndex = -1;
+  int get selectedDiscountIndex => _selectedDiscountIndex;
+
+  //rating
+  int _selectedRatingIndex = -1;
+  int get selectedRatingIndex => _selectedRatingIndex;
+  set setSelectedRatingIndex(int i){
+      _selectedRatingIndex = i;
+      notifyListeners();
+  }
   //============= GETTERS =============//
   TextEditingController get salonSearchController => _salonSearchController;
   TextEditingController get artistSearchController => _artistSearchController;
@@ -97,7 +108,8 @@ class ExploreProvider with ChangeNotifier {
 
   Future<String> getAddress(double latitude, double longitude) async {
     try {
-      List<Placemark> placemarks = await placemarkFromCoordinates(latitude, longitude);
+      List<Placemark> placemarks =
+          await placemarkFromCoordinates(latitude, longitude);
       Placemark place = placemarks[0];
       return "${place.locality}, ${place.country}";
     } catch (e) {
@@ -105,6 +117,7 @@ class ExploreProvider with ChangeNotifier {
       return "Error: $e";
     }
   }
+
   Future<void> initHome(BuildContext context) async {
     var _serviceEnabled = await _mapLocation.serviceEnabled();
     if (!_serviceEnabled) {
@@ -131,8 +144,10 @@ class ExploreProvider with ChangeNotifier {
 
         if (currentLocation != null) {
           // Use current location if available
-          print('Current Location: ${currentLocation.longitude}, ${currentLocation.latitude}');
-          userAddress = await getAddress(currentLocation.latitude, currentLocation.longitude);
+          print(
+              'Current Location: ${currentLocation.longitude}, ${currentLocation.latitude}');
+          userAddress = await getAddress(
+              currentLocation.latitude, currentLocation.longitude);
           await updateUserLocation(
             userId: userId,
             coords: [currentLocation.longitude, currentLocation.latitude],
@@ -143,10 +158,11 @@ class ExploreProvider with ChangeNotifier {
         }
 
         await Future.wait([
-          getTopSalons(coords: [currentLocation.longitude, currentLocation.latitude]),
-          getTopArtists(coords: [currentLocation.longitude, currentLocation.latitude]),
-         ]);
-
+          getTopSalons(
+              coords: [currentLocation.longitude, currentLocation.latitude]),
+          getTopArtists(
+              coords: [currentLocation.longitude, currentLocation.latitude]),
+        ]);
       } catch (e) {
         print("Error getting location: $e");
       }
@@ -200,9 +216,7 @@ class ExploreProvider with ChangeNotifier {
     }
   }
 
-
   Future<void> OnlyArtist(BuildContext context) async {
-
     Loader.showLoader(context);
     final box = await Hive.openBox('userBox');
     final userId = box.get('userId') ?? '';
@@ -210,7 +224,8 @@ class ExploreProvider with ChangeNotifier {
       print('Retrieved userId from Hive: $userId');
       try {
         Position currentLocation = await Geolocator.getCurrentPosition();
-        print('Current Location: ${currentLocation.longitude}, ${currentLocation.latitude}');
+        print(
+            'Current Location: ${currentLocation.longitude}, ${currentLocation.latitude}');
         await updateUserLocation(
           userId: userId,
           coords: [currentLocation.longitude, currentLocation.latitude],
@@ -218,12 +233,12 @@ class ExploreProvider with ChangeNotifier {
 
         // Run top salon and top artist requests concurrently
         await Future.wait([
-       //   getTopSalons(coords: [currentLocation.longitude, currentLocation.latitude]),
-          getTopArtists(coords: [currentLocation.longitude, currentLocation.latitude]),
+          //   getTopSalons(coords: [currentLocation.longitude, currentLocation.latitude]),
+          getTopArtists(
+              coords: [currentLocation.longitude, currentLocation.latitude]),
           //   getDistanceAndRating(coords: [currentLocation.longitude, currentLocation.latitude]),
           //   getArtistRating(coords: [currentLocation.longitude, currentLocation.latitude]),
         ]);
-
       } catch (e) {
         print("Error getting location: $e");
       }
@@ -233,7 +248,6 @@ class ExploreProvider with ChangeNotifier {
   }
 
   Future<void> Filter(BuildContext context) async {
-
     Loader.showLoader(context);
     final box = await Hive.openBox('userBox');
     final userId = box.get('userId') ?? '';
@@ -243,31 +257,28 @@ class ExploreProvider with ChangeNotifier {
         Position currentLocation = await Geolocator.getCurrentPosition();
         if (currentLocation != null) {
           print(
-              'Current Location: ${currentLocation.longitude}, ${currentLocation
-                  .latitude}');
+              'Current Location: ${currentLocation.longitude}, ${currentLocation.latitude}');
           // Update user location
           await updateUserLocation(
             userId: userId,
             coords: [currentLocation.longitude, currentLocation.latitude],
           );
-        }else{
+        } else {
           await loadSavedCoordinatesForFilter(context);
         }
         await Future.wait([
-            getDistanceAndRating(coords: [currentLocation.longitude, currentLocation.latitude]),
-             getArtistRating(coords: [currentLocation.longitude, currentLocation.latitude]),
+          getDistanceAndRating(
+              coords: [currentLocation.longitude, currentLocation.latitude]),
+          getArtistRating(
+              coords: [currentLocation.longitude, currentLocation.latitude]),
         ]);
-
       } catch (e) {
-
         print("Error getting location: $e");
       }
     }
 
     Loader.hideLoader(context);
   }
-
-
 
   Future<void> updateUserLocation({
     required String userId,
@@ -382,8 +393,7 @@ class ExploreProvider with ChangeNotifier {
       if (response.statusCode == 200) {
         salonList2 = SalonApiResponse.fromJson(response.data).data;
         print("Top Salons: ${response.data}");
-      }
-      else {
+      } else {
         // Handle error response for top artists
         print("Failed to fetch top artists");
         print(response.data);
@@ -395,7 +405,7 @@ class ExploreProvider with ChangeNotifier {
   }
 
   Future<void> getArtistRating({required List<double> coords}) async {
-    final apiUrl = UrlConstants.ratingFilter;
+    const apiUrl = UrlConstants.ratingFilter;
 
     final Map<String, dynamic> requestData = {
       "location": {"type": "Point", "coordinates": coords},
@@ -412,8 +422,7 @@ class ExploreProvider with ChangeNotifier {
       if (response.statusCode == 200) {
         artistList2 = ArtistApiResponse.fromJson(response.data).data;
         print("Top Artists: ${response.data}");
-      }
-       else {
+      } else {
         // Handle error response for top artists
         print("Failed to fetch top artists");
         print(response.data);
@@ -424,6 +433,77 @@ class ExploreProvider with ChangeNotifier {
     }
   }
 
+  Future<void> filterSalonListByDiscount(
+      BuildContext context, int discount, int idx) async {
+    Loader.showLoader(context);
+    final box = await Hive.openBox('userBox');
+    final userId = box.get('userId') ?? '';
+    if (userId.isNotEmpty) {
+      print('Retrieved userId from Hive: $userId');
+      try {
+        _selectedDiscountIndex = idx;
+        Position currentLocation = await Geolocator.getCurrentPosition();
+        if (currentLocation != null) {
+          print(
+              'Current Location: ${currentLocation.longitude}, ${currentLocation.latitude}');
+          // Update user location
+          await updateUserLocation(
+            userId: userId,
+            coords: [currentLocation.longitude, currentLocation.latitude],
+          );
+        } else {
+          await loadSavedCoordinatesForFilter(context);
+        }
+        await Future.wait([
+          // getDistanceAndRating(
+          //     coords: [currentLocation.longitude, currentLocation.latitude]),
+          getSalonFilterListByDiscount(
+              coords: [currentLocation.longitude, currentLocation.latitude],
+              discount: discount),
+        ]);
+
+        if(selectedRatingIndex == 0) salonData2.sort((a, b) => a.rating.toInt() - b.rating.toInt());
+        if(selectedRatingIndex == 1) salonData2.sort((a, b) => b.rating.toInt() - a.rating.toInt());
+        print("DisCount Filter Sallon Size : ${salonData2.length}");
+      } catch (e) {
+        print("Error getting location: $e");
+      }
+
+      notifyListeners();
+    }
+
+    Loader.hideLoader(context);
+  }
+
+  Future<void> getSalonFilterListByDiscount(
+      {required List<double> coords, required int discount}) async {
+    final apiUrl = UrlConstants.discountAndRatingForMen + discount.toString();
+
+    final Map<String, dynamic> requestData = {
+      "location": {"type": "Point", "coordinates": coords},
+    };
+
+    try {
+      final response = await dio.post(
+        apiUrl,
+        options: Options(headers: {
+          'Content-Type': 'application/json; charset=UTF-8',
+        }),
+        data: requestData,
+      );
+      if (response.statusCode == 200) {
+        salonList2 = SalonApiResponse.fromJson(response.data).data;
+        print("Filters Discounts Salons: ${response.data}");
+      } else {
+        // Handle error response for top artists
+        print("Failed to fetch Filters Discounts Salons");
+        print(response.data);
+      }
+    } catch (e) {
+      // Handle Dio errors for top artists
+      print("Dio error for Filter by Discount salons: $e");
+    }
+  }
 
   /// Method to initialize values of Explore screen viz. [_salonData] and [_userCurrentLatLng]
   void initExploreScreen(BuildContext context) async {
@@ -459,7 +539,8 @@ class ExploreProvider with ChangeNotifier {
   Future<void> getSalonList(BuildContext context,
       {bool justDistance = false}) async {
     try {
-      if (!justDistance) _salonData = await DatabaseService().getSalonList(SharedKeys.userId);
+      if (!justDistance)
+        _salonData = await DatabaseService().getSalonList(SharedKeys.userId);
       // print(context.read<HomeProvider>().userData.toMap());
       final latitude =
           context.read<HomeProvider>().userData.homeLocation != null
@@ -503,14 +584,10 @@ class ExploreProvider with ChangeNotifier {
       _filteredSalonData.clear();
       _filteredSalonData.addAll(_salonData);
     } catch (e) {
-    //  ReusableWidgets.showFlutterToast(context, '$e');
+      //  ReusableWidgets.showFlutterToast(context, '$e');
     }
     notifyListeners();
   }
-
-
-
-
 
   /// Set the value of [_filteredSalonData] according to the search query entered by user.
   Future<void> filterArtistList(String searchText) async {
@@ -524,7 +601,8 @@ class ExploreProvider with ChangeNotifier {
 
         // Check if response.data['data'] is a list
         if (response.data['data'] is List<dynamic>) {
-          List<ArtistData> filteredList = (response.data['data'] as List<dynamic>).map((artistJson) {
+          List<ArtistData> filteredList =
+              (response.data['data'] as List<dynamic>).map((artistJson) {
             return ArtistData.fromJson(artistJson as Map<String, dynamic>);
           }).toList();
 
@@ -546,7 +624,6 @@ class ExploreProvider with ChangeNotifier {
       print('Error fetching artists: $error');
     }
   }
-
 
   /// Set the value of [_filteredSalonData] according to the selected service.
   void filterSalonListByService({required Services selectedServiceCategory}) {

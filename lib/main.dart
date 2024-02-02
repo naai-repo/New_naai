@@ -71,6 +71,9 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(
           create: (context) => BarberProvider(),
         ),
+        ChangeNotifierProvider(
+          create: (context) => FilterBarbers(),
+        ),
       ],
       builder: (context, snapshot) {
         return Sizer(

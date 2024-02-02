@@ -45,12 +45,11 @@ import '../../pre_auth/loginResult.dart';
 class HomeProvider with ChangeNotifier {
   bool _changedLocation = false;
   final Dio dio = Dio();
- // Use the phone number from the response
+  // Use the phone number from the response
   final _mapLocation = location.Location();
   late LatLng _userCurrentLatLng;
 
   String userAddress = 'No Location Found';
-
 
   location.Location get mapLocation => _mapLocation;
   LatLng get userCurrentLatLng => _userCurrentLatLng;
@@ -63,18 +62,22 @@ class HomeProvider with ChangeNotifier {
   List<ServiceDetail> _services = [];
 
   late Symbol _symbol;
-  Position ? position;
-String ?  _addressText;
+  Position? position;
+  String? _addressText;
   late MapboxMapController _controller;
 
- // String _addressText = StringConstant.loading;
+
+  int _selectedDiscountIndex = 0;
+  int get selectedDiscountIndex => _selectedDiscountIndex;
+
+
+  // String _addressText = StringConstant.loading;
   List<ServiceDetail> get filteredServiceList => _filteredServiceList;
   List<ServiceDetail> _filteredServiceList = [];
 
   TextEditingController _mapSearchController = TextEditingController();
 
   UserModel _userData = UserModel();
-
 
   List<Booking> _lastOrNextBooking = [];
   List<Booking> _allBookings = [];
@@ -100,12 +103,11 @@ String ?  _addressText;
   List<Booking> get lastOrNextBooking => _lastOrNextBooking;
   List<Booking> get allBookings => _allBookings;
 
-
-
   List<AllBooking> get upcomingBooking => _upcomingBooking;
   List<AllBooking> get previousBooking => _previousBooking;
   int displayedSalonCount = 5; // Number of salons to display initially
   int displayedArtistCount = 5;
+
   /// Check if there is a [uid] stored in [SharedPreferences] or not.
   /// If no [uid] is found, then get the userId of the currently logged in
   /// user and save it in [SharedPreferences].
@@ -117,6 +119,7 @@ String ?  _addressText;
       await SharedPreferenceHelper.setUserId(uid);
     }
   }
+
   List<ArtistData> getDisplayedArtists() {
     // Logic to return the currently displayed artists
     return artistList2.take(displayedArtistCount).toList();
@@ -131,17 +134,20 @@ String ?  _addressText;
     // Logic to load more artists
     // For demonstration purposes, we'll add dummy data here
     //  artistList.addAll(getDummyArtists());
-    displayedArtistCount += 5; // Increase the count to show the newly loaded artists
+    displayedArtistCount +=
+        5; // Increase the count to show the newly loaded artists
     notifyListeners();
   }
+
   List<SalonData2> getDisplayedSalons() {
     // Logic to return the currently displayed salons
     return salonList2.take(displayedSalonCount).toList();
-
   }
+
   bool shouldShowLoadButton() {
     return displayedSalonCount < salonList2.length && salonList2.isNotEmpty;
   }
+
   void loadMoreSalons() {
     displayedSalonCount += 5;
     notifyListeners();
@@ -164,6 +170,7 @@ String ?  _addressText;
       const SymbolOptions(),
     );
   }
+
   bool _isSearchExpanded = false;
 
   bool get isSearchExpanded => _isSearchExpanded;
@@ -172,6 +179,7 @@ String ?  _addressText;
     _isSearchExpanded = value;
     notifyListeners();
   }
+
   /// Method to trigger all the API functions of home screen
 
   Future<void> filterArtistList(String searchText) async {
@@ -185,7 +193,8 @@ String ?  _addressText;
 
         // Check if response.data['data'] is a list
         if (response.data['data'] is List<dynamic>) {
-          List<ArtistData> filteredList = (response.data['data'] as List<dynamic>).map((artistJson) {
+          List<ArtistData> filteredList =
+              (response.data['data'] as List<dynamic>).map((artistJson) {
             return ArtistData.fromJson(artistJson as Map<String, dynamic>);
           }).toList();
 
@@ -210,7 +219,8 @@ String ?  _addressText;
 
   Future<String> getAddress(double latitude, double longitude) async {
     try {
-      List<Placemark> placemarks = await placemarkFromCoordinates(latitude, longitude);
+      List<Placemark> placemarks =
+          await placemarkFromCoordinates(latitude, longitude);
       Placemark place = placemarks[0];
       return "${place.locality}, ${place.country}";
     } catch (e) {
@@ -219,16 +229,18 @@ String ?  _addressText;
     }
   }
 
-  Future<void> DiscountFilterforWomen(BuildContext context) async {
+  Future<void> discountFilterforWomen(BuildContext context) async {
     Loader.showLoader(context);
 
     try {
       Position currentLocation = await Geolocator.getCurrentPosition();
-      print('Current Location: ${currentLocation.longitude}, ${currentLocation.latitude}');
-      userAddress = await getAddress(currentLocation.latitude, currentLocation.longitude);
+      print(
+          'Current Location: ${currentLocation.longitude}, ${currentLocation.latitude}');
+      userAddress =
+          await getAddress(currentLocation.latitude, currentLocation.longitude);
 
-      await getDistanceAndRatingForWomen(coords: [currentLocation.longitude, currentLocation.latitude]);
-
+      await getDistanceAndRatingForWomen(
+          coords: [currentLocation.longitude, currentLocation.latitude]);
     } catch (e) {
       Loader.hideLoader(context);
       print("Error getting location: $e");
@@ -249,7 +261,8 @@ String ?  _addressText;
       print('Using saved coordinates: $savedLongitude, $savedLatitude');
       userAddress = await getAddress(savedLatitude, savedLongitude);
 
-      await getDistanceAndRatingForWomen(coords:[savedLongitude, savedLatitude]);
+      await getDistanceAndRatingForWomen(
+          coords: [savedLongitude, savedLatitude]);
       Loader.hideLoader(context);
     } else {
       Loader.hideLoader(context);
@@ -267,7 +280,7 @@ String ?  _addressText;
       print('Using saved coordinates: $savedLongitude, $savedLatitude');
       userAddress = await getAddress(savedLatitude, savedLongitude);
 
-      await getDistanceAndRatingForMen(coords:[savedLongitude, savedLatitude]);
+      await getDistanceAndRatingForMen(coords: [savedLongitude, savedLatitude],discount: 0);
       Loader.hideLoader(context);
     } else {
       Loader.hideLoader(context);
@@ -275,19 +288,20 @@ String ?  _addressText;
     }
   }
 
-  Future<void> DiscountFilterforMen(BuildContext context) async {
-
+  Future<void> discountFilterforMen(BuildContext context, int discount, int idx) async {
     Loader.showLoader(context);
     try {
+      _selectedDiscountIndex = idx;
       Position currentLocation = await Geolocator.getCurrentPosition();
       print(
-          'Current Location: ${currentLocation.longitude}, ${currentLocation
-              .latitude}');
+          'Current Location: ${currentLocation.longitude}, ${currentLocation.latitude}');
       userAddress =
-      await getAddress(currentLocation.latitude, currentLocation.longitude);
+          await getAddress(currentLocation.latitude, currentLocation.longitude);
       print('Addressssss: $userAddress');
       await Future.wait([
-        getDistanceAndRatingForMen(coords: [currentLocation.longitude, currentLocation.latitude]),
+        getDistanceAndRatingForMen(
+            coords: [currentLocation.longitude, currentLocation.latitude],
+            discount: discount),
       ]);
     } catch (e) {
       Loader.hideLoader(context);
@@ -330,8 +344,10 @@ String ?  _addressText;
 
       if (currentLocation != null) {
         // Use current location if available
-        print('Current Location: ${currentLocation.longitude}, ${currentLocation.latitude}');
-        userAddress = await getAddress(currentLocation.latitude, currentLocation.longitude);
+        print(
+            'Current Location: ${currentLocation.longitude}, ${currentLocation.latitude}');
+        userAddress = await getAddress(
+            currentLocation.latitude, currentLocation.longitude);
         await updateUserLocation(
           userId: userId,
           coords: [currentLocation.longitude, currentLocation.latitude],
@@ -342,12 +358,13 @@ String ?  _addressText;
       }
 
       await Future.wait([
-        getTopSalons(coords: [currentLocation.longitude, currentLocation.latitude]),
-        getTopArtists(coords: [currentLocation.longitude, currentLocation.latitude]),
+        getTopSalons(
+            coords: [currentLocation.longitude, currentLocation.latitude]),
+        getTopArtists(
+            coords: [currentLocation.longitude, currentLocation.latitude]),
         getAppointments(),
         // Additional asynchronous tasks based on location
       ]);
-
     } catch (e) {
       Loader.hideLoader(context);
       print("Error getting location: $e");
@@ -380,7 +397,6 @@ String ?  _addressText;
       print('No location information available.');
     }
   }
-
 
   Future<void> updateUserLocation({
     required String userId,
@@ -477,7 +493,8 @@ String ?  _addressText;
     }
   }
 
-  Future<void> getDistanceAndRatingForWomen({required List<double> coords}) async {
+  Future<void> getDistanceAndRatingForWomen(
+      {required List<double> coords}) async {
     final apiUrl = UrlConstants.discountAndRatingForWomen;
 
     final Map<String, dynamic> requestData = {
@@ -507,8 +524,9 @@ String ?  _addressText;
     }
   }
 
-  Future<void> getDistanceAndRatingForMen({required List<double> coords}) async {
-    final apiUrl = UrlConstants.discountAndRatingForMen;
+  Future<void> getDistanceAndRatingForMen(
+      {required List<double> coords, required int discount}) async {
+    final apiUrl = UrlConstants.discountAndRatingForMen + discount.toString();
 
     final Map<String, dynamic> requestData = {
       "location": {"type": "Point", "coordinates": coords},
@@ -567,11 +585,11 @@ String ?  _addressText;
     }
   }
 
-
   Future locationPopUp(BuildContext context) async {
     var _permissionGranted = await _mapLocation.hasPermission();
     if (_permissionGranted == location.PermissionStatus.denied) {
-      await showModalBottomSheet(isScrollControlled: true,
+      await showModalBottomSheet(
+        isScrollControlled: true,
         isDismissible: false,
         backgroundColor: Colors.white,
         shape: const RoundedRectangleBorder(
@@ -611,37 +629,37 @@ String ?  _addressText;
                   Image.asset('assets/images/loc_image.png'),
                   const SizedBox(height: 20),
                   Column(
-                    children:[
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        Expanded(
-                          child: ElevatedButton(
-                            child: const Text(
-                              "Enable Device Location",
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Expanded(
+                            child: ElevatedButton(
+                              child: const Text(
+                                "Enable Device Location",
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: ColorsConstant.appColor,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: ColorsConstant.appColor,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                side:
+                                    BorderSide(color: ColorsConstant.appColor),
                               ),
-                              side:BorderSide(color: ColorsConstant.appColor),
-                            ),
-                            onPressed: () async {
-                              await Geolocator.requestPermission();
-                            //  _mapLocation.requestService();
-                         //    await _mapLocation.requestPermission();
+                              onPressed: () async {
+                                await Geolocator.requestPermission();
+                                //  _mapLocation.requestService();
+                                //    await _mapLocation.requestPermission();
                                 Navigator.pop(context);
-
-                            },
+                              },
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
+                        ],
+                      ),
                       const SizedBox(height: 20),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.end,
@@ -662,14 +680,15 @@ String ?  _addressText;
                                 ),
                               ),
                               onPressed: () async {
-                                 Navigator.pop(context);
-                                 Navigator.pushNamed(context, NamedRoutes.setHomeLocationRoute);
+                                Navigator.pop(context);
+                                Navigator.pushNamed(
+                                    context, NamedRoutes.setHomeLocationRoute);
                               },
                             ),
                           ),
                         ],
                       ),
-                  ],
+                    ],
                   ),
                 ],
               ),
@@ -724,7 +743,7 @@ String ?  _addressText;
                   Image.asset('assets/images/loc_image.png'),
                   const SizedBox(height: 20),
                   Column(
-                    children:[
+                    children: [
                       Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
@@ -748,7 +767,6 @@ String ?  _addressText;
                                 //  _mapLocation.requestService();
                                 //    await _mapLocation.requestPermission();
                                 Navigator.pop(context);
-
                               },
                             ),
                           ),
@@ -775,7 +793,8 @@ String ?  _addressText;
                               ),
                               onPressed: () async {
                                 Navigator.pop(context);
-                                Navigator.pushNamed(context, NamedRoutes.setHomeLocationRoute2);
+                                Navigator.pushNamed(
+                                    context, NamedRoutes.setHomeLocationRoute2);
                               },
                             ),
                           ),
@@ -792,10 +811,10 @@ String ?  _addressText;
     }
   }
 
-
   Future<void> getAppointments() async {
-    final String apiUrl = 'http://13.235.49.214:8800/appointments/user/bookings';
-    String? bearerToken =  await AccessTokenManager.getAccessToken();
+    final String apiUrl =
+        'http://13.235.49.214:8800/appointments/user/bookings';
+    String? bearerToken = await AccessTokenManager.getAccessToken();
 
     try {
       Dio dio = Dio();
@@ -867,8 +886,10 @@ String ?  _addressText;
 
       if (currentLocation != null) {
         // Use current location if available
-        print('Current Location: ${currentLocation.longitude}, ${currentLocation.latitude}');
-        userAddress = await getAddress(currentLocation.latitude, currentLocation.longitude);
+        print(
+            'Current Location: ${currentLocation.longitude}, ${currentLocation.latitude}');
+        userAddress = await getAddress(
+            currentLocation.latitude, currentLocation.longitude);
         await updateUserLocation(
           userId: userId,
           coords: [currentLocation.longitude, currentLocation.latitude],
@@ -879,12 +900,13 @@ String ?  _addressText;
       }
 
       await Future.wait([
-        getTopSalons(coords: [currentLocation.longitude, currentLocation.latitude]),
-        getTopArtists(coords: [currentLocation.longitude, currentLocation.latitude]),
+        getTopSalons(
+            coords: [currentLocation.longitude, currentLocation.latitude]),
+        getTopArtists(
+            coords: [currentLocation.longitude, currentLocation.latitude]),
         getAppointments(),
         // Additional asynchronous tasks based on location
       ]);
-
     } catch (e) {
       Loader.hideLoader(context);
       print("Error getting location: $e");
@@ -893,13 +915,12 @@ String ?  _addressText;
     Loader.hideLoader(context);
   }
 
-
   /// Fetch the user details from [FirebaseFirestore]
   Future<void> getUserDetails(BuildContext context) async {
     try {
       _userData = await DatabaseService().getUserDetails();
     } catch (e) {
-    //  ReusableWidgets.showFlutterToast(context, '$e');
+      //  ReusableWidgets.showFlutterToast(context, '$e');
     }
     notifyListeners();
   }
@@ -911,7 +932,7 @@ String ?  _addressText;
       _artistList.sort((a, b) => ((a.rating ?? 0) - (b.rating ?? 0)).toInt());
       context.read<ExploreProvider>().setArtistList(_artistList);
     } catch (e) {
-     // ReusableWidgets.showFlutterToast(context, '$e');
+      // ReusableWidgets.showFlutterToast(context, '$e');
     }
     notifyListeners();
   }
@@ -920,7 +941,7 @@ String ?  _addressText;
     try {
       _allReviewList = await DatabaseService().getAllReviews();
     } catch (e) {
-     // ReusableWidgets.showFlutterToast(context, '$e');
+      // ReusableWidgets.showFlutterToast(context, '$e');
     }
     notifyListeners();
   }
@@ -929,7 +950,7 @@ String ?  _addressText;
   Future<void> getUserBookings(BuildContext context) async {
     try {
       List<Booking> response =
-      await DatabaseService().getUserBookings(userId: userData.id ?? '');
+          await DatabaseService().getUserBookings(userId: userData.id ?? '');
       _allBookings = response;
       _lastOrNextBooking.clear();
       for (int i = 0; i < response.length; i++) {
@@ -978,10 +999,9 @@ String ?  _addressText;
     notifyListeners();
   }
 
-
   String getTimeAgoString(String? dateTimeString) {
     DateTime dateTime =
-    DateTime.parse(dateTimeString ?? DateTime.now().toString());
+        DateTime.parse(dateTimeString ?? DateTime.now().toString());
     final now = DateTime.now();
     final difference = now.difference(dateTime);
 
@@ -1024,9 +1044,9 @@ String ?  _addressText;
 
   /// Initialising map related values as soon as the map is rendered on screen.
   Future<void> onMapCreated(
-      MapboxMapController mapController,
-      BuildContext context,
-      ) async {
+    MapboxMapController mapController,
+    BuildContext context,
+  ) async {
     this._controller = mapController;
 /*
     var _serviceEnabled = await _mapLocation.serviceEnabled();
@@ -1037,7 +1057,8 @@ String ?  _addressText;
     */
     var _permissionGranted = await _mapLocation.hasPermission();
     if (_permissionGranted == location.PermissionStatus.denied) {
-      LatLng dummyLocation = LatLng(28.7383,77.0822); // Set your desired dummy location
+      LatLng dummyLocation =
+          LatLng(28.7383, 77.0822); // Set your desired dummy location
       await mapController.animateCamera(
         CameraUpdate.newCameraPosition(
           CameraPosition(
@@ -1052,7 +1073,7 @@ String ?  _addressText;
     var _locationData = await _mapLocation.getLocation();
 
     LatLng currentLatLng =
-    LatLng(_locationData.latitude!, _locationData.longitude!);
+        LatLng(_locationData.latitude!, _locationData.longitude!);
 
     await mapController.animateCamera(
       CameraUpdate.newCameraPosition(
@@ -1064,24 +1085,23 @@ String ?  _addressText;
     );
 
     _symbol = await this._controller.addSymbol(
-      UtilityFunctions.getCurrentLocationSymbolOptions(
-          latLng: currentLatLng),
-    );
+          UtilityFunctions.getCurrentLocationSymbolOptions(
+              latLng: currentLatLng),
+        );
 
     Loader.hideLoader(context);
-
-
   }
 
   Future<void> onMapCreated2(
-      MapboxMapController mapController,
-      BuildContext context,
-      ) async {
+    MapboxMapController mapController,
+    BuildContext context,
+  ) async {
     this._controller = mapController;
 
     var _permissionGranted = await _mapLocation.hasPermission();
     if (_permissionGranted == location.PermissionStatus.denied) {
-      LatLng dummyLocation = LatLng(28.7383,77.0822); // Set your desired dummy location
+      LatLng dummyLocation =
+          LatLng(28.7383, 77.0822); // Set your desired dummy location
       await mapController.animateCamera(
         CameraUpdate.newCameraPosition(
           CameraPosition(
@@ -1096,7 +1116,7 @@ String ?  _addressText;
     var _locationData = await _mapLocation.getLocation();
 
     LatLng currentLatLng =
-    LatLng(_locationData.latitude!, _locationData.longitude!);
+        LatLng(_locationData.latitude!, _locationData.longitude!);
 
     await mapController.animateCamera(
       CameraUpdate.newCameraPosition(
@@ -1108,24 +1128,22 @@ String ?  _addressText;
     );
 
     _symbol = await this._controller.addSymbol(
-      UtilityFunctions.getCurrentLocationSymbolOptions(
-          latLng: currentLatLng),
-    );
+          UtilityFunctions.getCurrentLocationSymbolOptions(
+              latLng: currentLatLng),
+        );
 
     Loader.hideLoader(context);
-
-
   }
 
   /// Take user to the place, selected from search suggestions
   Future<void> handlePlaceSelectionEvent(
-      Feature place,
-      BuildContext context,
-      ) async {
+    Feature place,
+    BuildContext context,
+  ) async {
     _mapSearchController.text = place.placeName ?? "";
 
     LatLng selectedLatLng =
-    LatLng(place.center?[1] ?? 0.0, place.center?[0] ?? 0.0);
+        LatLng(place.center?[1] ?? 0.0, place.center?[0] ?? 0.0);
 
     await _controller.removeSymbol(_symbol);
 
@@ -1141,7 +1159,6 @@ String ?  _addressText;
 
     clearMapSearchText();
 
-
     notifyListeners();
   }
 
@@ -1150,7 +1167,7 @@ String ?  _addressText;
     List<Feature> _data = [];
 
     Uri uri = Uri.parse(
-        "${ApiEndpointConstant.mapboxPlacesApi}${_mapSearchController.text}.json")
+            "${ApiEndpointConstant.mapboxPlacesApi}${_mapSearchController.text}.json")
         .replace(queryParameters: UtilityFunctions.mapSearchQueryParameters());
 
     try {
@@ -1159,7 +1176,7 @@ String ?  _addressText;
           .onError((error, stackTrace) => throw Exception(error));
 
       UserLocationModel responseData =
-      UserLocationModel.fromJson(jsonDecode(response.body));
+          UserLocationModel.fromJson(jsonDecode(response.body));
       _data = responseData.features ?? [];
 
       /// [Feature(id: StringConstant.yourCurrentLocation)] is added to show the current
@@ -1191,15 +1208,14 @@ String ?  _addressText;
     );
 
     this._controller.animateCamera(
-      CameraUpdate.newCameraPosition(
-        CameraPosition(target: coordinates, zoom: 16),
-      ),
-    );
+          CameraUpdate.newCameraPosition(
+            CameraPosition(target: coordinates, zoom: 16),
+          ),
+        );
     await getFormattedAddressConfirmation(
       context: context,
       coordinates: coordinates,
     );
-
 
     notifyListeners();
   }
@@ -1233,7 +1249,7 @@ String ?  _addressText;
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             Text(
-              _addressText??'',
+              _addressText ?? '',
               style: TextStyle(
                 fontSize: 14.sp,
                 fontWeight: FontWeight.w500,
@@ -1243,21 +1259,22 @@ String ?  _addressText;
             ElevatedButton(
               style: ButtonStyle(
                 backgroundColor:
-                MaterialStateProperty.all(ColorsConstant.appColor),
+                    MaterialStateProperty.all(ColorsConstant.appColor),
               ),
               onPressed: () async {
                 final box = await Hive.openBox('userBox');
                 String userId = box.get('userId') ?? '';
-               if (userId.isEmpty) {
-             userId = '659e565fedf72717a11caf27';
-             await box.put('userId', userId);
-    }Loader.showLoader(context);
-                  await updateUserLocation(
-                    userId: userId,
-                    coords: [coordinates.longitude, coordinates.latitude],
-                  );
-                userAddress =
-                await getAddress(coordinates.latitude, coordinates.longitude);
+                if (userId.isEmpty) {
+                  userId = '659e565fedf72717a11caf27';
+                  await box.put('userId', userId);
+                }
+                Loader.showLoader(context);
+                await updateUserLocation(
+                  userId: userId,
+                  coords: [coordinates.longitude, coordinates.latitude],
+                );
+                userAddress = await getAddress(
+                    coordinates.latitude, coordinates.longitude);
                 await Future.wait([
                   getTopSalons(
                       coords: [coordinates.longitude, coordinates.latitude]),
@@ -1267,8 +1284,8 @@ String ?  _addressText;
                   //  getArtistRating(coords: [currentLocation.longitude, currentLocation.latitude]),
                 ]);
                 Loader.hideLoader(context);
-                  Navigator.pushNamed(
-                      context, NamedRoutes.bottomNavigationRoute3);
+                Navigator.pushNamed(
+                    context, NamedRoutes.bottomNavigationRoute3);
               },
               child: const Text(StringConstant.confirmLocation),
             ),
@@ -1311,7 +1328,7 @@ String ?  _addressText;
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             Text(
-              _addressText??'',
+              _addressText ?? '',
               style: TextStyle(
                 fontSize: 14.sp,
                 fontWeight: FontWeight.w500,
@@ -1321,7 +1338,7 @@ String ?  _addressText;
             ElevatedButton(
               style: ButtonStyle(
                 backgroundColor:
-                MaterialStateProperty.all(ColorsConstant.appColor),
+                    MaterialStateProperty.all(ColorsConstant.appColor),
               ),
               onPressed: () async {
                 final box = await Hive.openBox('userBox');
@@ -1378,10 +1395,10 @@ String ?  _addressText;
     );
 
     this._controller.animateCamera(
-      CameraUpdate.newCameraPosition(
-        CameraPosition(target: coordinates, zoom: 16),
-      ),
-    );
+          CameraUpdate.newCameraPosition(
+            CameraPosition(target: coordinates, zoom: 16),
+          ),
+        );
 
     await getFormattedAddressConfirmation2(
       context: context,
@@ -1395,7 +1412,6 @@ String ?  _addressText;
   /// Show a bottom sheet with the formatted address text and a button to confirm
   /// the new address.
 
-
   /// Method to fetch the current location of the user using [location] package
   Future<LatLng> fetchCurrentLocation(BuildContext context) async {
     var _serviceEnabled = await _mapLocation.serviceEnabled();
@@ -1407,18 +1423,12 @@ String ?  _addressText;
     if (_permissionGranted == location.PermissionStatus.denied) {
       await openAppSettings();
       throw Exception('Location permission denied');
-
     }
-
 
     var _locationData = await _mapLocation.getLocation();
 
     return LatLng(_locationData.latitude!, _locationData.longitude!);
   }
-
-
-
-
 
   /// Animate the map to given [latLng]
   Future<void> animateToPosition(LatLng latLng) async {
@@ -1431,27 +1441,27 @@ String ?  _addressText;
 
   void populateBookingData(BuildContext context, int index) async {
     await context.read<SalonDetailsProvider>().getSalonData(
-      context,
-      salonId: _lastOrNextBooking[index].salonId!,
-    );
+          context,
+          salonId: _lastOrNextBooking[index].salonId!,
+        );
 
     await context.read<SalonDetailsProvider>().getArtistList(context);
     await context.read<SalonDetailsProvider>().getServiceList(context);
 
     context.read<SalonDetailsProvider>().setServiceIds(
-      ids: _lastOrNextBooking[index].serviceIds!,
-      totalPrice: _lastOrNextBooking[index].totalPrice,
-    );
+          ids: _lastOrNextBooking[index].serviceIds!,
+          totalPrice: _lastOrNextBooking[index].totalPrice,
+        );
 
     context
         .read<SalonDetailsProvider>()
         .setStaffSelectionMethod(selectedSingleStaff: true);
 
     context.read<SalonDetailsProvider>().setBookingData(
-      context,
-      setArtistId: true,
-      artistId: _lastOrNextBooking[index].artistId,
-    );
+          context,
+          setArtistId: true,
+          artistId: _lastOrNextBooking[index].artistId,
+        );
     Navigator.pushNamed(
       context,
       NamedRoutes.createBookingRoute,
@@ -1470,7 +1480,7 @@ String ?  _addressText;
     required int index,
   }) {
     DateTime dateTime =
-    DateTime.parse(dateTimeString ?? DateTime.now().toString());
+        DateTime.parse(dateTimeString ?? DateTime.now().toString());
     _lastOrNextBooking[index].bookingCreatedFor ?? DateTime.now().toString();
     if (getFormattedDate) {
       return DateFormat('MMM dd').format(dateTime);
@@ -1509,10 +1519,12 @@ String ?  _addressText;
 
   /// Get the address text from the user's home location
   String? getHomeAddressText() {
-    return userData.homeLocation?.addressString ;
+    return userData.homeLocation?.addressString;
   }
+
   String? getDummyHomeAddressText() {
-    return userData.homeLocation?.addressString??"Your Location will be show when you Sign In" ;
+    return userData.homeLocation?.addressString ??
+        "Your Location will be show when you Sign In";
   }
 
   /// Dispose [_controller] when the map is unmounted
@@ -1534,14 +1546,14 @@ String ?  _addressText;
     salonList.forEach((salon) {
       num average = salon.originalRating ?? 0;
       final allReviews = _allReviewList.where(
-            (review) => review.salonId == salon.id,
+        (review) => review.salonId == salon.id,
       );
       allReviews.forEach((review) {
         average += review.rating ?? 0;
       });
       average /= (allReviews.length + 1);
       final allArtist = artistList.where(
-            (artist) => artist.salonId == salon.id,
+        (artist) => artist.salonId == salon.id,
       );
       allArtist.forEach((artist) {
         average += artist.originalRating ?? 0;
@@ -1552,7 +1564,7 @@ String ?  _addressText;
     artistList.forEach((artist) {
       double average = artist.originalRating ?? 0;
       final allReviews = _allReviewList.where(
-            (review) => review.artistId != null && review.artistId == artist.id,
+        (review) => review.artistId != null && review.artistId == artist.id,
       );
       allReviews.forEach((review) {
         average += review.rating ?? 0;

@@ -14,7 +14,7 @@ class UrlConstants{
   static const topSalon = '${baseUrl}partner/salon/topSalons?page=1&limit=20';
   static const topArtist = '${baseUrl}partner/artist/topArtists';
   static const discountAndRating= '${baseUrl}partner/salon/filter?&filter=discount';
-  static const discountAndRatingForMen= '${baseUrl}partner/salon/filter?page=1&limit=20&filter=discount&min=9';
+  static const discountAndRatingForMen= '${baseUrl}partner/salon/filter?page=1&limit=20&filter=discount&min=';
   static const discountAndRatingForWomen= '${baseUrl}partner/salon/filter?page=1&limit=20&filter=discount&min=50';
   static const ratingFilter = '${baseUrl}partner/artist/filter?&filter=rating';
   static const scheduling = '${baseUrl}appointments/schedule';

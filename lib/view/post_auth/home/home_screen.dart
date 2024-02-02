@@ -1167,7 +1167,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Widget dummyDeal(HomeProvider provider) {
     return GestureDetector(
       onTap: () async{
-       await  provider.DiscountFilterforWomen(context);
+       await  provider.discountFilterforWomen(context);
        Navigator.push(
          context,
          MaterialPageRoute(
@@ -1241,7 +1241,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       children:[
        GestureDetector(
          onTap: ()async {
-      await provider.DiscountFilterforMen(context);
+      await provider.discountFilterforMen(context,0,0);
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -1312,7 +1312,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
        const Spacer(),
         GestureDetector(
           onTap: () async{
-            await provider.DiscountFilterforMen(context);
+            await provider.discountFilterforMen(context,0,0);
             Navigator.push(
               context,
               MaterialPageRoute(
@@ -2511,7 +2511,7 @@ class _HomeScreen2State extends State<HomeScreen2>with WidgetsBindingObserver {
 
     return GestureDetector(
       onTap: () async{
-       await provider.DiscountFilterforWomen(context);
+       await provider.discountFilterforWomen(context);
 
         Navigator.pushNamed(context, NamedRoutes.exploreRoute2);
       },
@@ -2580,7 +2580,7 @@ class _HomeScreen2State extends State<HomeScreen2>with WidgetsBindingObserver {
       children:[
         GestureDetector(
           onTap: () async{
-          await  provider.DiscountFilterforMen(context);
+          await  provider.discountFilterforMen(context,0,0);
           Navigator.pushNamed(context, NamedRoutes.exploreRoute2);
           },
           child: Container(
@@ -2646,7 +2646,7 @@ class _HomeScreen2State extends State<HomeScreen2>with WidgetsBindingObserver {
         const Spacer(),
         GestureDetector(
           onTap: () async{
-           await provider.DiscountFilterforMen(context);
+           await provider.discountFilterforMen(context,0,0);
            Navigator.pushNamed(context, NamedRoutes.exploreRoute2);
           },
           child: Container(
@@ -3826,7 +3826,7 @@ class _HomeScreen3State extends State<HomeScreen3> {
 
     return GestureDetector(
       onTap: () {
-        provider.DiscountFilterforWomen(context);
+        provider.discountFilterforWomen(context);
 
         Navigator.pushNamed(context, NamedRoutes.exploreRoute3);
       },
@@ -3895,7 +3895,7 @@ class _HomeScreen3State extends State<HomeScreen3> {
       children:[
         GestureDetector(
           onTap: () async{
-            await  provider.DiscountFilterforMen(context);
+            await  provider.discountFilterforMen(context,0,0);
             Navigator.pushNamed(context, NamedRoutes.exploreRoute3);
           },
           child: Container(
@@ -3961,7 +3961,7 @@ class _HomeScreen3State extends State<HomeScreen3> {
         const Spacer(),
         GestureDetector(
           onTap: () async{
-            await provider.DiscountFilterforMen(context);
+            await provider.discountFilterforMen(context,0,0);
             Navigator.pushNamed(context, NamedRoutes.exploreRoute2);
           },
           child: Container(
@@ -5222,7 +5222,7 @@ class _HomeScreen4State extends State<HomeScreen4> with WidgetsBindingObserver {
       children:[
         GestureDetector(
           onTap: ()async {
-            await   provider.DiscountFilterforMen(context);
+            await provider.discountFilterforMen(context,0,0);
 
             Navigator.pushNamed(context, NamedRoutes.bottomNavigationRoute4);
           },
@@ -5289,7 +5289,7 @@ class _HomeScreen4State extends State<HomeScreen4> with WidgetsBindingObserver {
         const Spacer(),
         GestureDetector(
           onTap: () async{
-            await provider.DiscountFilterforMen(context);
+            await provider.discountFilterforMen(context,0,0);
 
             Navigator.pushNamed(context, NamedRoutes.bottomNavigationRoute4);
           },
