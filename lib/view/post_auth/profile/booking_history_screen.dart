@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:naai/models/booking.dart';
@@ -12,6 +13,13 @@ import 'package:naai/view/widgets/reusable_widgets.dart';
 import 'package:naai/view_model/post_auth/home/home_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:sizer/sizer.dart';
+
+import '../../../models/allbooking.dart';
+import '../../../models/salon_detail.dart';
+import '../../../utils/components/red_button_with_text.dart';
+import '../../../utils/loading_indicator.dart';
+import '../../../utils/routing/named_routes.dart';
+import '../../../view_model/post_auth/salon_details/salon_details_provider.dart';
 
 class BookingHistoryScreen extends StatefulWidget {
   const BookingHistoryScreen({super.key});
@@ -92,15 +100,10 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
                               padding: EdgeInsets.zero,
                               physics: NeverScrollableScrollPhysics(),
                               shrinkWrap: true,
-                              itemCount: provider.allBookings.length,
+                              itemCount: provider.previousBooking.first.artistServiceMap.length,
                               itemBuilder: (context, index) {
-                                Booking booking = provider.allBookings[index];
-                                return Visibility(
-                                  visible: DateTime.parse(
-                                          booking.bookingCreatedFor ?? '')
-                                      .isAfter(DateTime.now()),
-                                  child: previousBookingCard(),
-                                );
+                                PrevBooking booking = provider.previousBooking[index];
+                                return previousBookingCard();
                               },
                             ),
                           ),
@@ -144,14 +147,14 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
                     BookedSalonAndArtistName(
                       headerText: StringConstant.salon,
                       headerIconPath: ImagePathConstant.salonChairIcon,
-                      nameText: provider.allBookings.last.salonName ?? '',
+                      nameText: provider.previousBooking.first.salonName ?? '',
                     ),
                     Visibility(
-                      visible: provider.artistList.isNotEmpty,
+                      visible: provider.previousBooking.isNotEmpty,
                       child: BookedSalonAndArtistName(
                         headerText: StringConstant.artist,
                         headerIconPath: ImagePathConstant.artistIcon,
-                        nameText: provider.allBookings.last.artistName ?? '',
+                        nameText: provider.previousBooking.first.artistServiceMap.first.artistName ?? '',
                       ),
                     ),
                   ],
@@ -173,17 +176,83 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
                     physics: NeverScrollableScrollPhysics(),
                     scrollDirection: Axis.horizontal,
                     itemBuilder: (context, index) => Text(
-                      provider.allBookings.last.bookedServiceNames?[index] ?? '',
+                      provider.previousBooking.first.artistServiceMap.first.serviceName?[index] ?? '',
                       style: TextStyle(
                         fontWeight: FontWeight.w500,
                         fontSize: 11.sp,
                         color: const Color(0xFF212121),
                       ),
                     ),
-                    separatorBuilder: (context, index) => Text(', '),
+                    separatorBuilder: (context, index) => Text(''),
                     itemCount:
-                        provider.allBookings.last.bookedServiceNames?.length ?? 0,
+                        provider.previousBooking.first.artistServiceMap.first.serviceName?.length ?? 0,
                   ),
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: <Widget>[
+                    RedButtonWithText(
+                      buttonText: StringConstant.bookAgain,
+                      onTap: () async {
+                        String salonId = provider.previousBooking.first.salonId;
+                        SalonDetailsProvider salonDetailsProvider = context.read<SalonDetailsProvider>();
+
+                        try {
+                          Loader.showLoader(context);
+                          final response = await Dio().get(
+                            'http://13.235.49.214:8800/partner/salon/single/$salonId',
+                          );
+                          Loader.hideLoader(context);
+
+                          ApiResponse apiResponse = ApiResponse.fromJson(response.data);
+                          ApiResponse salonDetails = ApiResponse(
+                            status: apiResponse.status,
+                            message: apiResponse.message,
+                            data: ApiResponseData(
+                              data: apiResponse.data.data,
+                              artists: apiResponse.data.artists,
+                              services: apiResponse.data.services,
+                            ),
+                          );
+
+                          // Pass the salonDetails to SalonDetailsProvider
+                          salonDetailsProvider.setSalonDetails(salonDetails);
+
+                          // If the API call is successful, navigate to the SalonDetailsScreen
+                          Navigator.pushNamed(context, NamedRoutes.salonDetailsRoute, arguments: salonId);
+                        } catch (error) {
+                          Loader.hideLoader(context);
+                          // Handle the case where the API call was not successful
+                          // You can show an error message or take appropriate action
+                          Navigator.pushNamed(context, NamedRoutes.bottomNavigationRoute);
+                          print('Failed to fetch salon details: $error');
+                        }
+                      },
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 5.w,
+                        vertical: 1.h,
+                      ),
+                      border: Border.all(color: ColorsConstant.appColor),
+                      shouldShowBoxShadow: false,
+                    ),
+                    SizedBox(width: 5.w),
+                    RedButtonWithText(
+                      onTap: () => Navigator.pushNamed(
+                        context,
+                        NamedRoutes.appointmentDetailsRoute,
+                        arguments: 0,
+                      ),
+                      buttonText: StringConstant.seeDetails,
+                      fillColor: Colors.white,
+                      textColor: ColorsConstant.appColor,
+                      border: Border.all(color: ColorsConstant.appColor),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 5.w,
+                        vertical: 1.h,
+                      ),
+                      shouldShowBoxShadow: false,
+                    ),
+                  ],
                 ),
               ],
             ),

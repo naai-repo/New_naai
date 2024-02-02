@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:naai/utils/colors_constant.dart';
 import 'package:naai/utils/image_path_constant.dart';
 import 'package:naai/utils/routing/named_routes.dart';
@@ -27,14 +28,31 @@ class _SplashScreenState extends State<SplashScreen> {
     super.initState();
     checkIfUserExists();
   }
-  
+  // Function to retrieve isGuest status from Hive
+  Future<bool> getIsGuestStatus() async {
+    final box = await Hive.openBox('userBox');
+    return box.get('isGuest', defaultValue: false) ?? false;
+  }
+
   void checkIfUserExists() {
     Timer(const Duration(seconds: 2), () async {
       String? accessToken = await AccessTokenManager.getAccessToken();
+      bool isGuest = await getIsGuestStatus();
       if (accessToken != null && accessToken.isNotEmpty) {
-        Navigator.pushReplacementNamed(context,NamedRoutes.bottomNavigationRoute);
+        Navigator.pushReplacementNamed(
+          context,
+          NamedRoutes.bottomNavigationRoute,
+        );
+      } else if (isGuest) {
+        Navigator.pushReplacementNamed(
+          context,
+          NamedRoutes.bottomNavigationRoute2,
+        );
       } else {
-        Navigator.pushReplacementNamed(context,NamedRoutes.authenticationRoute);
+        Navigator.pushReplacementNamed(
+          context,
+          NamedRoutes.authenticationRoute,
+        );
       }
     });
   }

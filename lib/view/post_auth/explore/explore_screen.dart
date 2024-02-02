@@ -51,7 +51,7 @@ class _ExploreScreenState extends State<ExploreScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ExploreProvider>(builder: (context, provider, child) {
+    return Consumer2<ExploreProvider,HomeProvider>(builder: (context, provider, provider2,child) {
       return Scaffold(
         body: Stack(
           children: <Widget>[
@@ -61,7 +61,7 @@ class _ExploreScreenState extends State<ExploreScreen>
               slivers: <Widget>[
                 ReusableWidgets.transparentFlexibleSpace(),
                 titleSearchBarWithLocation(),
-                provider.salonData2.length == 0
+                provider2.salonList2.length == 0
                     ? SliverFillRemaining(
                         child: Container(
                           color: Colors.white,
@@ -135,11 +135,11 @@ class _ExploreScreenState extends State<ExploreScreen>
                                     child: ListView.builder(
                                       shrinkWrap: true,
                                       scrollDirection: Axis.horizontal,
-                                      itemCount: provider.artistList2.length,
+                                      itemCount: provider2.artistList2.length,
                                       physics: BouncingScrollPhysics(),
                                       itemBuilder: (context, index) {
                                         ArtistData artist =
-                                            provider.artistList2[index];
+                                            provider2.artistList2[index];
                                         return artistCard(
                                           artist,
                                           index,
@@ -180,65 +180,131 @@ class _ExploreScreenState extends State<ExploreScreen>
                                         ),
                                       ),
                                       RedButtonWithText(
-                                  buttonText: StringConstant.filter,
-                                  textColor: ColorsConstant.appColor,
-                                  fontSize: 10.sp,
-                                  border: Border.all(
-                                      color: ColorsConstant.appColor),
-                                  icon:
-                                      provider.selectedFilterTypeList.isNotEmpty
-                                          ? Text(
-                                              '${provider.selectedFilterTypeList.length}',
-                                              style: TextStyle(
-                                                fontSize: 10.sp,
-                                                fontWeight: FontWeight.w600,
-                                                color: ColorsConstant.appColor,
-                                              ),
-                                            )
-                                          : SvgPicture.asset(
-                                              ImagePathConstant.filterIcon),
-                                  fillColor: ColorsConstant.lightAppColor,
-                                  borderRadius: 3.h,
-                                  onTap: () => showModalBottomSheet(
-                                    context: context,
-                                    isScrollControlled: true,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.vertical(
-                                        top: Radius.circular(2.h),
+                                        buttonText: StringConstant.filter,
+                                        textColor: ColorsConstant.appColor,
+                                        fontSize: 10.sp,
+                                        border: Border.all(
+                                            color: ColorsConstant.appColor),
+                                        icon: provider.selectedFilterTypeList
+                                                .isNotEmpty
+                                            ? Text(
+                                                '${provider.selectedFilterTypeList.length}',
+                                                style: TextStyle(
+                                                  fontSize: 10.sp,
+                                                  fontWeight: FontWeight.w600,
+                                                  color:
+                                                      ColorsConstant.appColor,
+                                                ),
+                                              )
+                                            : SvgPicture.asset(
+                                                ImagePathConstant.filterIcon),
+                                        fillColor: ColorsConstant.lightAppColor,
+                                        borderRadius: 3.h,
+                                        onTap: () => showModalBottomSheet(
+                                          context: context,
+                                          isScrollControlled: true,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.vertical(
+                                              top: Radius.circular(2.h),
+                                            ),
+                                          ),
+                                          builder: (context) {
+                                            return Column(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: <Widget>[
+                                                Text(
+                                                  StringConstant.filter,
+                                                  style: TextStyle(
+                                                    fontSize: 20.sp,
+                                                    fontWeight: FontWeight.w600,
+                                                    color:
+                                                        ColorsConstant.appColor,
+                                                  ),
+                                                ),
+                                                Divider(
+                                                  thickness: 2,
+                                                  color:
+                                                      ColorsConstant.textLight,
+                                                ),
+                                                SizedBox(height: 2.h),
+                                                SizedBox(
+                                                  width: 30.w,
+                                                  child: RedButtonWithText(
+                                                    buttonText:
+                                                        StringConstant.rating,
+                                                    icon: CircleAvatar(
+                                                      radius: 1.5.h,
+                                                      backgroundColor:
+                                                          Colors.white,
+                                                      child: Icon(
+                                                        Icons.close,
+                                                        color: ColorsConstant
+                                                            .appColor,
+                                                        size: 2.h,
+                                                      ),
+                                                    ),
+                                                    textColor: provider
+                                                            .selectedFilterTypeList
+                                                            .contains(FilterType
+                                                                .Rating)
+                                                        ? Colors.white
+                                                        : ColorsConstant
+                                                            .appColor,
+                                                    fontSize: 10.sp,
+                                                    border: Border.all(
+                                                        color: ColorsConstant
+                                                            .appColor),
+                                                    fillColor: provider
+                                                            .selectedFilterTypeList
+                                                            .contains(FilterType
+                                                                .Rating)
+                                                        ? ColorsConstant
+                                                            .appColor
+                                                        : ColorsConstant
+                                                            .lightAppColor,
+                                                    borderRadius: 3.h,
+                                                    onTap: () async{
+                                                      if (provider.selectedFilterTypeList.contains(FilterType.Rating)) {
+                                                        provider.selectedFilterTypeList.remove(FilterType.Rating);
+                                                        await provider.initHome(context);
+                                                      } else {
+                                                        provider.selectedFilterTypeList.add(FilterType.Rating);
+                                                        await provider.Filter(context);
+                                                      }
+                                                      Navigator.pop(context);
+                                                    },
+                                                    shouldShowBoxShadow: false,
+                                                    isIconSuffix: true,
+                                                    padding:
+                                                        EdgeInsets.symmetric(
+                                                      vertical: 1.5.w,
+                                                      horizontal: 2.5.w,
+                                                    ),
+                                                  ),
+                                                ),
+                                                SizedBox(height: 2.h),
+                                              ],
+                                            );
+                                          },
+                                        ),
+                                        shouldShowBoxShadow: false,
+                                        isIconSuffix: true,
+                                        padding: EdgeInsets.symmetric(
+                                          vertical: 1.5.w,
+                                          horizontal: 2.5.w,
+                                        ),
                                       ),
-                                    ),
-                                    builder: (context) {
-                                      return Container(
-                                        width: double.maxFinite,
-                                        height: 500,
-                                        decoration: BoxDecoration(
-                                            color: Colors.white,
-                                            borderRadius: BorderRadius.only(
-                                                topLeft: Radius.circular(2.h),
-                                                topRight:
-                                                    Radius.circular(2.h))),
-                                        child: const FilterBarberSheet(),
-                                      );
-                                    },
-                                  ),
-                                  shouldShowBoxShadow: false,
-                                  isIconSuffix: true,
-                                  padding: EdgeInsets.symmetric(
-                                    vertical: 1.5.w,
-                                    horizontal: 2.5.w,
-                                  ),
-                                )
                                     ],
                                   ),
                                   SizedBox(height: 2.h),
                                   ListView.builder(
                                     padding: EdgeInsets.zero,
-                                    physics: const NeverScrollableScrollPhysics(),
+                                    physics: NeverScrollableScrollPhysics(),
                                     shrinkWrap: true,
                                     itemBuilder: (context, index) =>
                                         salonCard(index),
                                     itemCount:
-                                        provider.salonData2.length
+                                        provider2.salonList2.length
                                   )
                                 ],
                               ),
@@ -258,7 +324,7 @@ class _ExploreScreenState extends State<ExploreScreen>
     ArtistData artist,
     int index,
   ) {
-    return Consumer<ExploreProvider>(builder: (context, provider, child) {
+    return Consumer2<ExploreProvider,HomeProvider>(builder: (context, provider,provider2, child) {
       return Padding(
         padding: EdgeInsets.only(right: 4.w),
           child: CurvedBorderedCard(
@@ -276,7 +342,7 @@ class _ExploreScreenState extends State<ExploreScreen>
                   List<Service> services = artist.services;
 
                   BarberProvider barberDetailsProvider = context.read<BarberProvider>();
-            
+
                   try {
                     Loader.showLoader(context);
 
@@ -306,7 +372,7 @@ class _ExploreScreenState extends State<ExploreScreen>
                             print('Failed to fetch artist details: Invalid response format');
                           }
                         } else if (response.requestOptions.uri.pathSegments.contains('salon')) {
-                          //Process salon API response
+                          // Process salon API response
                           ApiResponse apiResponse = ApiResponse.fromJson(response.data);
                           ApiResponse salonDetails = ApiResponse(
                             status: apiResponse.status,
@@ -317,10 +383,8 @@ class _ExploreScreenState extends State<ExploreScreen>
                               services: apiResponse.data.services,
                             ),
                           );
-                          
                           salonDetailsProvider.setSalonDetails(salonDetails);
                           barberDetailsProvider.setSalonDetails(salonDetails);
-                          
                         } else if (response.requestOptions.uri.pathSegments.contains('service')) {
                           ServiceResponse serviceResponse = ServiceResponse.fromJson(response.data);
                           ServiceResponse serviceresponse = ServiceResponse(
@@ -338,7 +402,6 @@ class _ExploreScreenState extends State<ExploreScreen>
                         print('Failed to fetch details: Invalid response format');
                       }
                     }
-                    
 
                     // If the API calls are successful, navigate to the next screen
                     Navigator.pushNamed(context, NamedRoutes.barberProfileRoute, arguments: artistId);
@@ -357,6 +420,7 @@ class _ExploreScreenState extends State<ExploreScreen>
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: <Widget>[
+
                           Column(
                             children: <Widget>[
                               Padding(
@@ -380,37 +444,12 @@ class _ExploreScreenState extends State<ExploreScreen>
                                 ),
                               ),
                               Text(
-                                artist.salonId ?? '',
+                                artist.salonName ?? '',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   color: ColorsConstant.textLight,
                                   fontSize: 10.sp,
                                   fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              Text.rich(
-                                TextSpan(
-                                  children: <InlineSpan>[
-                                    WidgetSpan(
-                                      alignment: PlaceholderAlignment.baseline,
-                                      baseline: TextBaseline.ideographic,
-                                      child: SvgPicture.asset(
-                                        ImagePathConstant.starIcon,
-                                        color: ColorsConstant.greenRating,
-                                      ),
-                                    ),
-                                    WidgetSpan(
-                                      child: SizedBox(width: 1.w),
-                                    ),
-                                    TextSpan(
-                                      text: artist.rating.toStringAsFixed(1),
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 10.sp,
-                                        color: ColorsConstant.greenRating,
-                                      ),
-                                    ),
-                                  ],
                                 ),
                               ),
                             ],
@@ -437,7 +476,7 @@ class _ExploreScreenState extends State<ExploreScreen>
                                         child: SizedBox(width: 1.w),
                                       ),
                                       TextSpan(
-                                      text: '',
+                                      text: artist.distance.toStringAsFixed(2),
                                         style: TextStyle(
                                           fontWeight: FontWeight.w600,
                                           fontSize: 10.sp,
@@ -526,66 +565,71 @@ class _ExploreScreenState extends State<ExploreScreen>
   }
 
   Widget titleSearchBarWithLocation() {
-    return MediaQuery.removePadding(
-      context: context,
-      removeTop: true,
-      child: SliverAppBar(
-        elevation: 10,
-        automaticallyImplyLeading: false,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(3.h),
-            topRight: Radius.circular(3.h),
-          ),
-        ),
-        backgroundColor: Colors.white,
-        pinned: true,
-        floating: true,
-        title: GestureDetector(
-          onTap: () => FocusManager.instance.primaryFocus!.unfocus(),
-          child: Container(
-            padding: EdgeInsets.only(top: 3.h),
-            child: Text(
-              StringConstant.exploreSalons,
-              style: StyleConstant.headingTextStyle,
-            ),
-          ),
-        ),
-        centerTitle: false,
-        bottom: PreferredSize(
-          preferredSize: Size.fromHeight(13.h),
-          child: Consumer<ExploreProvider>(builder: (context, provider, child) {
-            return TabBar(
-              controller: homeScreenController,
-              indicatorColor: Colors.white,
-              tabs: <Widget>[
-                GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () => FocusManager.instance.primaryFocus!.unfocus(),
-                  child: Padding(
-                    padding: EdgeInsets.only(top: 4.3.h, bottom: 2.h),
-                    child: TextFormField(
-                      controller: provider.salonSearchController,
-                      cursorColor: ColorsConstant.appColor,
-                      style: StyleConstant.searchTextStyle,
-                      textInputAction: TextInputAction.done,
-                      onChanged: (searchText) =>
-                          provider.filterArtistList(searchText),
-                      decoration: StyleConstant.searchBoxInputDecoration(
-                        context,
-                        hintText: StringConstant.search,
-                      ),
-                    ),
+    return Consumer2<ExploreProvider, HomeProvider>(
+        builder: (context, provider, provider2, child) {
+          return MediaQuery.removePadding(
+            context: context,
+            removeTop: true,
+            child: SliverAppBar(
+              elevation: 10,
+              automaticallyImplyLeading: false,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(3.h),
+                  topRight: Radius.circular(3.h),
+                ),
+              ),
+              backgroundColor: Colors.white,
+              pinned: true,
+              floating: true,
+              title: GestureDetector(
+                onTap: () => FocusManager.instance.primaryFocus!.unfocus(),
+                child: Container(
+                  padding: EdgeInsets.only(top: 3.h),
+                  child: Text(
+                    StringConstant.exploreSalons,
+                    style: StyleConstant.headingTextStyle,
                   ),
                 ),
-              ],
-            );
-          }),
-        ),
-      ),
-    );
+              ),
+              centerTitle: false,
+              bottom: PreferredSize(
+                preferredSize: Size.fromHeight(13.h),
+                child: Consumer<ExploreProvider>(
+                    builder: (context, provider, child) {
+                      return TabBar(
+                        controller: homeScreenController,
+                        indicatorColor: Colors.white,
+                        tabs: <Widget>[
+                          GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: () =>
+                                FocusManager.instance.primaryFocus!.unfocus(),
+                            child: Padding(
+                              padding: EdgeInsets.only(top: 4.3.h, bottom: 2.h),
+                              child: TextFormField(
+                                controller: provider2.salonSearchController,
+                                cursorColor: ColorsConstant.appColor,
+                                style: StyleConstant.searchTextStyle,
+                                textInputAction: TextInputAction.done,
+                                onChanged: (searchText) =>
+                                    provider2.filterArtistList(searchText),
+                                decoration: StyleConstant
+                                    .searchBoxInputDecoration(
+                                  context,
+                                  hintText: StringConstant.search,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    }),
+              ),
+            ),
+          );
+        });
   }
-
   Widget salonCard(int index) {
     return Consumer2<ExploreProvider,HomeProvider>(
       builder: (context, provider,homeprovider, child) {
@@ -594,7 +638,7 @@ class _ExploreScreenState extends State<ExploreScreen>
           color: Colors.white,
           child: GestureDetector(
             onTap: () async {
-              String salonId =  provider.salonData2[index].id ?? '';
+              String salonId =  homeprovider.salonList2[index].id ?? '';
               SalonDetailsProvider salonDetailsProvider = context.read<SalonDetailsProvider>();
 
               try {
@@ -640,7 +684,7 @@ class _ExploreScreenState extends State<ExploreScreen>
                         autoPlayInterval: Duration(seconds: 3),
                         autoPlayAnimationDuration: Duration(milliseconds: 800),
                         autoPlayCurve: Curves.fastOutSlowIn),
-                    items: (provider.salonData2[index].images ?? <ImageData>[]) // Use an empty list if images is null
+                    items: (homeprovider.salonList2[index].images ?? <ImageData>[] ) // Use an empty list if images is null
                         .map((ImageData imageUrl) {
                       return Builder(
                         builder: (BuildContext context) {
@@ -722,7 +766,7 @@ class _ExploreScreenState extends State<ExploreScreen>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
                       Text(
-                        provider.salonData2[index].name ?? '',
+                        homeprovider.salonList2[index].name ?? '',
                         style: TextStyle(
                           color: ColorsConstant.textDark,
                           fontSize: 15.sp,
@@ -730,7 +774,7 @@ class _ExploreScreenState extends State<ExploreScreen>
                         ),
                       ),
                       Text(
-                        '${provider.salonData2[index].address}',
+                        '${homeprovider.salonList2[index].address}',
                         style: TextStyle(
                           color: ColorsConstant.greySalonAddress,
                           fontSize: 11.sp,
@@ -743,17 +787,17 @@ class _ExploreScreenState extends State<ExploreScreen>
                           ColorfulInformationCard(
                             imagePath: ImagePathConstant.locationIconAlt,
                             text:
-                                '${provider.salonData2[index].distance.toStringAsFixed(2)}',
+                                '${homeprovider.salonList2[index].distance.toStringAsFixed(2)}',
                             color: ColorsConstant.purpleDistance,
                           ),
                           SizedBox(width: 3.w),
                           ColorfulInformationCard(
                             imagePath: ImagePathConstant.starIcon,
-                            text: '${provider.salonData2[index].rating.toStringAsFixed(1)}',
+                            text: '${homeprovider.salonList2[index].rating.toStringAsFixed(1)}',
                             color: ColorsConstant.greenRating,
                           ),
                           SizedBox(width: 3.w),
-                          provider.salonData2[index].discount == 0 ||provider.salonData2[index].discount==null?SizedBox():Container(
+                          homeprovider.salonList2[index].discount == 0 ||homeprovider.salonList2[index].discount==null?SizedBox():Container(
                             constraints: BoxConstraints(minWidth: 13.w),
                             padding: EdgeInsets.symmetric(
                               vertical: 0.3.h,
@@ -774,7 +818,7 @@ class _ExploreScreenState extends State<ExploreScreen>
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: <Widget>[
                                 Text(
-                                  '${provider.salonData2[index].discount} %off',
+                                  '${homeprovider.salonList2[index].discount} %off',
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontSize: 10.sp,
@@ -813,7 +857,7 @@ class _ExploreScreenState extends State<ExploreScreen>
                                 ),
                               ),
                               TextSpan(
-                                text: '${provider.salonData2[index].timing.opening} - ${provider.salonData2[index].timing.closing}',
+                                text: '${homeprovider.salonList2[index].timing.opening} - ${homeprovider.salonList2[index].timing.closing}',
                                 style: TextStyle(
                                   color: ColorsConstant.textDark,
                                   fontSize: 10.sp,
@@ -846,8 +890,7 @@ class _ExploreScreenState extends State<ExploreScreen>
                                 ),
                               ),
                               TextSpan(
-                                text: provider
-                                    .salonData2[index].closedOn,
+                                text: homeprovider.salonList2[index].closedOn,
                                 style: TextStyle(
                                   color: ColorsConstant.textDark,
                                   fontSize: 10.sp,
@@ -861,7 +904,7 @@ class _ExploreScreenState extends State<ExploreScreen>
                     ],
                   ),
                   SizedBox(height: 1.2.h),
-                  index == (provider.salonData2.length - 1)
+                  index == (homeprovider.salonList2.length - 1)
                       ? SizedBox(height: 10.h)
                       : Divider(
                           thickness: 1,
@@ -995,11 +1038,11 @@ class _ExploreScreen2State extends State<ExploreScreen2>
                               child: ListView.builder(
                                 shrinkWrap: true,
                                 scrollDirection: Axis.horizontal,
-                                itemCount: provider.artistList2.length,
+                                itemCount: provider2.artistList2.length,
                                 physics: BouncingScrollPhysics(),
                                 itemBuilder: (context, index) {
                                   ArtistData artist =
-                                  provider.artistList2[index];
+                                  provider2.artistList2[index];
                                   return artistCard(
                                     artist,
                                     index,
@@ -1303,37 +1346,12 @@ class _ExploreScreen2State extends State<ExploreScreen2>
                               ),
                             ),
                             Text(
-                              artist.salonId ?? '',
+                              artist.salonName ?? '',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 color: ColorsConstant.textLight,
                                 fontSize: 10.sp,
                                 fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            Text.rich(
-                              TextSpan(
-                                children: <InlineSpan>[
-                                  WidgetSpan(
-                                    alignment: PlaceholderAlignment.baseline,
-                                    baseline: TextBaseline.ideographic,
-                                    child: SvgPicture.asset(
-                                      ImagePathConstant.starIcon,
-                                      color: ColorsConstant.greenRating,
-                                    ),
-                                  ),
-                                  WidgetSpan(
-                                    child: SizedBox(width: 1.w),
-                                  ),
-                                  TextSpan(
-                                    text: artist.rating.toStringAsFixed(1),
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 10.sp,
-                                      color: ColorsConstant.greenRating,
-                                    ),
-                                  ),
-                                ],
                               ),
                             ),
                           ],
@@ -1360,7 +1378,7 @@ class _ExploreScreen2State extends State<ExploreScreen2>
                                       child: SizedBox(width: 1.w),
                                     ),
                                     TextSpan(
-                                      text: '',
+                                      text: artist.distance.toStringAsFixed(2),
                                       style: TextStyle(
                                         fontWeight: FontWeight.w600,
                                         fontSize: 10.sp,
@@ -1862,6 +1880,9 @@ class _ExploreScreen2State extends State<ExploreScreen2>
     );
   }
 }
+
+
+
 
 class ExploreScreen3 extends StatefulWidget {
   const ExploreScreen3({Key? key}) : super(key: key);
@@ -2765,321 +2786,6 @@ class _ExploreScreen3State extends State<ExploreScreen3>
         ImagePathConstant.appBackgroundImage,
         color: ColorsConstant.graphicFill,
       ),
-    );
-  }
-}
-
-
-class FilterBarberSheet extends StatelessWidget {
-  const FilterBarberSheet({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final ref = Provider.of<FilterBarbers>(context, listen: true);
-    List<Widget> screens = [
-      priceWidget(),
-      priceWidget(),
-      ratingWidget(),
-      discountWidget(),
-      distanceWidget()
-    ];
-
-
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.start,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Container(
-          padding: EdgeInsets.symmetric(vertical: 1.w, horizontal: 5.w),
-          decoration: BoxDecoration(
-              borderRadius: BorderRadius.only(topLeft: Radius.circular(2.h))),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Text(
-                "Filters",
-                style: TextStyle(
-                    color: Colors.black,
-                    fontSize: 13.sp,
-                    fontWeight: FontWeight.bold),
-              ),
-              TextButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                  child: Text(
-                    "Close",
-                    style: TextStyle(color: Colors.black, fontSize: 11.sp),
-                  ))
-            ],
-          ),
-        ),
-        Divider(
-          height: 0.5.h,
-          color: ColorsConstant.divider,
-        ),
-        SizedBox(
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(
-                width: 35.w,
-                height: 50.h,
-                // color: ColorsConstant.appColorAccent,
-                child: Material(
-                  color: ColorsConstant.appColorAccent,
-                  child: ListView.builder(
-                      itemCount: ref.getFilterTypes.length,
-                      itemBuilder: (context, idx) {
-                        Color itemBgColor = (ref.getSelectdIndex == idx)
-                            ? Colors.white
-                            : Colors.transparent;
-                        Color itemTColor = (ref.getSelectdIndex == idx)
-                            ? Colors.black
-                            : ColorsConstant.appColor;
-                        FontWeight weight = (ref.getSelectdIndex == idx)
-                            ? FontWeight.w600
-                            : FontWeight.normal;
-                        return Container(
-                          color: itemBgColor,
-                          child: Column(
-                            children: [
-                              ListTile(
-                                titleAlignment: ListTileTitleAlignment.center,
-                                onTap: () {
-                                  if (ref.getSelectdIndex != idx) {
-                                    ref.changeIndex(idx);
-                                  }
-                                },
-                                title: Text(
-                                  ref.getFilterTypes[idx],
-                                  style: TextStyle(
-                                      color: itemTColor,
-                                      fontSize: 10.sp,
-                                      fontWeight: weight),
-                                ),
-                              ),
-                              Divider(
-                                thickness: 0.05.h,
-                                height: 0.1,
-                                color: ColorsConstant.divider,
-                              )
-                            ],
-                          ),
-                        );
-                      }),
-                ),
-              ),
-              Expanded(
-                  child: (ref.getSelectdIndex < screens.length)
-                      ? screens[ref.getSelectdIndex]
-                      : const SizedBox())
-            ],
-          ),
-        )
-      ],
-    );
-  }
-
-  Widget distanceWidget() {
-    return Container(
-      padding: EdgeInsets.all(5.w),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text("Select Distance"),
-          SizedBox(
-            height: 1.h,
-          ),
-          const RangeSliderWidget()
-        ],
-      ),
-    );
-  }
-
-  Widget discountWidget() {
-    return Container(
-      padding: EdgeInsets.all(5.w),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text("Discounts"),
-          SizedBox(
-            height: 1.h,
-          ),
-          const DiscountsButtons()
-        ],
-      ),
-    );
-  }
-
-  Widget ratingWidget() {
-    return Container(
-      padding: EdgeInsets.all(5.w),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text("Rating"),
-          SizedBox(
-            height: 1.h,
-          ),
-          const RatingButtions()
-        ],
-      ),
-    );
-  }
-
-  Widget priceWidget() {
-    return Container(
-      padding: EdgeInsets.all(5.w),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text("Select Gender"),
-          SizedBox(
-            height: 1.h,
-          ),
-          Row(
-            children: [
-              RedButtonWithText(buttonText: "Male", onTap: () {}),
-              SizedBox(width: 5.w),
-              RedButtonWithText(buttonText: "Female", onTap: () {}),
-            ],
-          )
-        ],
-      ),
-    );
-  }
-}
-
-class DiscountsButtons extends StatefulWidget {
-  const DiscountsButtons({super.key});
-
-  @override
-  State<DiscountsButtons> createState() => _DiscountsButtonsState();
-}
-
-class _DiscountsButtonsState extends State<DiscountsButtons> {
-  int selectedDiscountIndex = 0;
-  List<String> discounts = ["10", "20", "30", "40", "50"];
-
-  @override
-  Widget build(BuildContext context) {
-    List<Widget> buttons = [];
-    Color selectButtonColor = ColorsConstant.appColor,unselectButtonColor = ColorsConstant.appColorAccent,
-    borderButtonColor = ColorsConstant.appColor;
-    final ref = Provider.of<ExploreProvider>(context, listen: true);
-    selectedDiscountIndex = ref.selectedDiscountIndex;
-    print('Discount Select Idx : $selectedDiscountIndex');
-    
-    for (int i = 0; i < discounts.length; i++) {
-      buttons.add(FilterButton(
-          onTap: () async {
-              if(i != selectedDiscountIndex){
-                  await ref.filterSalonListByDiscount(context,int.parse(discounts[i]),i);
-              }else{
-                  await ref.filterSalonListByDiscount(context,0,-1);
-              }
-          },
-          bgColor: (selectedDiscountIndex != -1 && i == selectedDiscountIndex) ? selectButtonColor : unselectButtonColor,
-          borderRadius: BorderRadius.circular(8.sp),
-          border: Border.all(color: borderButtonColor,width: 0.1.w),
-          padding: EdgeInsets.symmetric(horizontal: 5.w,vertical: 2.w),
-          child: Text(
-            "${discounts[i].toString()}% Off or more",
-             style: TextStyle(
-              fontSize: 9.sp,
-              color: (selectedDiscountIndex != -1 && i == selectedDiscountIndex) ? unselectButtonColor : selectButtonColor
-            ),
-          )));
-    }
-    return Wrap(
-      spacing: double.maxFinite,
-      runSpacing: 2.w,
-      children: buttons,
-    );
-  }
-}
-
-
-class RatingButtions extends StatelessWidget {
-  const RatingButtions({super.key});
-  
-  @override
-  Widget build(BuildContext context) {
-    int selectedRatingIndex = -1;
-    List<String> ratingsText = ["Low to High", "High to Low"];
-    List<Widget> buttons = [];
-    Color selectButtonColor = ColorsConstant.appColor,unselectButtonColor = ColorsConstant.appColorAccent,
-    borderButtonColor = ColorsConstant.appColor;
-    final ref = Provider.of<ExploreProvider>(context, listen: true);
-    selectedRatingIndex = ref.selectedRatingIndex;
-    print('Rating Select Idx : $selectedRatingIndex');
-    
-    for (int i = 0; i < ratingsText.length; i++) {
-      buttons.add(FilterButton(
-          onTap: () async {
-              if(i != selectedRatingIndex){
-                  if(selectedRatingIndex == 1) ref.salonData2.sort((a, b) => a.rating.toInt() - b.rating.toInt());
-                  if(selectedRatingIndex == 0) ref.salonData2.sort((a, b) => b.rating.toInt() - a.rating.toInt());
-                  ref.salonList2 = ref.salonData2;
-                  ref.setSelectedRatingIndex = i;
-              }else{
-                  ref.salonData2.shuffle();
-                  ref.salonList2 = ref.salonData2;
-                  ref.setSelectedRatingIndex = -1;
-              }
-          },
-          bgColor: (selectedRatingIndex != -1 && i == selectedRatingIndex) ? selectButtonColor : unselectButtonColor,
-          borderRadius: BorderRadius.circular(8.sp),
-          border: Border.all(color: borderButtonColor,width: 0.1.w),
-          padding: EdgeInsets.symmetric(horizontal: 5.w,vertical: 2.w),
-          child: Text(
-            ratingsText[i],
-             style: TextStyle(
-              fontSize: 9.sp,
-              color: (selectedRatingIndex != -1 && i == selectedRatingIndex) ? unselectButtonColor : selectButtonColor
-            ),
-          )));
-    }
-    return Wrap(
-      spacing: double.maxFinite,
-      runSpacing: 2.w,
-      children: buttons,
-    );
-  }
-}
-
-class RangeSliderWidget extends StatefulWidget {
-  const RangeSliderWidget({super.key});
-
-  @override
-  State<RangeSliderWidget> createState() => _RangeSliderWidgetState();
-}
-
-class _RangeSliderWidgetState extends State<RangeSliderWidget> {
-  double range = 0, end = 0;
-  @override
-  Widget build(BuildContext context) {
-    return RangeSlider(
-      values: RangeValues(range, end),
-      onChanged: (v) {},
-      onChangeEnd: (v) {
-        setState(() {
-          end = v.end;
-          range = v.start;
-        });
-      },
-      max: 100,
-      min: 0,
-      labels: RangeLabels("0", "1"),
     );
   }
 }

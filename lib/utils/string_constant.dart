@@ -20,6 +20,8 @@ class StringConstant {
   static const String enterVerificationCode = 'Enter Verification Code';
   static const String enterOtpSubtext =
       'Enter code that we have sent to your mobile no.';
+  static const String submitReviewSalon = "Submit Review to Salon";
+  static const String submitReviewArtist = "Submit Review to Artist";
   static const String verifyNumber = 'VERIFY NUMBER';
   static const String addName = 'Add Name';
   static const String signUP = 'SignUp';

@@ -121,6 +121,9 @@ class RoutingFunctions {
       case NamedRoutes.appointmentDetailsRoute:
         target = AppointmentDetails(index: settings.arguments as int);
         break;
+      case NamedRoutes.appointmentDetailsRoute2:
+        target = AppointmentDetails2(index: settings.arguments as int);
+        break;
       case NamedRoutes.bookingHistoryRoute:
         target = BookingHistoryScreen();
         break;
@@ -139,7 +142,7 @@ class RoutingFunctions {
   static Route createRoute(Widget widget) {
     return PageRouteBuilder(
       pageBuilder: (context, animation, secondaryAnimation) => widget,
-      transitionsBuilder: (context, animation, secondaryAnimation, child){
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
         var begin = Offset(0, 0);
         var end = Offset.zero;
         var curve = Curves.ease;

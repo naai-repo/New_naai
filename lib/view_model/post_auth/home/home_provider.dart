@@ -35,21 +35,30 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 import 'package:sizer/sizer.dart';
 import '../../../models/allbooking.dart';
+import '../../../models/artist_detail.dart';
 import '../../../models/artist_model.dart';
+import '../../../models/artist_services.dart';
 import '../../../models/review.dart';
+import '../../../models/salon_detail.dart';
 import '../../../models/salon_model.dart';
 import '../../../models/service_detail.dart';
+import '../../../models/service_response.dart';
 import '../../../utils/access_token.dart';
 import '../../pre_auth/loginResult.dart';
 
 class HomeProvider with ChangeNotifier {
   bool _changedLocation = false;
   final Dio dio = Dio();
-  // Use the phone number from the response
+
   final _mapLocation = location.Location();
   late LatLng _userCurrentLatLng;
+  List<String> salonNames = [];
 
   String userAddress = 'No Location Found';
+
+  String formatBookingDate(DateTime date) {
+    return DateFormat('dd-MM-yy').format(date);
+  }
 
   location.Location get mapLocation => _mapLocation;
   LatLng get userCurrentLatLng => _userCurrentLatLng;
@@ -62,16 +71,11 @@ class HomeProvider with ChangeNotifier {
   List<ServiceDetail> _services = [];
 
   late Symbol _symbol;
-  Position? position;
-  String? _addressText;
+  Position ? position;
+String ?  _addressText;
   late MapboxMapController _controller;
 
-
-  int _selectedDiscountIndex = 0;
-  int get selectedDiscountIndex => _selectedDiscountIndex;
-
-
-  // String _addressText = StringConstant.loading;
+ // String _addressText = StringConstant.loading;
   List<ServiceDetail> get filteredServiceList => _filteredServiceList;
   List<ServiceDetail> _filteredServiceList = [];
 
@@ -79,11 +83,12 @@ class HomeProvider with ChangeNotifier {
 
   UserModel _userData = UserModel();
 
+
   List<Booking> _lastOrNextBooking = [];
   List<Booking> _allBookings = [];
 
-  List<AllBooking> _upcomingBooking = [];
-  List<AllBooking> _previousBooking = [];
+  List<CurrentBooking> _upcomingBooking = [];
+  List<PrevBooking> _previousBooking = [];
 
   //============= GETTERS =============//
   List<SalonData> get salonList => _salonList;
@@ -103,23 +108,45 @@ class HomeProvider with ChangeNotifier {
   List<Booking> get lastOrNextBooking => _lastOrNextBooking;
   List<Booking> get allBookings => _allBookings;
 
-  List<AllBooking> get upcomingBooking => _upcomingBooking;
-  List<AllBooking> get previousBooking => _previousBooking;
+
+
+  List<CurrentBooking> get upcomingBooking => _upcomingBooking;
+  List<PrevBooking> get previousBooking => _previousBooking;
   int displayedSalonCount = 5; // Number of salons to display initially
   int displayedArtistCount = 5;
-
   /// Check if there is a [uid] stored in [SharedPreferences] or not.
   /// If no [uid] is found, then get the userId of the currently logged in
   /// user and save it in [SharedPreferences].
   ///
   /// The [uid] is necessary to get the user data.
+
+
+  String formatAppointmentDate(DateTime bookingDate) {
+    DateTime currentDate = DateTime.now();
+    Duration difference = currentDate.difference(bookingDate);
+
+    if (difference.inDays == 0) {
+      // Same day
+      return "Today";
+    } else if (difference.inDays == 1) {
+      // Yesterday
+      return "1 day ago";
+    } else if (difference.inDays < 7) {
+      // Within the last week
+      return "${difference.inDays} days ago";
+    } else {
+      // More than a week ago
+      int weeks = (difference.inDays / 7).floor();
+      return "${weeks} ${weeks == 1 ? 'week' : 'weeks'} ago";
+    }
+  }
+
   void checkUserIdInSharedPref(String uid) async {
     String storedUid = await SharedPreferenceHelper.getUserId();
     if (storedUid.isEmpty) {
       await SharedPreferenceHelper.setUserId(uid);
     }
   }
-
   List<ArtistData> getDisplayedArtists() {
     // Logic to return the currently displayed artists
     return artistList2.take(displayedArtistCount).toList();
@@ -134,20 +161,17 @@ class HomeProvider with ChangeNotifier {
     // Logic to load more artists
     // For demonstration purposes, we'll add dummy data here
     //  artistList.addAll(getDummyArtists());
-    displayedArtistCount +=
-        5; // Increase the count to show the newly loaded artists
+    displayedArtistCount += 5; // Increase the count to show the newly loaded artists
     notifyListeners();
   }
-
   List<SalonData2> getDisplayedSalons() {
     // Logic to return the currently displayed salons
     return salonList2.take(displayedSalonCount).toList();
-  }
 
+  }
   bool shouldShowLoadButton() {
     return displayedSalonCount < salonList2.length && salonList2.isNotEmpty;
   }
-
   void loadMoreSalons() {
     displayedSalonCount += 5;
     notifyListeners();
@@ -157,7 +181,8 @@ class HomeProvider with ChangeNotifier {
     _salonList2 = value;
     notifyListeners();
   }
-
+  TextEditingController get salonSearchController => _salonSearchController;
+  TextEditingController _salonSearchController = TextEditingController();
   set artistList2(List<ArtistData> value) {
     _artistList2 = value;
     notifyListeners();
@@ -170,7 +195,6 @@ class HomeProvider with ChangeNotifier {
       const SymbolOptions(),
     );
   }
-
   bool _isSearchExpanded = false;
 
   bool get isSearchExpanded => _isSearchExpanded;
@@ -179,7 +203,6 @@ class HomeProvider with ChangeNotifier {
     _isSearchExpanded = value;
     notifyListeners();
   }
-
   /// Method to trigger all the API functions of home screen
 
   Future<void> filterArtistList(String searchText) async {
@@ -193,8 +216,7 @@ class HomeProvider with ChangeNotifier {
 
         // Check if response.data['data'] is a list
         if (response.data['data'] is List<dynamic>) {
-          List<ArtistData> filteredList =
-              (response.data['data'] as List<dynamic>).map((artistJson) {
+          List<ArtistData> filteredList = (response.data['data'] as List<dynamic>).map((artistJson) {
             return ArtistData.fromJson(artistJson as Map<String, dynamic>);
           }).toList();
 
@@ -219,8 +241,7 @@ class HomeProvider with ChangeNotifier {
 
   Future<String> getAddress(double latitude, double longitude) async {
     try {
-      List<Placemark> placemarks =
-          await placemarkFromCoordinates(latitude, longitude);
+      List<Placemark> placemarks = await placemarkFromCoordinates(latitude, longitude);
       Placemark place = placemarks[0];
       return "${place.locality}, ${place.country}";
     } catch (e) {
@@ -229,18 +250,16 @@ class HomeProvider with ChangeNotifier {
     }
   }
 
-  Future<void> discountFilterforWomen(BuildContext context) async {
+  Future<void> DiscountFilterforWomen(BuildContext context) async {
     Loader.showLoader(context);
 
     try {
       Position currentLocation = await Geolocator.getCurrentPosition();
-      print(
-          'Current Location: ${currentLocation.longitude}, ${currentLocation.latitude}');
-      userAddress =
-          await getAddress(currentLocation.latitude, currentLocation.longitude);
+      print('Current Location: ${currentLocation.longitude}, ${currentLocation.latitude}');
+      userAddress = await getAddress(currentLocation.latitude, currentLocation.longitude);
 
-      await getDistanceAndRatingForWomen(
-          coords: [currentLocation.longitude, currentLocation.latitude]);
+      await getDistanceAndRatingForWomen(coords: [currentLocation.longitude, currentLocation.latitude]);
+
     } catch (e) {
       Loader.hideLoader(context);
       print("Error getting location: $e");
@@ -261,8 +280,7 @@ class HomeProvider with ChangeNotifier {
       print('Using saved coordinates: $savedLongitude, $savedLatitude');
       userAddress = await getAddress(savedLatitude, savedLongitude);
 
-      await getDistanceAndRatingForWomen(
-          coords: [savedLongitude, savedLatitude]);
+      await getDistanceAndRatingForWomen(coords:[savedLongitude, savedLatitude]);
       Loader.hideLoader(context);
     } else {
       Loader.hideLoader(context);
@@ -280,7 +298,7 @@ class HomeProvider with ChangeNotifier {
       print('Using saved coordinates: $savedLongitude, $savedLatitude');
       userAddress = await getAddress(savedLatitude, savedLongitude);
 
-      await getDistanceAndRatingForMen(coords: [savedLongitude, savedLatitude],discount: 0);
+      await getDistanceAndRatingForMen(coords:[savedLongitude, savedLatitude]);
       Loader.hideLoader(context);
     } else {
       Loader.hideLoader(context);
@@ -288,20 +306,19 @@ class HomeProvider with ChangeNotifier {
     }
   }
 
-  Future<void> discountFilterforMen(BuildContext context, int discount, int idx) async {
+  Future<void> DiscountFilterforMen(BuildContext context) async {
+
     Loader.showLoader(context);
     try {
-      _selectedDiscountIndex = idx;
       Position currentLocation = await Geolocator.getCurrentPosition();
       print(
-          'Current Location: ${currentLocation.longitude}, ${currentLocation.latitude}');
+          'Current Location: ${currentLocation.longitude}, ${currentLocation
+              .latitude}');
       userAddress =
-          await getAddress(currentLocation.latitude, currentLocation.longitude);
+      await getAddress(currentLocation.latitude, currentLocation.longitude);
       print('Addressssss: $userAddress');
       await Future.wait([
-        getDistanceAndRatingForMen(
-            coords: [currentLocation.longitude, currentLocation.latitude],
-            discount: discount),
+        getDistanceAndRatingForMen(coords: [currentLocation.longitude, currentLocation.latitude]),
       ]);
     } catch (e) {
       Loader.hideLoader(context);
@@ -344,10 +361,8 @@ class HomeProvider with ChangeNotifier {
 
       if (currentLocation != null) {
         // Use current location if available
-        print(
-            'Current Location: ${currentLocation.longitude}, ${currentLocation.latitude}');
-        userAddress = await getAddress(
-            currentLocation.latitude, currentLocation.longitude);
+        print('Current Location: ${currentLocation.longitude}, ${currentLocation.latitude}');
+        userAddress = await getAddress(currentLocation.latitude, currentLocation.longitude);
         await updateUserLocation(
           userId: userId,
           coords: [currentLocation.longitude, currentLocation.latitude],
@@ -358,13 +373,12 @@ class HomeProvider with ChangeNotifier {
       }
 
       await Future.wait([
-        getTopSalons(
-            coords: [currentLocation.longitude, currentLocation.latitude]),
-        getTopArtists(
-            coords: [currentLocation.longitude, currentLocation.latitude]),
+        getTopSalons(coords: [currentLocation.longitude, currentLocation.latitude]),
+        getTopArtists(coords: [currentLocation.longitude, currentLocation.latitude]),
         getAppointments(),
         // Additional asynchronous tasks based on location
       ]);
+
     } catch (e) {
       Loader.hideLoader(context);
       print("Error getting location: $e");
@@ -397,6 +411,7 @@ class HomeProvider with ChangeNotifier {
       print('No location information available.');
     }
   }
+
 
   Future<void> updateUserLocation({
     required String userId,
@@ -462,10 +477,9 @@ class HomeProvider with ChangeNotifier {
       print("Dio error for top salons: $e");
     }
   }
-
+  ArtistData?  artist;
   Future<void> getTopArtists({required List<double> coords}) async {
     final apiUrl = UrlConstants.topArtist;
-
     final Map<String, dynamic> requestData = {
       "location": {"type": "Point", "coordinates": coords},
     };
@@ -480,21 +494,48 @@ class HomeProvider with ChangeNotifier {
       );
 
       if (response.statusCode == 200) {
-        artistList2 = ArtistApiResponse.fromJson(response.data).data;
-        print("Top Artists: ${response.data}");
+
+
+        print("Response of artist:- ${ArtistApiResponse.fromJson(response.data)}");
+        ArtistApiResponse artistApiResponse = ArtistApiResponse.fromJson(response.data);
+        print('Response of artist2:-${artistApiResponse.data} ');
+        for (var artistData in artistApiResponse.data) {
+          var salonId = artistData.salonId;
+
+          print('Salon id of artist :-$salonId');
+
+          var salonResponse = await Dio().get(
+              'http://13.235.49.214:8800/partner/salon/single/$salonId');
+
+          dynamic apiResponse = ApiResponse
+              .fromJson(salonResponse.data)
+              .data
+              .data
+              .name;
+          dynamic artistSalonName;
+          salonNames.add(apiResponse);
+
+          print('responseeeeeeeeee :- $apiResponse');
+          dynamic SalonNames ;
+          artistData.setSalonName(apiResponse) ;
+          print('Artist Salon Name is :- $artistSalonName');
+          SalonNames = artistSalonName;
+
+          print("SalonName in home screen :- $SalonNames");
+        }
+        artistList2 = artistApiResponse.data;
       } else {
-        // Handle error response for top artists
         print("Failed to fetch top artists");
         print(response.data);
       }
     } catch (e) {
-      // Handle Dio errors for top artists
       print("Dio error for top artists: $e");
     }
   }
+  Map<String, ServiceResponse> serviceDetailsMap = {}; // Use a map to store service details
 
-  Future<void> getDistanceAndRatingForWomen(
-      {required List<double> coords}) async {
+
+  Future<void> getDistanceAndRatingForWomen({required List<double> coords}) async {
     final apiUrl = UrlConstants.discountAndRatingForWomen;
 
     final Map<String, dynamic> requestData = {
@@ -524,9 +565,8 @@ class HomeProvider with ChangeNotifier {
     }
   }
 
-  Future<void> getDistanceAndRatingForMen(
-      {required List<double> coords, required int discount}) async {
-    final apiUrl = UrlConstants.discountAndRatingForMen + discount.toString();
+  Future<void> getDistanceAndRatingForMen({required List<double> coords}) async {
+    final apiUrl = UrlConstants.discountAndRatingForMen;
 
     final Map<String, dynamic> requestData = {
       "location": {"type": "Point", "coordinates": coords},
@@ -543,7 +583,7 @@ class HomeProvider with ChangeNotifier {
 
       if (response.statusCode == 200) {
         salonList2 = SalonApiResponse.fromJson(response.data).data;
-        print("Top Artists: ${response.data}");
+        print("Top Salon: ${response.data}");
       } else {
         // Handle error response for top artists
         print("Failed to fetch top artists");
@@ -585,11 +625,11 @@ class HomeProvider with ChangeNotifier {
     }
   }
 
+
   Future locationPopUp(BuildContext context) async {
     var _permissionGranted = await _mapLocation.hasPermission();
     if (_permissionGranted == location.PermissionStatus.denied) {
-      await showModalBottomSheet(
-        isScrollControlled: true,
+      await showModalBottomSheet(isScrollControlled: true,
         isDismissible: false,
         backgroundColor: Colors.white,
         shape: const RoundedRectangleBorder(
@@ -629,37 +669,37 @@ class HomeProvider with ChangeNotifier {
                   Image.asset('assets/images/loc_image.png'),
                   const SizedBox(height: 20),
                   Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          Expanded(
-                            child: ElevatedButton(
-                              child: const Text(
-                                "Enable Device Location",
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                    children:[
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Expanded(
+                          child: ElevatedButton(
+                            child: const Text(
+                              "Enable Device Location",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
                               ),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: ColorsConstant.appColor,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                side:
-                                    BorderSide(color: ColorsConstant.appColor),
-                              ),
-                              onPressed: () async {
-                                await Geolocator.requestPermission();
-                                //  _mapLocation.requestService();
-                                //    await _mapLocation.requestPermission();
-                                Navigator.pop(context);
-                              },
                             ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: ColorsConstant.appColor,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              side:BorderSide(color: ColorsConstant.appColor),
+                            ),
+                            onPressed: () async {
+                              await Geolocator.requestPermission();
+                            //  _mapLocation.requestService();
+                         //    await _mapLocation.requestPermission();
+                                Navigator.pop(context);
+
+                            },
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
+                    ),
                       const SizedBox(height: 20),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.end,
@@ -680,15 +720,14 @@ class HomeProvider with ChangeNotifier {
                                 ),
                               ),
                               onPressed: () async {
-                                Navigator.pop(context);
-                                Navigator.pushNamed(
-                                    context, NamedRoutes.setHomeLocationRoute);
+                                 Navigator.pop(context);
+                                 Navigator.pushNamed(context, NamedRoutes.setHomeLocationRoute);
                               },
                             ),
                           ),
                         ],
                       ),
-                    ],
+                  ],
                   ),
                 ],
               ),
@@ -743,7 +782,7 @@ class HomeProvider with ChangeNotifier {
                   Image.asset('assets/images/loc_image.png'),
                   const SizedBox(height: 20),
                   Column(
-                    children: [
+                    children:[
                       Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
@@ -767,6 +806,7 @@ class HomeProvider with ChangeNotifier {
                                 //  _mapLocation.requestService();
                                 //    await _mapLocation.requestPermission();
                                 Navigator.pop(context);
+
                               },
                             ),
                           ),
@@ -793,8 +833,7 @@ class HomeProvider with ChangeNotifier {
                               ),
                               onPressed: () async {
                                 Navigator.pop(context);
-                                Navigator.pushNamed(
-                                    context, NamedRoutes.setHomeLocationRoute2);
+                                Navigator.pushNamed(context, NamedRoutes.setHomeLocationRoute2);
                               },
                             ),
                           ),
@@ -811,16 +850,16 @@ class HomeProvider with ChangeNotifier {
     }
   }
 
-  Future<void> getAppointments() async {
-    final String apiUrl =
-        'http://13.235.49.214:8800/appointments/user/bookings';
-    String? bearerToken = await AccessTokenManager.getAccessToken();
+
+  Future<void> getAppointments({int index = 0}) async {
+    final String apiUrl = 'http://13.235.49.214:8800/appointments/user/bookings';
+    String? bearerToken =  await AccessTokenManager.getAccessToken();
 
     try {
       Dio dio = Dio();
 
       dio.options.headers['Authorization'] = 'Bearer $bearerToken';
-
+print('token is :- $bearerToken');
       Response response = await dio.get(apiUrl);
 
       if (response.statusCode == 200) {
@@ -830,29 +869,207 @@ class HomeProvider with ChangeNotifier {
         // Parse JSON and convert it into Dart objects
         AllBooking userBookings = AllBooking.fromJson(response.data);
 
+        _upcomingBooking.clear();
+        _previousBooking.clear();
+        // Populate previous and upcoming bookings lists
+        _previousBooking.addAll(userBookings.prevBooking);
+        _upcomingBooking.addAll(userBookings.currentBookings);
+        _upcomingBooking.addAll(userBookings.comingBookings);
+
+        for (var booking in userBookings.currentBookings) {
+          var salonId = booking.salonId;
+
+          var salonResponse = await Dio().get('http://13.235.49.214:8800/partner/salon/single/$salonId');
+
+          // Check if the salonResponse is not null and contains the expected data
+          if (salonResponse.statusCode == 200 && salonResponse.data != null) {
+            dynamic apiResponse = ApiResponse.fromJson(salonResponse.data).data.data.name;
+
+            // Set the salonName property
+            booking.salonName = apiResponse;
+            booking.setSalonName(apiResponse);
+            print('Salon name for booking ${booking.id}: ${booking.salonName}');
+          } else {
+            // Handle the case where the response is null or doesn't contain the expected data
+            print('Error fetching salon name for booking ${booking.id}');
+          }
+        }
+
+        for (var booking in userBookings.currentBookings[index].artistServiceMap) {
+          var artistId = booking.artistId;
+          print("artist id for booking :- $artistId");
+          var artistResponse = await Dio().get('http://13.235.49.214:8800/partner/artist/single/$artistId');
+
+          if ( artistResponse.statusCode == 200 &&  artistResponse.data != null) {
+            dynamic apiResponse = ArtistResponse.fromJson( artistResponse.data).data.name;
+
+            // Set the salonName property
+            booking.artistName = apiResponse;
+            booking.setartistName(apiResponse);
+            print('artist name for previous booking ${booking.id}: $apiResponse');
+          } else {
+            // Handle the case where the response is null or doesn't contain the expected data
+            print('Error fetching artist name for booking ${booking.id}');
+          }
+        }
+
+        for (var booking in userBookings.currentBookings[index].artistServiceMap) {
+          var serviceId = booking.serviceId;
+          print("service Id for booking :- $serviceId");
+          var serviceResponse = await Dio().get('http://13.235.49.214:8800/partner/service/single/$serviceId');
+
+          if ( serviceResponse.statusCode == 200 &&  serviceResponse.data != null) {
+            dynamic apiResponse = ServiceResponse.fromJson(serviceResponse.data).data.serviceTitle;
+
+            // Set the salonName property
+            booking.serviceName = apiResponse;
+            booking.setserviceName(apiResponse);
+            print('service name for previous booking ${booking.id}: $apiResponse');
+          } else {
+            // Handle the case where the response is null or doesn't contain the expected data
+            print('Error fetching artist name for booking ${booking.id}');
+          }
+        }
+
+        for (var booking in userBookings.prevBooking) {
+          var salonId = booking.salonId;
+
+          var salonResponse = await Dio().get('http://13.235.49.214:8800/partner/salon/single/$salonId');
+
+          // Check if the salonResponse is not null and contains the expected data
+          if (salonResponse.statusCode == 200 && salonResponse.data != null) {
+            dynamic apiResponse = ApiResponse.fromJson(salonResponse.data).data.data.name;
+
+            // Set the salonName property
+            booking.salonName = apiResponse;
+            booking.setSalonName(apiResponse);
+            print('Salon name for previous booking ${booking.id}: $apiResponse');
+          } else {
+            // Handle the case where the response is null or doesn't contain the expected data
+            print('Error fetching salon name for booking ${booking.id}');
+          }
+        }
+
+        for (var booking in userBookings.prevBooking[index].artistServiceMap) {
+          var artistId = booking.artistId;
+          print("artist id for booking :- $artistId");
+          var artistResponse = await Dio().get('http://13.235.49.214:8800/partner/artist/single/$artistId');
+
+          if ( artistResponse.statusCode == 200 &&  artistResponse.data != null) {
+            dynamic apiResponse = ArtistResponse.fromJson( artistResponse.data).data.name;
+
+            // Set the salonName property
+            booking.artistName = apiResponse;
+            booking.setartistName(apiResponse);
+            print('artist name for previous booking ${booking.id}: $apiResponse');
+          } else {
+            // Handle the case where the response is null or doesn't contain the expected data
+            print('Error fetching artist name for booking ${booking.id}');
+          }
+        }
+
+        for (var booking in userBookings.prevBooking[index].artistServiceMap) {
+          var serviceId = booking.serviceId;
+          print("service Id for booking :- $serviceId");
+          var serviceResponse = await Dio().get('http://13.235.49.214:8800/partner/service/single/$serviceId');
+
+          if ( serviceResponse.statusCode == 200 &&  serviceResponse.data != null) {
+            dynamic apiResponse = ServiceResponse.fromJson(serviceResponse.data).data.serviceTitle;
+
+            // Set the salonName property
+            booking.serviceName = apiResponse;
+            booking.setserviceName(apiResponse);
+            print('service name for previous booking ${booking.id}: $apiResponse');
+          } else {
+            // Handle the case where the response is null or doesn't contain the expected data
+            print('Error fetching artist name for booking ${booking.id}');
+          }
+        }
+
+
+        for (var booking in userBookings.comingBookings) {
+          var salonId = booking.salonId;
+
+          var salonResponse = await Dio().get('http://13.235.49.214:8800/partner/salon/single/$salonId');
+
+          // Check if the salonResponse is not null and contains the expected data
+          if (salonResponse.statusCode == 200 && salonResponse.data != null) {
+            dynamic apiResponse = ApiResponse.fromJson(salonResponse.data).data.data.name;
+
+            // Set the salonName property
+            booking.salonName = apiResponse;
+            booking.setSalonName(apiResponse);
+            print('Salon name for previous booking ${booking.id}: $apiResponse');
+          } else {
+            // Handle the case where the response is null or doesn't contain the expected data
+            print('Error fetching salon name for booking ${booking.id}');
+          }
+        }
+
+        for (var booking in userBookings.comingBookings[index].artistServiceMap) {
+          var artistId = booking.artistId;
+          print("artist id for booking :- $artistId");
+          var artistResponse = await Dio().get('http://13.235.49.214:8800/partner/artist/single/$artistId');
+
+          if ( artistResponse.statusCode == 200 &&  artistResponse.data != null) {
+            dynamic apiResponse = ArtistResponse.fromJson( artistResponse.data).data.name;
+
+            // Set the salonName property
+            booking.artistName = apiResponse;
+            booking.setartistName(apiResponse);
+            print('artist name for previous booking ${booking.id}: $apiResponse');
+          } else {
+            // Handle the case where the response is null or doesn't contain the expected data
+            print('Error fetching artist name for booking ${booking.id}');
+          }
+        }
+
+        for (var booking in userBookings.comingBookings[index].artistServiceMap) {
+          var serviceId = booking.serviceId;
+          print("service Id for booking :- $serviceId");
+          var serviceResponse = await Dio().get('http://13.235.49.214:8800/partner/service/single/$serviceId');
+
+          if ( serviceResponse.statusCode == 200 &&  serviceResponse.data != null) {
+            dynamic apiResponse = ServiceResponse.fromJson(serviceResponse.data).data.serviceTitle;
+
+            // Set the salonName property
+            booking.serviceName = apiResponse;
+            booking.setserviceName(apiResponse);
+            print('service name for previous booking ${booking.id}: $apiResponse');
+          } else {
+            // Handle the case where the response is null or doesn't contain the expected data
+            print('Error fetching artist name for booking ${booking.id}');
+          }
+        }
         // Accessing the parsed data
         print('User ID: ${userBookings.userId}');
         print('Current Bookings:');
         for (var booking in userBookings.currentBookings) {
           print('${booking.id} - ${booking.bookingDate}');
+          print('timeslot  for current start :- ${booking.timeSlot.start}');
+          print('timeslot for current start :- ${booking.timeSlot.start}');
         }
 
         print('Previous Bookings:');
         for (var booking in userBookings.prevBooking) {
           print('${booking.id} - ${booking.bookingDate}');
+          print('timeslot  for prev start :- ${booking.timeSlot.start}');
+          print('timeslot for prev start :- ${booking.timeSlot.start}');
         }
 
         print('Coming Bookings:');
         for (var booking in userBookings.comingBookings) {
           print('${booking.id} - ${booking.bookingDate}');
+          print('timeslot  for coming start :- ${booking.timeSlot.start}');
+          print('timeslot for coming start :- ${booking.timeSlot.start}');
         }
       } else {
         // Handle error
-        print('Error: ${response.statusCode}, ${response.data}');
+        print('Error issssssssss: ${response.statusCode}, ${response.data}');
       }
     } catch (error) {
       // Handle DioError or other exceptions
-      print('Error: $error');
+      print('Error issssssssssss: $error');
     }
   }
 
@@ -879,17 +1096,15 @@ class HomeProvider with ChangeNotifier {
 
     Loader.showLoader(context);
     final box = await Hive.openBox('userBox');
-    final userId = box.get('userId') ?? '';
+    final userId = box.get('userId') ?? '654a925f1c6156295deed42d';
 
     try {
       Position currentLocation = await Geolocator.getCurrentPosition();
 
       if (currentLocation != null) {
         // Use current location if available
-        print(
-            'Current Location: ${currentLocation.longitude}, ${currentLocation.latitude}');
-        userAddress = await getAddress(
-            currentLocation.latitude, currentLocation.longitude);
+        print('Current Location: ${currentLocation.longitude}, ${currentLocation.latitude}');
+        userAddress = await getAddress(currentLocation.latitude, currentLocation.longitude);
         await updateUserLocation(
           userId: userId,
           coords: [currentLocation.longitude, currentLocation.latitude],
@@ -900,13 +1115,12 @@ class HomeProvider with ChangeNotifier {
       }
 
       await Future.wait([
-        getTopSalons(
-            coords: [currentLocation.longitude, currentLocation.latitude]),
-        getTopArtists(
-            coords: [currentLocation.longitude, currentLocation.latitude]),
+        getTopSalons(coords: [currentLocation.longitude, currentLocation.latitude]),
+        getTopArtists(coords: [currentLocation.longitude, currentLocation.latitude]),
         getAppointments(),
         // Additional asynchronous tasks based on location
       ]);
+
     } catch (e) {
       Loader.hideLoader(context);
       print("Error getting location: $e");
@@ -915,12 +1129,13 @@ class HomeProvider with ChangeNotifier {
     Loader.hideLoader(context);
   }
 
+
   /// Fetch the user details from [FirebaseFirestore]
   Future<void> getUserDetails(BuildContext context) async {
     try {
       _userData = await DatabaseService().getUserDetails();
     } catch (e) {
-      //  ReusableWidgets.showFlutterToast(context, '$e');
+    //  ReusableWidgets.showFlutterToast(context, '$e');
     }
     notifyListeners();
   }
@@ -932,7 +1147,7 @@ class HomeProvider with ChangeNotifier {
       _artistList.sort((a, b) => ((a.rating ?? 0) - (b.rating ?? 0)).toInt());
       context.read<ExploreProvider>().setArtistList(_artistList);
     } catch (e) {
-      // ReusableWidgets.showFlutterToast(context, '$e');
+     // ReusableWidgets.showFlutterToast(context, '$e');
     }
     notifyListeners();
   }
@@ -941,7 +1156,7 @@ class HomeProvider with ChangeNotifier {
     try {
       _allReviewList = await DatabaseService().getAllReviews();
     } catch (e) {
-      // ReusableWidgets.showFlutterToast(context, '$e');
+     // ReusableWidgets.showFlutterToast(context, '$e');
     }
     notifyListeners();
   }
@@ -950,7 +1165,7 @@ class HomeProvider with ChangeNotifier {
   Future<void> getUserBookings(BuildContext context) async {
     try {
       List<Booking> response =
-          await DatabaseService().getUserBookings(userId: userData.id ?? '');
+      await DatabaseService().getUserBookings(userId: userData.id ?? '');
       _allBookings = response;
       _lastOrNextBooking.clear();
       for (int i = 0; i < response.length; i++) {
@@ -999,9 +1214,10 @@ class HomeProvider with ChangeNotifier {
     notifyListeners();
   }
 
+
   String getTimeAgoString(String? dateTimeString) {
     DateTime dateTime =
-        DateTime.parse(dateTimeString ?? DateTime.now().toString());
+    DateTime.parse(dateTimeString ?? DateTime.now().toString());
     final now = DateTime.now();
     final difference = now.difference(dateTime);
 
@@ -1044,9 +1260,9 @@ class HomeProvider with ChangeNotifier {
 
   /// Initialising map related values as soon as the map is rendered on screen.
   Future<void> onMapCreated(
-    MapboxMapController mapController,
-    BuildContext context,
-  ) async {
+      MapboxMapController mapController,
+      BuildContext context,
+      ) async {
     this._controller = mapController;
 /*
     var _serviceEnabled = await _mapLocation.serviceEnabled();
@@ -1057,8 +1273,7 @@ class HomeProvider with ChangeNotifier {
     */
     var _permissionGranted = await _mapLocation.hasPermission();
     if (_permissionGranted == location.PermissionStatus.denied) {
-      LatLng dummyLocation =
-          LatLng(28.7383, 77.0822); // Set your desired dummy location
+      LatLng dummyLocation = LatLng(28.7383,77.0822); // Set your desired dummy location
       await mapController.animateCamera(
         CameraUpdate.newCameraPosition(
           CameraPosition(
@@ -1073,7 +1288,7 @@ class HomeProvider with ChangeNotifier {
     var _locationData = await _mapLocation.getLocation();
 
     LatLng currentLatLng =
-        LatLng(_locationData.latitude!, _locationData.longitude!);
+    LatLng(_locationData.latitude!, _locationData.longitude!);
 
     await mapController.animateCamera(
       CameraUpdate.newCameraPosition(
@@ -1085,23 +1300,24 @@ class HomeProvider with ChangeNotifier {
     );
 
     _symbol = await this._controller.addSymbol(
-          UtilityFunctions.getCurrentLocationSymbolOptions(
-              latLng: currentLatLng),
-        );
+      UtilityFunctions.getCurrentLocationSymbolOptions(
+          latLng: currentLatLng),
+    );
 
     Loader.hideLoader(context);
+
+
   }
 
   Future<void> onMapCreated2(
-    MapboxMapController mapController,
-    BuildContext context,
-  ) async {
+      MapboxMapController mapController,
+      BuildContext context,
+      ) async {
     this._controller = mapController;
 
     var _permissionGranted = await _mapLocation.hasPermission();
     if (_permissionGranted == location.PermissionStatus.denied) {
-      LatLng dummyLocation =
-          LatLng(28.7383, 77.0822); // Set your desired dummy location
+      LatLng dummyLocation = LatLng(28.7383,77.0822); // Set your desired dummy location
       await mapController.animateCamera(
         CameraUpdate.newCameraPosition(
           CameraPosition(
@@ -1116,7 +1332,7 @@ class HomeProvider with ChangeNotifier {
     var _locationData = await _mapLocation.getLocation();
 
     LatLng currentLatLng =
-        LatLng(_locationData.latitude!, _locationData.longitude!);
+    LatLng(_locationData.latitude!, _locationData.longitude!);
 
     await mapController.animateCamera(
       CameraUpdate.newCameraPosition(
@@ -1128,22 +1344,24 @@ class HomeProvider with ChangeNotifier {
     );
 
     _symbol = await this._controller.addSymbol(
-          UtilityFunctions.getCurrentLocationSymbolOptions(
-              latLng: currentLatLng),
-        );
+      UtilityFunctions.getCurrentLocationSymbolOptions(
+          latLng: currentLatLng),
+    );
 
     Loader.hideLoader(context);
+
+
   }
 
   /// Take user to the place, selected from search suggestions
   Future<void> handlePlaceSelectionEvent(
-    Feature place,
-    BuildContext context,
-  ) async {
+      Feature place,
+      BuildContext context,
+      ) async {
     _mapSearchController.text = place.placeName ?? "";
 
     LatLng selectedLatLng =
-        LatLng(place.center?[1] ?? 0.0, place.center?[0] ?? 0.0);
+    LatLng(place.center?[1] ?? 0.0, place.center?[0] ?? 0.0);
 
     await _controller.removeSymbol(_symbol);
 
@@ -1159,6 +1377,7 @@ class HomeProvider with ChangeNotifier {
 
     clearMapSearchText();
 
+
     notifyListeners();
   }
 
@@ -1167,7 +1386,7 @@ class HomeProvider with ChangeNotifier {
     List<Feature> _data = [];
 
     Uri uri = Uri.parse(
-            "${ApiEndpointConstant.mapboxPlacesApi}${_mapSearchController.text}.json")
+        "${ApiEndpointConstant.mapboxPlacesApi}${_mapSearchController.text}.json")
         .replace(queryParameters: UtilityFunctions.mapSearchQueryParameters());
 
     try {
@@ -1176,7 +1395,7 @@ class HomeProvider with ChangeNotifier {
           .onError((error, stackTrace) => throw Exception(error));
 
       UserLocationModel responseData =
-          UserLocationModel.fromJson(jsonDecode(response.body));
+      UserLocationModel.fromJson(jsonDecode(response.body));
       _data = responseData.features ?? [];
 
       /// [Feature(id: StringConstant.yourCurrentLocation)] is added to show the current
@@ -1208,14 +1427,15 @@ class HomeProvider with ChangeNotifier {
     );
 
     this._controller.animateCamera(
-          CameraUpdate.newCameraPosition(
-            CameraPosition(target: coordinates, zoom: 16),
-          ),
-        );
+      CameraUpdate.newCameraPosition(
+        CameraPosition(target: coordinates, zoom: 16),
+      ),
+    );
     await getFormattedAddressConfirmation(
       context: context,
       coordinates: coordinates,
     );
+
 
     notifyListeners();
   }
@@ -1249,7 +1469,7 @@ class HomeProvider with ChangeNotifier {
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             Text(
-              _addressText ?? '',
+              _addressText??'',
               style: TextStyle(
                 fontSize: 14.sp,
                 fontWeight: FontWeight.w500,
@@ -1259,22 +1479,21 @@ class HomeProvider with ChangeNotifier {
             ElevatedButton(
               style: ButtonStyle(
                 backgroundColor:
-                    MaterialStateProperty.all(ColorsConstant.appColor),
+                MaterialStateProperty.all(ColorsConstant.appColor),
               ),
               onPressed: () async {
                 final box = await Hive.openBox('userBox');
                 String userId = box.get('userId') ?? '';
-                if (userId.isEmpty) {
-                  userId = '659e565fedf72717a11caf27';
-                  await box.put('userId', userId);
-                }
-                Loader.showLoader(context);
-                await updateUserLocation(
-                  userId: userId,
-                  coords: [coordinates.longitude, coordinates.latitude],
-                );
-                userAddress = await getAddress(
-                    coordinates.latitude, coordinates.longitude);
+               if (userId.isEmpty) {
+             userId = '659e565fedf72717a11caf27';
+             await box.put('userId', userId);
+    }Loader.showLoader(context);
+                  await updateUserLocation(
+                    userId: userId,
+                    coords: [coordinates.longitude, coordinates.latitude],
+                  );
+                userAddress =
+                await getAddress(coordinates.latitude, coordinates.longitude);
                 await Future.wait([
                   getTopSalons(
                       coords: [coordinates.longitude, coordinates.latitude]),
@@ -1284,8 +1503,8 @@ class HomeProvider with ChangeNotifier {
                   //  getArtistRating(coords: [currentLocation.longitude, currentLocation.latitude]),
                 ]);
                 Loader.hideLoader(context);
-                Navigator.pushNamed(
-                    context, NamedRoutes.bottomNavigationRoute3);
+                  Navigator.pushNamed(
+                      context, NamedRoutes.bottomNavigationRoute3);
               },
               child: const Text(StringConstant.confirmLocation),
             ),
@@ -1328,7 +1547,7 @@ class HomeProvider with ChangeNotifier {
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             Text(
-              _addressText ?? '',
+              _addressText??'',
               style: TextStyle(
                 fontSize: 14.sp,
                 fontWeight: FontWeight.w500,
@@ -1338,7 +1557,7 @@ class HomeProvider with ChangeNotifier {
             ElevatedButton(
               style: ButtonStyle(
                 backgroundColor:
-                    MaterialStateProperty.all(ColorsConstant.appColor),
+                MaterialStateProperty.all(ColorsConstant.appColor),
               ),
               onPressed: () async {
                 final box = await Hive.openBox('userBox');
@@ -1352,7 +1571,7 @@ class HomeProvider with ChangeNotifier {
                   userId: userId,
                   coords: [coordinates.longitude, coordinates.latitude],
                 );
-                Loader.hideLoader(context);
+
                 await Future.wait([
                   getTopSalons(
                       coords: [coordinates.longitude, coordinates.latitude]),
@@ -1361,6 +1580,7 @@ class HomeProvider with ChangeNotifier {
                   //  getDistanceAndRating(coords: [currentLocation.longitude, currentLocation.latitude]),
                   //  getArtistRating(coords: [currentLocation.longitude, currentLocation.latitude]),
                 ]);
+                Loader.hideLoader(context);
                 Navigator.pushNamed(
                     context, NamedRoutes.bottomNavigationRoute4);
               },
@@ -1395,10 +1615,10 @@ class HomeProvider with ChangeNotifier {
     );
 
     this._controller.animateCamera(
-          CameraUpdate.newCameraPosition(
-            CameraPosition(target: coordinates, zoom: 16),
-          ),
-        );
+      CameraUpdate.newCameraPosition(
+        CameraPosition(target: coordinates, zoom: 16),
+      ),
+    );
 
     await getFormattedAddressConfirmation2(
       context: context,
@@ -1412,22 +1632,59 @@ class HomeProvider with ChangeNotifier {
   /// Show a bottom sheet with the formatted address text and a button to confirm
   /// the new address.
 
+
   /// Method to fetch the current location of the user using [location] package
   Future<LatLng> fetchCurrentLocation(BuildContext context) async {
-    var _serviceEnabled = await _mapLocation.serviceEnabled();
+    try {
+      var _serviceEnabled = await _mapLocation.serviceEnabled();
 
-    if (!_serviceEnabled) {
-      _serviceEnabled = await _mapLocation.requestService();
+      if (!_serviceEnabled) {
+        _serviceEnabled = await _mapLocation.requestService();
+      }
+
+      var _permissionGranted = await _mapLocation.hasPermission();
+      if (_permissionGranted == location.PermissionStatus.denied) {
+        await showLocationPermissionDialog(context);
+        throw Exception('Location permission denied');
+      }
+
+      var _locationData = await _mapLocation.getLocation();
+
+      return LatLng(_locationData.latitude!, _locationData.longitude!);
+    } catch (e) {
+      print('Error fetching location: $e');
+      // Handle the error as needed
+      return LatLng(28.7383,77.0822); // Return a default location or handle differently
     }
-    var _permissionGranted = await _mapLocation.hasPermission();
-    if (_permissionGranted == location.PermissionStatus.denied) {
-      await openAppSettings();
-      throw Exception('Location permission denied');
-    }
+  }
 
-    var _locationData = await _mapLocation.getLocation();
-
-    return LatLng(_locationData.latitude!, _locationData.longitude!);
+  Future<void> showLocationPermissionDialog(BuildContext context) async {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          content: SingleChildScrollView(
+            child: ListBody(
+              children: <Widget>[
+                Text('It looks like you have turned off permissions required for this feature.It can be enabled under Phone Settings > Apps > NAAI > Permission'),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: Text('Go To\nSETTINGS',
+              style: TextStyle(color:ColorsConstant.appColor),
+              ),
+              onPressed: () {
+                Navigator.of(context).pop();
+                openAppSettings();
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   /// Animate the map to given [latLng]
@@ -1437,36 +1694,55 @@ class HomeProvider with ChangeNotifier {
         CameraPosition(target: latLng, zoom: 16),
       ),
     );
-  }
-
-  void populateBookingData(BuildContext context, int index) async {
-    await context.read<SalonDetailsProvider>().getSalonData(
-          context,
-          salonId: _lastOrNextBooking[index].salonId!,
+  }  ArtistServiceList? artistServiceList;
+    Future<void> fetchArtistListAndNavigate(BuildContext context, List<String> selectedServiceIds) async {
+      try {
+        Loader.showLoader(context);
+        final response = await Dio().post(
+          'http://13.235.49.214:8800/appointments/singleArtist/list',
+          data: {
+            "salonId": _previousBooking.first.salonId,
+            "services": _previousBooking.first.artistServiceMap.first.serviceId,
+          },
         );
+        Loader.hideLoader(context);
 
-    await context.read<SalonDetailsProvider>().getArtistList(context);
-    await context.read<SalonDetailsProvider>().getServiceList(context);
+        if (response.statusCode == 200) {
+          artistServiceList = ArtistServiceList.fromJson(response.data);
+          print('response is :-${response.data}');
+          if (selectedServiceIds.length == 1) {
+            // Navigate to createBookingRoute if there is only one service
+            Navigator.pushNamed(
+              context,
+              NamedRoutes.createBookingRoute3,
+              arguments: {
+                'salonId': _previousBooking.first.salonId,
+                'selectedServiceIds': selectedServiceIds,
+              },
+            );
+          } else {
+            // Navigate to createBooking3Route if there are multiple services
+            Navigator.pushNamed(
+              context,
+              NamedRoutes.createBookingRoute,
+              arguments: {
+                'salonId': _previousBooking.first.salonId,
+                'selectedServiceIds': selectedServiceIds,
+              },
+            );
+          }
+        } else {
+          // Handle other status codes
+          print('Failed to fetch artist list: ${response.statusCode}');
+        }
+      } catch (error) {
+        Loader.hideLoader(context);
+        // Handle errors
+        print('Failed to fetch artist list: $error');
+      }
+    }
 
-    context.read<SalonDetailsProvider>().setServiceIds(
-          ids: _lastOrNextBooking[index].serviceIds!,
-          totalPrice: _lastOrNextBooking[index].totalPrice,
-        );
 
-    context
-        .read<SalonDetailsProvider>()
-        .setStaffSelectionMethod(selectedSingleStaff: true);
-
-    context.read<SalonDetailsProvider>().setBookingData(
-          context,
-          setArtistId: true,
-          artistId: _lastOrNextBooking[index].artistId,
-        );
-    Navigator.pushNamed(
-      context,
-      NamedRoutes.createBookingRoute,
-    );
-  }
 
   /// Get date in the format [Month Date], abbreviated day of week or time schedule
   /// of the booking.
@@ -1480,8 +1756,8 @@ class HomeProvider with ChangeNotifier {
     required int index,
   }) {
     DateTime dateTime =
-        DateTime.parse(dateTimeString ?? DateTime.now().toString());
-    _lastOrNextBooking[index].bookingCreatedFor ?? DateTime.now().toString();
+    DateTime.parse(dateTimeString ?? DateTime.now().toString());
+    _upcomingBooking[index].bookingDate ?? DateTime.now().toString();
     if (getFormattedDate) {
       return DateFormat('MMM dd').format(dateTime);
     } else if (getAbbreviatedDay) {
@@ -1519,12 +1795,10 @@ class HomeProvider with ChangeNotifier {
 
   /// Get the address text from the user's home location
   String? getHomeAddressText() {
-    return userData.homeLocation?.addressString;
+    return userData.homeLocation?.addressString ;
   }
-
   String? getDummyHomeAddressText() {
-    return userData.homeLocation?.addressString ??
-        "Your Location will be show when you Sign In";
+    return userData.homeLocation?.addressString??"Your Location will be show when you Sign In" ;
   }
 
   /// Dispose [_controller] when the map is unmounted
@@ -1546,14 +1820,14 @@ class HomeProvider with ChangeNotifier {
     salonList.forEach((salon) {
       num average = salon.originalRating ?? 0;
       final allReviews = _allReviewList.where(
-        (review) => review.salonId == salon.id,
+            (review) => review.salonId == salon.id,
       );
       allReviews.forEach((review) {
         average += review.rating ?? 0;
       });
       average /= (allReviews.length + 1);
       final allArtist = artistList.where(
-        (artist) => artist.salonId == salon.id,
+            (artist) => artist.salonId == salon.id,
       );
       allArtist.forEach((artist) {
         average += artist.originalRating ?? 0;
@@ -1564,7 +1838,7 @@ class HomeProvider with ChangeNotifier {
     artistList.forEach((artist) {
       double average = artist.originalRating ?? 0;
       final allReviews = _allReviewList.where(
-        (review) => review.artistId != null && review.artistId == artist.id,
+            (review) => review.artistId != null && review.artistId == artist.id,
       );
       allReviews.forEach((review) {
         average += review.rating ?? 0;

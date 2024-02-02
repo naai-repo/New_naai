@@ -391,7 +391,7 @@ class ReusableWidgets {
             ),
           ),
           SizedBox(height: 1.h),
-          provider.salonDetails!.data.services.length == 0
+          provider.salonDetails!.data.services.servicesWithoutSubCategory.length == 0
               ? Container(
                   height: 10.h,
                   child: Center(
@@ -402,11 +402,11 @@ class ReusableWidgets {
                   padding: EdgeInsets.zero,
                   shrinkWrap: true,
                   physics: NeverScrollableScrollPhysics(),
-                  itemCount: provider.salonDetails!.data.services.length,
+                  itemCount: provider.salonDetails!.data.services.servicesWithoutSubCategory.length,
                   itemBuilder: (context, index) {
-                    DataService? serviceDetail =
-                        provider.salonDetails!.data.services[index];
-                    bool isAdded = provider.salonDetails!.data.services
+                    ServicesWithoutSubCategory? serviceDetail =
+                        provider.salonDetails!.data.services.servicesWithoutSubCategory[index];
+                    bool isAdded = provider.salonDetails!.data.services.servicesWithoutSubCategory
                             ?.contains(serviceDetail.id) ??
                         false;
                     return GestureDetector(
@@ -435,7 +435,7 @@ class ReusableWidgets {
                               child: Row(
                                 children: <Widget>[
                                   SvgPicture.asset(
-                                    serviceDetail.targetGender == Gender.MEN
+                                    serviceDetail.targetGender == 'male'
                                         ? ImagePathConstant.manIcon
                                         : ImagePathConstant.womanIcon,
                                     height: 4.h,

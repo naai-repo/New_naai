@@ -11,13 +11,11 @@ String timeSlotResponseToJson(TimeSlotResponse data) => json.encode(data.toJson(
 class TimeSlotResponse {
   String salonId;
   List<TimeSlotResponseTimeSlot> timeSlots;
- // ArtistsTimeSlots artistsTimeSlots;
   List<List<String>> timeSlotsVisible;
 
   TimeSlotResponse({
     required this.salonId,
     required this.timeSlots,
-  //  required this.artistsTimeSlots,
     required this.timeSlotsVisible,
   });
 
@@ -25,7 +23,7 @@ class TimeSlotResponse {
     salonId: json["salonId"],
     timeSlots: List<TimeSlotResponseTimeSlot>.from(json["timeSlots"].map((x) => TimeSlotResponseTimeSlot.fromJson(x))),
   //  artistsTimeSlots: ArtistsTimeSlots.fromJson(json["artistsTimeSlots"]),
-    timeSlotsVisible: List<List<String>>.from(json["timeSlotsVisible"].map((x) => List<String>.from(x.map((x) => x)))),
+    timeSlotsVisible: List<List<String>>.from(json["timeSlotsVisible"].map((x) => List<String>.from(x))),
   );
 
   Map<String, dynamic> toJson() => {
@@ -96,7 +94,7 @@ class TimeService {
   String serviceTitle;
   String description;
   String targetGender;
-  List<String> salonIds;
+  String salonId;
   int avgTime;
   int basePrice;
   DateTime createdAt;
@@ -109,7 +107,7 @@ class TimeService {
     required this.serviceTitle,
     required this.description,
     required this.targetGender,
-    required this.salonIds,
+    required this.salonId,
     required this.avgTime,
     required this.basePrice,
     required this.createdAt,
@@ -123,7 +121,7 @@ class TimeService {
     serviceTitle: json["serviceTitle"],
     description: json["description"],
     targetGender: json["targetGender"],
-    salonIds: List<String>.from(json["salonIds"].map((x) => x)),
+    salonId: json["salonId"],
     avgTime: json["avgTime"],
     basePrice: json["basePrice"],
     createdAt: DateTime.parse(json["createdAt"]),
@@ -137,7 +135,7 @@ class TimeService {
     "serviceTitle": serviceTitle,
     "description": description,
     "targetGender": targetGender,
-    "salonIds": List<dynamic>.from(salonIds.map((x) => x)),
+    "salonId": salonId,
     "avgTime": avgTime,
     "basePrice": basePrice,
     "createdAt": createdAt.toIso8601String(),

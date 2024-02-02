@@ -20,6 +20,8 @@ import '../../../models/artist_detail.dart';
 import '../../../models/artist_model.dart';
 import '../../../models/salon.dart';
 import '../../../models/salon_detail.dart';
+import '../../../models/service_response.dart';
+import '../../../utils/access_token.dart';
 
 class BarberProvider with ChangeNotifier {
   int _selectedArtistIndex = 0;
@@ -53,6 +55,7 @@ class BarberProvider with ChangeNotifier {
   Data? _artistDetails; // Replace ArtistDetails with your actual model
 
   Data? get artistDetails => _artistDetails;
+  Map<String, ServiceResponse> serviceDetailsMap = {}; // Use a map to store service details
 
   ArtistData? artistid;
   ApiResponse? _salonDetails; // Replace SalonDetails with your actual model
@@ -68,7 +71,6 @@ class BarberProvider with ChangeNotifier {
     _artistDetails = artistDetails;
     notifyListeners();
   }
-
   String? Servicetitle;
   String? salonName2;
 
@@ -83,22 +85,47 @@ class BarberProvider with ChangeNotifier {
     _shouldSetArtistData = true;
   }
 
-  Future<void> submitReview2(
-    BuildContext context, {
+  Future<void> submitReview2( BuildContext context, {
     required int stars,
     required String text,
   }) async {
-    final String apiUrl = 'http://localhost:8800/partner/review/add';
-    final Dio dio = Dio();
+    String apiUrl = 'http://13.235.49.214:8800/partner/review/add';
+
+    String? artistId = artistDetails?.id;
+
+    // If salonId is null or empty, get it from the first booking in home provider
+    if (artistId == null || artistId.isEmpty) {
+      HomeProvider homeProvider = Provider.of<HomeProvider>(context, listen: false);
+      if (homeProvider.previousBooking.isNotEmpty) {
+        artistId = homeProvider.previousBooking.first.artistServiceMap.first.artistId;
+      }
+    }
+
+    if (artistId == null || artistId.isEmpty) {
+      // Handle the case where salonId is still null or empty
+      print("Salon ID is null or empty");
+      return;
+    }
 
     final Map<String, dynamic> requestData = {
-      "title": "Review Salon",
+      "title": "Review Artist",
       "description": text,
-      "salonId": artistDetails?.id,
+      "artistId": artistDetails?.id,
       "rating": stars
     };
 
     try {
+      Loader.showLoader(context);
+      Dio dio = Dio();
+      dio.interceptors.add(LogInterceptor(requestBody: true, responseBody: true, logPrint: print));
+
+      String? authToken = await AccessTokenManager.getAccessToken();
+
+      if (authToken != null) {
+        dio.options.headers['Authorization'] = 'Bearer $authToken';
+      } else {
+        Loader.hideLoader(context); // Handle the case where the user is not authenticated
+      }
       final response = await dio.post(
         apiUrl,
         options: Options(headers: {"Content-Type": "application/json"}),
@@ -109,12 +136,15 @@ class BarberProvider with ChangeNotifier {
         // Review submitted successfully, handle the response data if needed
         print("Review submitted successfully!");
         print(response.data);
+        Loader.hideLoader(context);
       } else {
+        Loader.hideLoader(context);
         // Failed to submit the review, handle the error
         print("Failed to submit the review");
         print(response.data);
       }
     } catch (error) {
+      Loader.hideLoader(context);
       // Handle any exceptions that occurred during the request
       print("Error: $error");
     }
@@ -148,6 +178,8 @@ class BarberProvider with ChangeNotifier {
     }
     notifyListeners();
   }
+
+
 
   /// Set the value of [_selectedGendersFilter] according to the gender filter selected
   /// by user
@@ -305,22 +337,8 @@ class BarberProvider with ChangeNotifier {
     _selectedServiceCategories.clear();
     notifyListeners();
   }
-
-  void clearfilteredServiceList() {
+  void clearfilteredServiceList () {
     _filteredServiceList.clear();
-    notifyListeners();
-  }
-}
-
-class FilterBarbers with ChangeNotifier {
-  int _selectedindex = 0;
-  final List<String> _filterTypes = ['Price','Category','Rating','Discount','Salon Type','Distance'];
-
-  int get getSelectdIndex => _selectedindex;
-  List<String> get getFilterTypes => _filterTypes;
-
-  void changeIndex(int idx) {
-    _selectedindex = idx;
     notifyListeners();
   }
 }

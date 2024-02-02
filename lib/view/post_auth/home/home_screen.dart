@@ -1,6 +1,5 @@
 
 import 'dart:convert';
-
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -29,6 +28,7 @@ import 'package:naai/view_model/post_auth/explore/explore_provider.dart';
 import 'package:naai/view_model/post_auth/home/home_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:sizer/sizer.dart';
+import '../../../models/allbooking.dart';
 import '../../../models/artist_detail.dart';
 import '../../../models/artist_model.dart';
 import '../../../models/salon_detail.dart';
@@ -46,7 +46,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
-
 
   @override
   void initState() {
@@ -115,11 +114,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                             ),
                           //  if (provider.isSearchExpanded)
                             serviceCategories(),
-                        if (provider.upcomingBooking.isNotEmpty)
+                       if (provider.upcomingBooking.isNotEmpty)
                               Padding(
                                 padding: EdgeInsets.symmetric(horizontal: 3.w),
                                 child: Visibility(
-                                  visible: provider.upcomingBooking.any((booking) => booking.currentBookings.isNotEmpty),
+                                  visible: provider.upcomingBooking.isNotEmpty,
                                   child: MediaQuery.removePadding(
                                     context: context,
                                     removeBottom: true,
@@ -130,8 +129,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                       itemCount: provider.upcomingBooking.length,
                                       itemBuilder: (context, index) {
                                         return Visibility(
-                                          visible: provider.upcomingBooking[index].currentBookings.isNotEmpty,
-                                          child: upcomingBookingCard(index),
+                                          visible:provider.upcomingBooking[index].id != null,
+                                          child: upcomingBookingCard(provider.upcomingBooking[index],index),
                                         );
                                       },
                                       separatorBuilder: (context, index) => SizedBox(height: 2.h),
@@ -158,6 +157,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   Widget previousBookingCard() {
+
     return Consumer<HomeProvider>(builder: (context, provider, child) {
       return CurvedBorderedCard(
         fillColor: const Color(0xFFFCF3F3),
@@ -182,15 +182,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   BookedSalonAndArtistName(
                     headerText: StringConstant.salon,
                     headerIconPath: ImagePathConstant.salonChairIcon,
-                    nameText: provider.lastOrNextBooking.last.salonName ?? '',
+                    nameText:  provider.previousBooking.first.salonName ?? '' ,
                   ),
                   Visibility(
-                    visible: provider.artistList.isNotEmpty,
+                    visible: provider.artistList2.isNotEmpty,
                     child: BookedSalonAndArtistName(
                       headerText: StringConstant.artist,
                       headerIconPath: ImagePathConstant.artistIcon,
-                      nameText:
-                          provider.lastOrNextBooking.last.artistName ?? '',
+                      nameText:  provider.previousBooking.first.artistServiceMap.first.artistName ?? '',
                     ),
                   ),
                 ],
@@ -212,8 +211,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   physics: const NeverScrollableScrollPhysics(),
                   scrollDirection: Axis.horizontal,
                   itemBuilder: (context, index) => Text(
-                    provider.lastOrNextBooking.last
-                            .bookedServiceNames?[index] ??
+                    provider.previousBooking.first.artistServiceMap.first.serviceName?[index] ??
                         '',
                     style: TextStyle(
                       fontWeight: FontWeight.w500,
@@ -221,9 +219,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       color: const Color(0xFF212121),
                     ),
                   ),
-                  separatorBuilder: (context, index) => const Text(', '),
-                  itemCount: provider
-                          .lastOrNextBooking.last.bookedServiceNames?.length ??
+                  separatorBuilder: (context, index) => const Text(''),
+                  itemCount: provider.previousBooking.first.artistServiceMap.first.serviceName?.length??
                       0,
                 ),
               ),
@@ -232,8 +229,42 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 children: <Widget>[
                   RedButtonWithText(
                     buttonText: StringConstant.bookAgain,
-                    onTap: () => provider.populateBookingData(context, 0),
-                    padding: EdgeInsets.symmetric(
+                    onTap: () async {
+                      String salonId = provider.previousBooking.first.salonId;
+                      SalonDetailsProvider salonDetailsProvider = context.read<SalonDetailsProvider>();
+
+                      try {
+                        Loader.showLoader(context);
+                        final response = await Dio().get(
+                          'http://13.235.49.214:8800/partner/salon/single/$salonId',
+                        );
+                        Loader.hideLoader(context);
+
+                        ApiResponse apiResponse = ApiResponse.fromJson(response.data);
+                        ApiResponse salonDetails = ApiResponse(
+                          status: apiResponse.status,
+                          message: apiResponse.message,
+                          data: ApiResponseData(
+                            data: apiResponse.data.data,
+                            artists: apiResponse.data.artists,
+                            services: apiResponse.data.services,
+                          ),
+                        );
+
+                        // Pass the salonDetails to SalonDetailsProvider
+                        salonDetailsProvider.setSalonDetails(salonDetails);
+
+                        // If the API call is successful, navigate to the SalonDetailsScreen
+                        Navigator.pushNamed(context, NamedRoutes.salonDetailsRoute, arguments: salonId);
+                      } catch (error) {
+                        Loader.hideLoader(context);
+                        // Handle the case where the API call was not successful
+                        // You can show an error message or take appropriate action
+                        Navigator.pushNamed(context, NamedRoutes.bottomNavigationRoute);
+                        print('Failed to fetch salon details: $error');
+                      }
+                    },
+                     padding: EdgeInsets.symmetric(
                       horizontal: 5.w,
                       vertical: 1.h,
                     ),
@@ -266,13 +297,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     });
   }
 
-  Widget upcomingBookingCard(int index) {
+  Widget upcomingBookingCard(CurrentBooking booking,index) {
     return Consumer<HomeProvider>(builder: (context, provider, child) {
       return GestureDetector(
         onTap: () => Navigator.pushNamed(
           context,
-          NamedRoutes.appointmentDetailsRoute,
-          arguments: index,
+          NamedRoutes.appointmentDetailsRoute2,
+          arguments: 0,
         ),
         child: Container(
           padding: EdgeInsets.all(1.5.h),
@@ -328,7 +359,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
                       Text(
-                        provider.lastOrNextBooking[index].salonName ?? '',
+                        provider.upcomingBooking[index].salonName ?? '',
                         style: TextStyle(
                           fontSize: 13.sp,
                           fontWeight: FontWeight.w600,
@@ -350,12 +381,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                           TimeDateCard(
                             fillColor: ColorsConstant.textDark,
                             child: Text(
-                              provider.getFormattedDateOfBooking(
-                                getFormattedDate: true,
-                                dateTimeString: provider
-                                    .lastOrNextBooking[index].bookingCreatedFor,
-                                index: index,
+                              provider.formatBookingDate(provider.upcomingBooking[index].bookingDate),
+                              style: StyleConstant.bookingDateTimeTextStyle,
                               ),
+                            ),
+                          SizedBox(width: 1.w),
+                          TimeDateCard(
+                            fillColor: ColorsConstant.textDark,
+                            child: Text(
+                              provider.upcomingBooking[index].timeSlot.start,
                               style: StyleConstant.bookingDateTimeTextStyle,
                             ),
                           ),
@@ -363,28 +397,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                           TimeDateCard(
                             fillColor: ColorsConstant.textDark,
                             child: Text(
-                              provider.getFormattedDateOfBooking(
-                                getAbbreviatedDay: true,
-                                dateTimeString: provider
-                                    .lastOrNextBooking[index].bookingCreatedFor,
-                                index: index,
-                              ),
+                              provider.upcomingBooking[index].timeSlot.end,
                               style: StyleConstant.bookingDateTimeTextStyle,
-                            ),
-                          ),
-                          SizedBox(width: 1.w),
-                          TimeDateCard(
-                            fillColor: ColorsConstant.textDark,
-                            child: Text(
-                              provider.getFormattedDateOfBooking(
-                                getTimeScheduled: true,
-                                dateTimeString: provider
-                                    .lastOrNextBooking[index].bookingCreatedFor,
-                                index: index,
                               ),
-                              style: StyleConstant.bookingDateTimeTextStyle,
+
                             ),
-                          ),
                         ],
                       ),
                     ],
@@ -545,11 +562,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       itemBuilder: (context, index) {
                         index = 2 * index;
                         ArtistData artist = provider.artistList2[index];
+                   //     String SalonName = provider.SalonNames[index];
                         return artistCard(
                           isThin: (index / 2).floor().isEven,
                           name: artist.name ?? '',
                           rating: artist.rating ?? 0,
-                          salonName: artist.salonId ?? '',
+                          salonName: artist.salonName ?? '',
                           artistId: artist.id ?? '',
                           imagePath: artist.imageUrl ?? 'https://drive.google.com/uc?export=view&id=1zw2jQ0_wgXb0Dr5lAgXvCfu5Ic0ajFE0',
                           color: ColorsConstant.artistListColors[index % 6],
@@ -560,7 +578,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                             List<Service> services = artist.services;
 
                             BarberProvider barberDetailsProvider = context.read<BarberProvider>();
-
                             try {
                               Loader.showLoader(context);
 
@@ -605,16 +622,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                     barberDetailsProvider.setSalonDetails(salonDetails);
                                   } else if (response.requestOptions.uri.pathSegments.contains('service')) {
                                     ServiceResponse serviceResponse = ServiceResponse.fromJson(response.data);
-                                    ServiceResponse serviceresponse = ServiceResponse(
-                                        status: serviceResponse.status,
-                                        message: serviceResponse.message,
-                                        data:    serviceResponse.data);
-                                    salonDetailsProvider.setServiceDetails(serviceresponse);
-                                    if (serviceResponse != null && serviceResponse.data != null) {
-                                      // Handle service response
-                                    } else {
-                                      print('Failed to fetch service details: Invalid response format');
-                                    }
+                                    provider.serviceDetailsMap[serviceResponse.data.id] = serviceResponse; // Store service details in the map
+                                    print('service name is :- ${serviceResponse.data.serviceTitle}');
                                   }
                                 } else {
                                   print('Failed to fetch details: Invalid response format');
@@ -644,11 +653,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       itemBuilder: (context, index) {
                         index = 2 * index + 1;
                         ArtistData artist = provider.artistList2[index];
+
+
                         return artistCard(
                           isThin: ((index - 1) / 2).floor().isOdd,
                           name: artist.name ?? '',
                           rating: artist.rating ?? 0,
-                          salonName: artist.salonId ?? '',
+                          salonName: artist.salonName ?? '',
                           artistId: artist.id ?? '',
                          imagePath: artist.imageUrl ??'',
                           color: ColorsConstant.artistListColors[index % 6],
@@ -659,7 +670,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                             List<Service> services = artist.services;
 
                             BarberProvider barberDetailsProvider = context.read<BarberProvider>();
-
                             try {
                               Loader.showLoader(context);
 
@@ -703,18 +713,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                     salonDetailsProvider.setSalonDetails(salonDetails);
                                     barberDetailsProvider.setSalonDetails(salonDetails);
                                   } else if (response.requestOptions.uri.pathSegments.contains('service')) {
-                                    // Process service API response
                                     ServiceResponse serviceResponse = ServiceResponse.fromJson(response.data);
-                                    ServiceResponse serviceresponse = ServiceResponse(
-                                        status: serviceResponse.status,
-                                        message: serviceResponse.message,
-                                        data:    serviceResponse.data);
-                                    salonDetailsProvider.setServiceDetails(serviceresponse);
-                                    if (serviceResponse != null && serviceResponse.data != null) {
-                                      // Handle service response
-                                    } else {
-                                      print('Failed to fetch service details: Invalid response format');
-                                    }
+                                    provider.serviceDetailsMap[serviceResponse.data.id] = serviceResponse; // Store service details in the map
+                                    print('service name is :- ${serviceResponse.data.serviceTitle}');
                                   }
                                 } else {
                                   print('Failed to fetch details: Invalid response format');
@@ -1167,7 +1168,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Widget dummyDeal(HomeProvider provider) {
     return GestureDetector(
       onTap: () async{
-       await  provider.discountFilterforWomen(context);
+       await  provider.DiscountFilterforWomen(context);
        Navigator.push(
          context,
          MaterialPageRoute(
@@ -1241,7 +1242,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       children:[
        GestureDetector(
          onTap: ()async {
-      await provider.discountFilterforMen(context,0,0);
+      await provider.DiscountFilterforMen(context);
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -1312,7 +1313,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
        const Spacer(),
         GestureDetector(
           onTap: () async{
-            await provider.discountFilterforMen(context,0,0);
+            await provider.DiscountFilterforMen(context);
             Navigator.push(
               context,
               MaterialPageRoute(
@@ -1584,7 +1585,7 @@ class _HomeScreen2State extends State<HomeScreen2>with WidgetsBindingObserver {
                 children: <Widget>[
                   RedButtonWithText(
                     buttonText: StringConstant.bookAgain,
-                    onTap: () => provider.populateBookingData(context, 0),
+                    onTap: (){},
                     padding: EdgeInsets.symmetric(
                       horizontal: 5.w,
                       vertical: 1.h,
@@ -1796,6 +1797,10 @@ class _HomeScreen2State extends State<HomeScreen2>with WidgetsBindingObserver {
 
   Widget searchLocationBar() {
     return GestureDetector(
+      onTap: () => Navigator.pushNamed(
+        context,
+        NamedRoutes.setHomeLocationRoute2,
+      ),
       child: Container(
         margin: EdgeInsets.only(top: 4.h, bottom: 2.h),
         padding: EdgeInsets.all(0.5.h),
@@ -1806,7 +1811,8 @@ class _HomeScreen2State extends State<HomeScreen2>with WidgetsBindingObserver {
         child: LayoutBuilder(builder: (context, constraints) {
           bool _shouldScroll = (TextPainter(
             text: TextSpan(
-                text: 'Please Sign In',
+                text: Provider.of<HomeProvider>(context, listen: true)
+                    .userAddress,
                 style: TextStyle(
                   fontSize: 10.sp,
                   fontWeight: FontWeight.w500,
@@ -1835,7 +1841,7 @@ class _HomeScreen2State extends State<HomeScreen2>with WidgetsBindingObserver {
                 alignment: Alignment.centerLeft,
                 child: _shouldScroll
                     ? Text(
-                  "Please Sign in",
+                  "${context.read<HomeProvider>().userAddress}",
                   style: TextStyle(
                     color: ColorsConstant.textLight,
                     fontSize: 10.sp,
@@ -1843,7 +1849,7 @@ class _HomeScreen2State extends State<HomeScreen2>with WidgetsBindingObserver {
                   ),
                 )
                     : Text(
-                  "Please Sign In",
+                  "${context.read<HomeProvider>().userAddress}",
                   style: TextStyle(
                     color: ColorsConstant.textLight,
                     fontSize: 10.sp,
@@ -1893,7 +1899,7 @@ class _HomeScreen2State extends State<HomeScreen2>with WidgetsBindingObserver {
                           isThin: (index / 2).floor().isEven,
                           name: artist.name ?? '',
                           rating: artist.rating ?? 0,
-                          salonName: artist.salonId ?? '',
+                          salonName: artist.salonName ?? '',
                           artistId: artist.id ?? '',
                           imagePath: artist.imageUrl ?? 'https://drive.google.com/uc?export=view&id=1zw2jQ0_wgXb0Dr5lAgXvCfu5Ic0ajFE0',
                           color: ColorsConstant.artistListColors[index % 6],
@@ -1992,7 +1998,7 @@ class _HomeScreen2State extends State<HomeScreen2>with WidgetsBindingObserver {
                           isThin: ((index - 1) / 2).floor().isOdd,
                           name: artist.name ?? '',
                           rating: artist.rating ?? 0,
-                          salonName: artist.salonId ?? '',
+                          salonName: artist.salonName ?? '',
                           artistId: artist.id ?? '',
                           imagePath: artist.imageUrl ??'',
                           color: ColorsConstant.artistListColors[index % 6],
@@ -2003,6 +2009,7 @@ class _HomeScreen2State extends State<HomeScreen2>with WidgetsBindingObserver {
                             List<Service> services = artist.services;
 
                             BarberProvider barberDetailsProvider = context.read<BarberProvider>();
+                            List<ServiceResponse> serviceDetailsList = []; // Move the definition here
 
                             try {
                               Loader.showLoader(context);
@@ -2048,6 +2055,8 @@ class _HomeScreen2State extends State<HomeScreen2>with WidgetsBindingObserver {
                                     barberDetailsProvider.setSalonDetails(salonDetails);
                                   } else if (response.requestOptions.uri.pathSegments.contains('service')) {
                                     ServiceResponse serviceResponse = ServiceResponse.fromJson(response.data);
+                                    serviceDetailsList.add(serviceResponse);
+                                    salonDetailsProvider.setServiceDetailsList(serviceDetailsList); // Set the list in the provider
                                     ServiceResponse serviceresponse = ServiceResponse(
                                         status: serviceResponse.status,
                                         message: serviceResponse.message,
@@ -2511,7 +2520,7 @@ class _HomeScreen2State extends State<HomeScreen2>with WidgetsBindingObserver {
 
     return GestureDetector(
       onTap: () async{
-       await provider.discountFilterforWomen(context);
+       await provider.DiscountFilterforWomen(context);
 
         Navigator.pushNamed(context, NamedRoutes.exploreRoute2);
       },
@@ -2580,7 +2589,7 @@ class _HomeScreen2State extends State<HomeScreen2>with WidgetsBindingObserver {
       children:[
         GestureDetector(
           onTap: () async{
-          await  provider.discountFilterforMen(context,0,0);
+          await  provider.DiscountFilterforMen(context);
           Navigator.pushNamed(context, NamedRoutes.exploreRoute2);
           },
           child: Container(
@@ -2646,7 +2655,7 @@ class _HomeScreen2State extends State<HomeScreen2>with WidgetsBindingObserver {
         const Spacer(),
         GestureDetector(
           onTap: () async{
-           await provider.discountFilterforMen(context,0,0);
+           await provider.DiscountFilterforMen(context);
            Navigator.pushNamed(context, NamedRoutes.exploreRoute2);
           },
           child: Container(
@@ -2899,7 +2908,7 @@ class _HomeScreen3State extends State<HomeScreen3> {
                 children: <Widget>[
                   RedButtonWithText(
                     buttonText: StringConstant.bookAgain,
-                    onTap: () => provider.populateBookingData(context, 0),
+                    onTap: () {},
                     padding: EdgeInsets.symmetric(
                       horizontal: 5.w,
                       vertical: 1.h,
@@ -3208,7 +3217,7 @@ class _HomeScreen3State extends State<HomeScreen3> {
                           isThin: (index / 2).floor().isEven,
                           name: artist.name ?? '',
                           rating: artist.rating ?? 0,
-                          salonName: artist.salonId ?? '',
+                          salonName: artist.salonName ?? '',
                           artistId: artist.id ?? '',
                           imagePath: artist.imageUrl ?? 'https://drive.google.com/uc?export=view&id=1zw2jQ0_wgXb0Dr5lAgXvCfu5Ic0ajFE0',
                           color: ColorsConstant.artistListColors[index % 6],
@@ -3307,7 +3316,7 @@ class _HomeScreen3State extends State<HomeScreen3> {
                           isThin: ((index - 1) / 2).floor().isOdd,
                           name: artist.name ?? '',
                           rating: artist.rating ?? 0,
-                          salonName: artist.salonId ?? '',
+                          salonName: artist.salonName ?? '',
                           artistId: artist.id ?? '',
                           imagePath: artist.imageUrl ??'',
                           color: ColorsConstant.artistListColors[index % 6],
@@ -3826,7 +3835,7 @@ class _HomeScreen3State extends State<HomeScreen3> {
 
     return GestureDetector(
       onTap: () {
-        provider.discountFilterforWomen(context);
+        provider.DiscountFilterforWomen(context);
 
         Navigator.pushNamed(context, NamedRoutes.exploreRoute3);
       },
@@ -3895,7 +3904,7 @@ class _HomeScreen3State extends State<HomeScreen3> {
       children:[
         GestureDetector(
           onTap: () async{
-            await  provider.discountFilterforMen(context,0,0);
+            await  provider.DiscountFilterforMen(context);
             Navigator.pushNamed(context, NamedRoutes.exploreRoute3);
           },
           child: Container(
@@ -3961,7 +3970,7 @@ class _HomeScreen3State extends State<HomeScreen3> {
         const Spacer(),
         GestureDetector(
           onTap: () async{
-            await provider.discountFilterforMen(context,0,0);
+            await provider.DiscountFilterforMen(context);
             Navigator.pushNamed(context, NamedRoutes.exploreRoute2);
           },
           child: Container(
@@ -4220,7 +4229,7 @@ class _HomeScreen4State extends State<HomeScreen4> with WidgetsBindingObserver {
                 children: <Widget>[
                   RedButtonWithText(
                     buttonText: StringConstant.bookAgain,
-                    onTap: () => provider.populateBookingData(context, 0),
+                    onTap: () {},
                     padding: EdgeInsets.symmetric(
                       horizontal: 5.w,
                       vertical: 1.h,
@@ -5222,7 +5231,7 @@ class _HomeScreen4State extends State<HomeScreen4> with WidgetsBindingObserver {
       children:[
         GestureDetector(
           onTap: ()async {
-            await provider.discountFilterforMen(context,0,0);
+            await   provider.DiscountFilterforMen(context);
 
             Navigator.pushNamed(context, NamedRoutes.bottomNavigationRoute4);
           },
@@ -5289,7 +5298,7 @@ class _HomeScreen4State extends State<HomeScreen4> with WidgetsBindingObserver {
         const Spacer(),
         GestureDetector(
           onTap: () async{
-            await provider.discountFilterforMen(context,0,0);
+            await provider.DiscountFilterforMen(context);
 
             Navigator.pushNamed(context, NamedRoutes.bottomNavigationRoute4);
           },

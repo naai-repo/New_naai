@@ -35,7 +35,7 @@ class ApiResponse {
 class ApiResponseData {
   DataData data;
   List<Artist2> artists;
-  List<DataService> services;
+  DataService services;
 
   ApiResponseData({
     required this.data,
@@ -46,13 +46,13 @@ class ApiResponseData {
   factory ApiResponseData.fromJson(Map<String, dynamic> json) => ApiResponseData(
     data: DataData.fromJson(json["data"]),
     artists: List<Artist2>.from(json["artists"].map((x) => Artist2.fromJson(x))),
-    services: List<DataService>.from(json["services"].map((x) => DataService.fromJson(x))),
+    services:DataService.fromJson(json["services"]),
   );
 
   Map<String, dynamic> toJson() => {
     "data": data.toJson(),
     "artists": List<dynamic>.from(artists.map((x) => x.toJson())),
-    "services": List<dynamic>.from(services.map((x) => x.toJson())),
+    "services": services.toJson(),
   };
 }
 
@@ -64,7 +64,7 @@ class Artist2 {
   String name;
   double rating;
   String salonId;
-  List<ArtistService2> services;
+  List<dynamic> services;
   int phoneNumber;
   bool availability;
   bool live;
@@ -109,7 +109,9 @@ class Artist2 {
     name: json["name"] ?? '',
     rating: (json["rating"] ?? 0).toDouble(),
     salonId: json["salonId"] ?? '',
-    services: List<ArtistService2>.from(json["services"]?.map((x) => ArtistService2.fromJson(x)) ?? []),
+    services: json["services"] != null
+        ? List<dynamic>.from(json["services"].map((x) => x))
+        : [],
     phoneNumber: json["phoneNumber"] ?? 0,
     availability: json["availability"] ?? false,
     live: json["live"] ?? false,
@@ -149,6 +151,7 @@ class Artist2 {
 }
 
 
+
 class Links {
   String instagram;
 
@@ -181,32 +184,6 @@ class Location {
   Map<String, dynamic> toJson() => {
     "type": type,
     "coordinates": List<dynamic>.from(coordinates.map((x) => x)),
-  };
-}
-
-
-
-class ArtistService2 {
-  String serviceId;
-  int price;
-  String id;
-
-  ArtistService2({
-    required this.serviceId,
-    required this.price,
-    required this.id,
-  });
-
-  factory ArtistService2.fromJson(Map<String, dynamic> json) => ArtistService2(
-    serviceId: json["serviceId"]?? '',
-    price: json["price"],
-    id: json["_id"]?? '',
-  );
-
-  Map<String, dynamic> toJson() => {
-    "serviceId": serviceId,
-    "price": price,
-    "_id": id,
   };
 }
 
@@ -382,57 +359,102 @@ class DataTiming {
 }
 
 class DataService {
+  ServicesWithSubCategory servicesWithSubCategory;
+  List<ServicesWithoutSubCategory> servicesWithoutSubCategory;
+
+  DataService ({
+    required this.servicesWithSubCategory,
+    required this.servicesWithoutSubCategory,
+  });
+
+
+  factory  DataService.fromJson(Map<String, dynamic> json) =>  DataService(
+    servicesWithSubCategory: ServicesWithSubCategory.fromJson(json["servicesWithSubCategory"]),
+    servicesWithoutSubCategory: List<ServicesWithoutSubCategory>.from(json["servicesWithoutSubCategory"].map((x) => ServicesWithoutSubCategory.fromJson(x))),
+  );
+
+  Map<String, dynamic> toJson() => {
+    "servicesWithSubCategory": servicesWithSubCategory.toJson(),
+    "servicesWithoutSubCategory": List<dynamic>.from(servicesWithoutSubCategory.map((x) => x.toJson())),
+  };
+}
+class ServicesWithSubCategory {
+  List<ServicesWithoutSubCategory> hairColor;
+
+  ServicesWithSubCategory({
+    required this.hairColor,
+  });
+
+  factory ServicesWithSubCategory.fromJson(Map<String, dynamic> json) {
+    List<ServicesWithoutSubCategory> hairColorList = [];
+
+    if (json['Hair color'] != null) {
+      hairColorList = List<ServicesWithoutSubCategory>.from(
+        json['Hair color'].map((x) => ServicesWithoutSubCategory.fromJson(x)),
+      );
+    }
+
+    return ServicesWithSubCategory(hairColor: hairColorList);
+  }
+
+  Map<String, dynamic> toJson() => {
+    "Hair color": List<dynamic>.from(hairColor.map((x) => x.toJson())),
+  };
+}
+
+
+class ServicesWithoutSubCategory {
   String id;
+  String salonId;
   String category;
+  String subCategory;
   String serviceTitle;
   String description;
   String targetGender;
-  List<String> salonIds;
   int avgTime;
   int basePrice;
   DateTime createdAt;
   DateTime updatedAt;
   int v;
-  bool isSelected;
-  DataService({
+
+  ServicesWithoutSubCategory({
     required this.id,
+    required this.salonId,
     required this.category,
+    required this.subCategory,
     required this.serviceTitle,
     required this.description,
     required this.targetGender,
-    required this.salonIds,
     required this.avgTime,
     required this.basePrice,
     required this.createdAt,
     required this.updatedAt,
     required this.v,
-    required this.isSelected
   });
 
-  factory DataService.fromJson(Map<String, dynamic> json) {
-    return DataService(
-      id: json["_id"] ?? '',
-      category: json["category"] ?? '',
-      serviceTitle: json["serviceTitle"] ?? '',
-      description: json["description"] ?? '',
-      targetGender: json["targetGender"] ?? '',
-      salonIds: List<String>.from(json["salonIds"]?.map((x) => x?.toString()) ?? []),
-      avgTime: json["avgTime"] ?? 0,
-      basePrice: json["basePrice"] ?? 0,
-      createdAt: DateTime.parse(json["createdAt"]?.toString() ?? ''),
-      updatedAt: DateTime.parse(json["updatedAt"]?.toString() ?? ''),
-      v: json["__v"] ?? 0,
-      isSelected: json['']??false,
-    );
-  }
+  factory ServicesWithoutSubCategory.fromJson(Map<String, dynamic> json) => ServicesWithoutSubCategory(
+    id: json["_id"],
+    salonId: json["salonId"],
+    category: json["category"],
+    subCategory: json["sub_category"],
+    serviceTitle: json["serviceTitle"],
+    description: json["description"],
+    targetGender: json["targetGender"],
+    avgTime: json["avgTime"],
+    basePrice: json["basePrice"],
+    createdAt: DateTime.parse(json["createdAt"]),
+    updatedAt: DateTime.parse(json["updatedAt"]),
+    v: json["__v"],
+  );
 
   Map<String, dynamic> toJson() => {
     "_id": id,
+    "salonId": salonId,
     "category": category,
+    "sub_category": subCategory,
     "serviceTitle": serviceTitle,
     "description": description,
     "targetGender": targetGender,
-    "salonIds": List<dynamic>.from(salonIds.map((x) => x)),
     "avgTime": avgTime,
     "basePrice": basePrice,
     "createdAt": createdAt.toIso8601String(),

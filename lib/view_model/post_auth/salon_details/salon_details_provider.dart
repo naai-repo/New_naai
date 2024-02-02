@@ -22,6 +22,7 @@ import 'package:naai/view_model/post_auth/home/home_provider.dart';
 import 'package:provider/provider.dart';
 import '../../../models/Time_Slot_model.dart';
 import '../../../models/artist_detail.dart';
+import '../../../models/artist_request.dart';
 import '../../../models/artist_services.dart';
 import '../../../models/salon_detail.dart';
 import '../../../models/service_response.dart';
@@ -35,6 +36,26 @@ class SalonDetailsProvider with ChangeNotifier {
   List<ServiceDetail> _serviceList = [];
   DataService? serviceDetail;
   // List<Review> _salonReviewList = [];
+  ArtistRequest? _apiAResponse;
+  List<TimeService> _selectedbarberServices = [];
+
+  List<TimeService> get selectedServices => _selectedbarberServices;
+
+  void setSelectedServices(List<TimeService> services) {
+    _selectedbarberServices = services;
+    notifyListeners();
+  }
+
+  // Method to set API A response
+  void setApiAResponse(ArtistRequest response) {
+    _apiAResponse = response;
+    notifyListeners();
+  }
+
+  // Method to get API A response
+  ArtistRequest? getApiAResponse() {
+    return _apiAResponse;
+  }
   List<ServiceDetail> _filteredServiceList = [];
   List<Artist> _artistList = [];
   DateTime? _selectedDate;
@@ -60,7 +81,7 @@ class SalonDetailsProvider with ChangeNotifier {
   int _selectedSalonIndex = 0;
   double _totalPrice = 0;
   double _showPrice = 0;
-  
+
   Booking _currentBooking = Booking();
 
   // TODO: Change this to [false] once multiple artist booking method is finished
@@ -153,6 +174,9 @@ class SalonDetailsProvider with ChangeNotifier {
 
   Data? salonid;
 
+  List<ServiceResponse> _serviceDetailsList = [];
+  List<ServiceResponse>  get serviceDetailsList => _serviceDetailsList;
+
   void setSalonDetails(ApiResponse salonDetails) {
     _salonDetails = salonDetails;
     notifyListeners();
@@ -162,7 +186,10 @@ class SalonDetailsProvider with ChangeNotifier {
     _timeslot = timeslot;
     notifyListeners();
   }
-
+  void setServiceDetailsList(List<ServiceResponse> serviceDetailsList) {
+    _serviceDetailsList = serviceDetailsList;
+    notifyListeners();
+  }
   String? _selectedTime;
   String? get selectedTime => _selectedTime;
 
@@ -193,7 +220,7 @@ class SalonDetailsProvider with ChangeNotifier {
 
       if (response.statusCode == 200) {
         artistServiceList = ArtistServiceList.fromJson(response.data);
-        // Check the length of selectedServiceIds
+ print('response is :-${response.data}');
         if (selectedServiceIds.length == 1) {
           // Navigate to createBookingRoute if there is only one service
           Navigator.pushNamed(
@@ -239,6 +266,7 @@ class SalonDetailsProvider with ChangeNotifier {
       Loader.hideLoader(context);
 
       if (response.statusCode == 200) {
+        print('response is ${response.data}');
         artistServiceList = ArtistServiceList.fromJson(response.data);
         }
        else {
@@ -252,58 +280,70 @@ class SalonDetailsProvider with ChangeNotifier {
     }
   }
 
-
   Future<void> submitReview2( BuildContext context, {
     required int stars,
     required String text,
   }) async {
-    final Dio dio = Dio();
+      String apiUrl = 'http://13.235.49.214:8800/partner/review/add';
 
-    final Map<String, dynamic> requestData = {
-      "title": "Review Salon",
-      "description": text,
-      "salonId": salonid,
-      "rating": stars
-    };
+      String? salonId = salonDetails?.data.data.id;
 
-    try {
-      Loader.showLoader(context);
+      // If salonId is null or empty, get it from the first booking in home provider
+      if (salonId == null || salonId.isEmpty) {
+        HomeProvider homeProvider = Provider.of<HomeProvider>(context, listen: false);
+        if (homeProvider.previousBooking.isNotEmpty) {
+          salonId = homeProvider.previousBooking.first.salonId;
+        }
+      }
 
-      String? authToken = await AccessTokenManager.getAccessToken();
-
-      if (authToken == null) {
-        Loader.hideLoader(context);
-        print("Access token not found. User may not be authenticated.");
-        // Handle the case where the user is not authenticated
+      if (salonId == null || salonId.isEmpty) {
+        // Handle the case where salonId is still null or empty
+        print("Salon ID is null or empty");
         return;
       }
 
-      // Include Bearer token in the headers
-      dio.options.headers["Authorization"] = "Bearer $authToken";
+      final Map<String, dynamic> requestData = {
+        "title": "Review Salon",
+        "description": text,
+        "salonId": salonId,
+        "rating": stars,
+      };
 
+      try {
+        Loader.showLoader(context);
+        Dio dio = Dio();
+        dio.interceptors.add(LogInterceptor(requestBody: true, responseBody: true, logPrint: print));
 
-      final response = await dio.post(
-        'http://13.235.49.214:8800/partner/review/add',
-        options: Options(headers: {"Content-Type": "application/json"}),
-        data: json.encode(requestData),
-      );
-      Loader.hideLoader(context);
-      if (response.statusCode == 200) {
-        // Review submitted successfully, handle the response data if needed
-        print("Review submitted successfully!");
-        print(response.data);
-      } else {
+        String? authToken = await AccessTokenManager.getAccessToken();
+
+        if (authToken != null) {
+          dio.options.headers['Authorization'] = 'Bearer $authToken';
+        } else {
+          Loader.hideLoader(context); // Handle the case where the user is not authenticated
+        }
+        final response = await dio.post(
+          apiUrl,
+          options: Options(headers: {"Content-Type": "application/json"}),
+          data: json.encode(requestData),
+        );
+        print('Request is :- $requestData');
+        if (response.statusCode == 200) {
+          // Review submitted successfully, handle the response data if needed
+          print("Review submitted successfully!");
+          print(response.data);
+          Loader.hideLoader(context);
+        } else {
+          Loader.hideLoader(context);
+          // Failed to submit the review, handle the error
+          print("Failed to submit the review");
+          print(response.data);
+        }
+      } catch (error) {
         Loader.hideLoader(context);
-        // Failed to submit the review, handle the error
-        print("Failed to submit the review");
-        print(response.data);
+        // Handle any exceptions that occurred during the request
+        print("Error: $error");
       }
-    } catch (error) {
-      Loader.hideLoader(context);
-      // Handle any exceptions that occurred during the request
-      print("Error: $error");
     }
-  }
 
 
   void setApiResponse(ApiResponse apiResponse) {
@@ -321,29 +361,9 @@ class SalonDetailsProvider with ChangeNotifier {
 
   String? Servicetitle;
 
-  Future<void> fetchData() async {
-    try {
-      final response = await Dio().get(
-        'http://13.235.49.214:8800/partner/service/single/${salonid!.salonId}',
-      );
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> data = response.data['data'];
-        final String title = data['serviceTitle'];
-        Servicetitle = title;
-        print('titleis $title');
-      } else {
-        // Handle other status codes
-        print('Failed to fetch service title: ${response.statusCode}');
-      }
-    } catch (error) {
-      // Handle errors
-      print('Failed to fetch service title: $error');
-    }
-  }
-  Set<DataService> _selectedServices = Set<DataService>();
+  Set<ServicesWithoutSubCategory> _selectedServices = Set<ServicesWithoutSubCategory>();
   Set<Service2> _barberselectedServices = Set<Service2>();
-  Set<DataService> getSelectedServices() => _selectedServices;
+  Set<ServicesWithoutSubCategory> getSelectedServices() => _selectedServices;
 
   Set<Service2> barbergetSelectedServices() => _barberselectedServices;
 
@@ -351,7 +371,7 @@ class SalonDetailsProvider with ChangeNotifier {
 
 
 
-  void toggleSelectedService(DataService service) {
+  void toggleSelectedService(ServicesWithoutSubCategory service) {
     if (_selectedServices.contains(service)) {
       _selectedServices.remove(service);
     } else {
@@ -408,7 +428,6 @@ class SalonDetailsProvider with ChangeNotifier {
     return _barberselectedServices.fold(0.0, (sum, service) => sum + service.price);
   }
   /// Get details related to a given service.
- 
   dynamic getServiceDetails({
     required String serviceId,
     bool getServiceName = false,
@@ -661,7 +680,7 @@ class SalonDetailsProvider with ChangeNotifier {
 
     notifyListeners();
   }
-   
+
   /// For a given seconds data which signifies total seconds passed in a day till now,
   /// get the corresponding time stamp of it.
   /// Note: 12:00 AM is considered as 0 seconds
@@ -733,13 +752,13 @@ class SalonDetailsProvider with ChangeNotifier {
     _filteredServiceList.addAll(_serviceList);
   }
 
-  DataService? _selectedService;
+  ServicesWithoutSubCategory? _selectedService;
 
-  DataService? get selectedService => _selectedService;
+  ServicesWithoutSubCategory? get selectedService => _selectedService;
 
   void setSelectedService2(String serviceId) {
     // Find the service with the given id in salonDetails
-    DataService? selectedService = salonDetails?.data.services.firstWhereOrNull(
+    ServicesWithoutSubCategory? selectedService = salonDetails?.data.services.servicesWithoutSubCategory.firstWhereOrNull(
           (service) => service.id == serviceId,
     );
 

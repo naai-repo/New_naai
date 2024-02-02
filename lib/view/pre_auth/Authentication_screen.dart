@@ -100,11 +100,12 @@ class AuthenticationScreen extends StatelessWidget {
                             authenticationOptionsDivider(),
                             SizedBox(height: 4.h),
                             TextButton(
-                              onPressed: () => {
-                                Navigator.pushReplacementNamed(
+                              onPressed: ()  async{
+                              await saveIsGuestStatus(true);
+                              Navigator.pushReplacementNamed(
                                   context,
                                   NamedRoutes.bottomNavigationRoute2,
-                                ),
+                                );
                               },
                               child: Padding(
                                 padding: EdgeInsets.symmetric(
@@ -135,6 +136,10 @@ class AuthenticationScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+  Future<void> saveIsGuestStatus(bool isGuest) async {
+    final box = await Hive.openBox('userBox');
+    box.put('isGuest', isGuest);
   }
 
 
