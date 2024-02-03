@@ -400,7 +400,7 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
             ),
           ),
           SizedBox(height: 1.h),
-          provider.salonDetails!.data.services.servicesWithoutSubCategory.length == 0
+          provider.salonDetails!.data.services.servicesWithoutSubCategory.isEmpty
               ? Container(
             height: 10.h,
             child: Center(
@@ -414,84 +414,115 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
             itemCount: provider.salonDetails!.data.services.servicesWithoutSubCategory.length,
             itemBuilder: (context, index) {
               ServicesWithoutSubCategory? serviceDetail =
-              provider.salonDetails!.data.services.servicesWithoutSubCategory[index];
-              return GestureDetector(
-                onTap: () {
-                 //logic for to tap and checked the checkbox
-                  provider.toggleSelectedService(serviceDetail!);
-                },
-                child: Container(
-                  margin: EdgeInsets.symmetric(
-                    vertical: 1.h,
-                    horizontal: 3.w,
-                  ),
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 3.w,
-                    vertical: 1.h,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(1.h),
-                    border: Border.all(color: ColorsConstant.divider),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      SizedBox(
-                        width: 50.w,
-                        child: Row(
-                          children: <Widget>[
-                            SvgPicture.asset(
-                              serviceDetail.targetGender == 'male'
-                                  ? ImagePathConstant.manIcon
-                                  : ImagePathConstant.womanIcon,
-                              height: 4.h,
-                            ),
-                            SizedBox(width: 2.w),
-                            Expanded(
-                              child: Text(
-                                serviceDetail.serviceTitle ?? "",
+              provider.salonDetails?.data.services.servicesWithoutSubCategory[index];
+
+               bool isAdded = provider.getSelectedServices().contains(serviceDetail);
+                String? title = serviceDetail?.serviceTitle ?? 'Expample Title';
+                String? discription = serviceDetail?.description ?? 'Example Discription';
+                int? totalPrice = serviceDetail?.basePrice ?? 999999;
+                int? discount = provider.salonDetails?.data.data.discount ?? 0;
+                double? discountPrice = totalPrice - (totalPrice * discount/100);
+                   // serviceDetail3.salonId;
+                   
+
+                    return Container(
+                      padding: EdgeInsets.all(3.w),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                                Text(
+                                title,
                                 style: TextStyle(
-                                  color: ColorsConstant.textDark,
-                                  fontSize: 10.sp,
-                                  fontWeight: FontWeight.w500,
+                                  color: const Color(0xFF2B2F34),
+                                  fontSize: 12.sp,
+                                  fontFamily: 'Poppins',
+                                  fontWeight: FontWeight.w700,
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: <Widget>[
-                          Text(
-                            "Rs. ${serviceDetail.basePrice}",
-                            style: TextStyle(
-                              fontSize: 10.sp,
-                              fontWeight: FontWeight.w600,
-                              color: ColorsConstant.textDark,
-                            ),
+                              SvgPicture.asset(
+                                      serviceDetail!.targetGender == "men"
+                                          ? ImagePathConstant.manIcon
+                                          : ImagePathConstant.womanIcon,
+                                      height: 3.h,
+                                    )
+                            ],
                           ),
-                          Checkbox(
-                            value: selectedServices.contains(serviceDetail),
-                            activeColor: ColorsConstant.appColor,
-                            side: BorderSide(
-                              color: Color.fromARGB(255, 193, 193, 193),
-                              width: 2,
+                          (discription.isNotEmpty) ? SizedBox(height: 1.h) : const SizedBox(),
+                          (discription.isNotEmpty) ? Text(
+                            discription,
+                            style: TextStyle(
+                              color: const Color(0xFF8B9AAC),
+                              fontSize: 10.sp,
+                              fontFamily: 'Poppins',
+                              fontWeight: FontWeight.w500,
+                            )) : const SizedBox(),
+                          SizedBox(height: 1.h,),
+                          RichText(text: TextSpan(
+                            children: [
+                               TextSpan(
+                                text: "Rs. $discountPrice",
+                                style: TextStyle(
+                                    color: const Color(0xFF373737),
+                                    fontSize: 13.sp,
+                                    fontFamily: 'Helvetica Neue',
+                                    fontWeight: FontWeight.w800,
+                                  )
+                               ),
+                              
+                               WidgetSpan(child: SizedBox(width: 2.w,)),
+                               TextSpan(
+                                text: "Rs. $totalPrice",
+                                style: TextStyle(
+                                    color: const Color(0xFF8B9AAC),
+                                      fontSize: 12.sp,
+                                      fontFamily: 'Helvetica Neue',
+                                      fontWeight: FontWeight.w400,
+                                      decoration: TextDecoration.lineThrough,
+                                  )
+                               ),
+                            ]
+                          )),
+                          SizedBox(height: 2.h,),
+                           TextButton(
+                            onPressed: () async {
+                              provider.toggleSelectedService(serviceDetail);
+                            }, 
+                            style: TextButton.styleFrom(
+                              padding: EdgeInsets.symmetric(horizontal: 6.w,vertical: 2.w),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10.sp),
+                                  side: BorderSide(color: const Color(0xFFAA2F4C),width: 0.2.w)
+                                  )
                             ),
-                            onChanged: (value) {
-
-                              provider.toggleSelectedService(serviceDetail!);
-                            },
+                            child: RichText(text: TextSpan(
+                              style: TextStyle(
+                                color: const Color(0xFFAA2F4C),
+                                fontSize: 12.sp,
+                                fontFamily: 'Poppins',
+                                fontWeight: FontWeight.w600,
+                              ),
+                               children: [
+                                  WidgetSpan(
+                                    alignment: PlaceholderAlignment.middle,
+                                    child: Icon((!isAdded) ? Icons.add : Icons.remove,
+                                    size: 14.sp,color: const Color(0xFFAA2F4C),)),
+                                  WidgetSpan(child: SizedBox(width: 2.w,)),
+                                   TextSpan(
+                                      text: (!isAdded) ? "Add" : "Remove"
+                                  )
+                               ]
+                            ))
                           ),
                         ],
                       ),
-                    ],
-                  ),
-                ),
-              );
+                    );
+                
+
             },
           ),
           SizedBox(height: 3.h),
@@ -499,6 +530,8 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
       );
     });
   }
+
+
    Widget serviceCategoryFilterWidget() {
     return Consumer<SalonDetailsProvider>(builder: (context, provider, child) {
       return Container(
