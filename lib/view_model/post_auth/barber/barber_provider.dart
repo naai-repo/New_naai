@@ -397,6 +397,7 @@ class ReviewsProvider with ChangeNotifier {
       );
 
       if (response.statusCode == 200) {
+        reviews = [];
         for (var e in response.data['data']) {
           reviews.add(ReviewItem.fromJson(jsonEncode(e)));
         }

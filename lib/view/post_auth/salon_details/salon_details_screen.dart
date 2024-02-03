@@ -53,6 +53,7 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
       },
       child: Consumer<SalonDetailsProvider>(
           builder: (context, provider, child) {
+              context.read<ReviewsProvider>().getReviewsApisSalon(provider.salonDetails!.data.data.id);
        //     ApiResponse? salonDetails = provider.salonDetails; // Use the instance obtained from the context
             if (provider.salonDetails!.data.data.discount == 0 ||
                 provider.salonDetails!.data.data.discount == null){
@@ -360,6 +361,7 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
       );
     });
   }
+  
    Widget servicesTab() {
     return Consumer<SalonDetailsProvider>(builder: (context, provider, child) {
     //  List<DataService> selectedServices = [];
@@ -542,7 +544,7 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
       );
     });
   }
-  Widget imageCarousel() {
+   Widget imageCarousel() {
     return Consumer<SalonDetailsProvider>(builder: (context, provider, child) {
       return Stack(
         alignment: Alignment.bottomCenter,

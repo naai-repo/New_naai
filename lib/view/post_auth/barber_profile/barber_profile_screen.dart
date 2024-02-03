@@ -607,7 +607,7 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
   Widget reviewColumn() {
     return Consumer<BarberProvider>(
       builder: (context, provider, child) {
-        final ref = Provider.of<ReviewsProvider>(context,listen: false);
+        final ref = Provider.of<ReviewsProvider>(context,listen: true);
 
         return GestureDetector(
           onTap: () => FocusManager.instance.primaryFocus!.unfocus(),
