@@ -1,10 +1,10 @@
 import 'dart:convert';
-
 import 'package:dio/dio.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:naai/models/artist.dart';
 import 'package:naai/models/review.dart';
+import 'package:naai/models/reviews_barber.dart';
 import 'package:naai/models/service_detail.dart';
 import 'package:naai/services/database.dart';
 import 'package:naai/utils/enums.dart';
@@ -37,8 +37,6 @@ class BarberProvider with ChangeNotifier {
   bool _shouldSetArtistData = true;
   TextEditingController _searchController = TextEditingController();
 
-
-
   //============= GETTERS =============//
   int get selectedArtistIndex => _selectedArtistIndex;
   List<Gender> get selectedGendersFilter => _selectedGendersFilter;
@@ -47,8 +45,6 @@ class BarberProvider with ChangeNotifier {
   List<ServiceDetail> get filteredServiceList => _filteredServiceList;
   // List<Review> get artistReviewList => _artistReviewList;
 
-
-  
   Artist get artist => _artist;
   SalonData get selectedSalonData => _selectedSalonData;
   bool get shouldSetArtistData => _shouldSetArtistData;
@@ -57,7 +53,8 @@ class BarberProvider with ChangeNotifier {
   Data? _artistDetails; // Replace ArtistDetails with your actual model
 
   Data? get artistDetails => _artistDetails;
-  Map<String, ServiceResponse> serviceDetailsMap = {}; // Use a map to store service details
+  Map<String, ServiceResponse> serviceDetailsMap =
+      {}; // Use a map to store service details
 
   ArtistData? artistid;
   ApiResponse? _salonDetails; // Replace SalonDetails with your actual model
@@ -73,6 +70,7 @@ class BarberProvider with ChangeNotifier {
     _artistDetails = artistDetails;
     notifyListeners();
   }
+
   String? Servicetitle;
   String? salonName2;
 
@@ -87,7 +85,8 @@ class BarberProvider with ChangeNotifier {
     _shouldSetArtistData = true;
   }
 
-  Future<void> submitReview2( BuildContext context, {
+  Future<void> submitReview2(
+    BuildContext context, {
     required int stars,
     required String text,
   }) async {
@@ -97,9 +96,11 @@ class BarberProvider with ChangeNotifier {
 
     // If salonId is null or empty, get it from the first booking in home provider
     if (artistId == null || artistId.isEmpty) {
-      HomeProvider homeProvider = Provider.of<HomeProvider>(context, listen: false);
+      HomeProvider homeProvider =
+          Provider.of<HomeProvider>(context, listen: false);
       if (homeProvider.previousBooking.isNotEmpty) {
-        artistId = homeProvider.previousBooking.first.artistServiceMap.first.artistId;
+        artistId =
+            homeProvider.previousBooking.first.artistServiceMap.first.artistId;
       }
     }
 
@@ -119,14 +120,16 @@ class BarberProvider with ChangeNotifier {
     try {
       Loader.showLoader(context);
       Dio dio = Dio();
-      dio.interceptors.add(LogInterceptor(requestBody: true, responseBody: true, logPrint: print));
+      dio.interceptors.add(LogInterceptor(
+          requestBody: true, responseBody: true, logPrint: print));
 
       String? authToken = await AccessTokenManager.getAccessToken();
 
       if (authToken != null) {
         dio.options.headers['Authorization'] = 'Bearer $authToken';
       } else {
-        Loader.hideLoader(context); // Handle the case where the user is not authenticated
+        Loader.hideLoader(
+            context); // Handle the case where the user is not authenticated
       }
       final response = await dio.post(
         apiUrl,
@@ -181,7 +184,6 @@ class BarberProvider with ChangeNotifier {
     notifyListeners();
   }
 
-   
   /// Set the value of [_selectedGendersFilter] according to the gender filter selected
   /// by user
   void setSelectedGendersFilter({required Gender selectedGender}) {
@@ -338,8 +340,74 @@ class BarberProvider with ChangeNotifier {
     _selectedServiceCategories.clear();
     notifyListeners();
   }
-  void clearfilteredServiceList () {
+
+  void clearfilteredServiceList() {
     _filteredServiceList.clear();
     notifyListeners();
+  }
+}
+
+class ReviewsProvider with ChangeNotifier {
+  List<ReviewItem> reviews = [];
+
+  Future<List<ReviewItem>> getReviewsApisArtist(String artistId) async {
+    try {
+      final String url =
+          "http://13.235.49.214:8800/partner/review/artist/$artistId";
+      final Dio dio = Dio();
+      String? authToken = await AccessTokenManager.getAccessToken();
+
+      if (authToken != null) {
+        dio.options.headers['Authorization'] = 'Bearer $authToken';
+      }
+      final response = await dio.get(
+        url,
+        options: Options(headers: {"Content-Type": "application/json"}),
+      );
+
+      if (response.statusCode == 200) {
+        reviews = [];
+        for (var e in response.data['data']) {
+          reviews.add(ReviewItem.fromJson(jsonEncode(e)));
+        }
+        return reviews;
+      } else {
+        print("Review Response Code Error : ${response.data}");
+        return [];
+      }
+    } catch (e) {
+      print("Reviews Error :${e}");
+      return [];
+    }
+  }
+
+  Future<List<ReviewItem>> getReviewsApisSalon(String salonId) async {
+    try {
+      final String url =
+          "http://13.235.49.214:8800/partner/review/salon/$salonId";
+      final Dio dio = Dio();
+      String? authToken = await AccessTokenManager.getAccessToken();
+
+      if (authToken != null) {
+        dio.options.headers['Authorization'] = 'Bearer $authToken';
+      }
+      final response = await dio.get(
+        url,
+        options: Options(headers: {"Content-Type": "application/json"}),
+      );
+
+      if (response.statusCode == 200) {
+        for (var e in response.data['data']) {
+          reviews.add(ReviewItem.fromJson(jsonEncode(e)));
+        }
+        return reviews;
+      } else {
+        print("Review Response Code Error : ${response.data}");
+        return [];
+      }
+    } catch (e) {
+      print("Reviews Error :${e}");
+      return [];
+    }
   }
 }
