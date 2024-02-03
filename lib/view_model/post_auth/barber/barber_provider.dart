@@ -18,6 +18,7 @@ import 'package:provider/provider.dart';
 
 import '../../../models/artist_detail.dart';
 import '../../../models/artist_model.dart';
+import '../../../models/review_barber.dart';
 import '../../../models/salon.dart';
 import '../../../models/salon_detail.dart';
 import '../../../models/service_response.dart';
@@ -340,5 +341,70 @@ class BarberProvider with ChangeNotifier {
   void clearfilteredServiceList () {
     _filteredServiceList.clear();
     notifyListeners();
+  }
+}
+class ReviewsProvider with ChangeNotifier {
+  List<ReviewItem> reviews = [];
+
+  Future<List<ReviewItem>> getReviewsApisArtist(String artistId) async {
+    try {
+      final String url =
+          "http://13.235.49.214:8800/partner/review/artist/$artistId";
+      final Dio dio = Dio();
+      String? authToken = await AccessTokenManager.getAccessToken();
+
+      if (authToken != null) {
+        dio.options.headers['Authorization'] = 'Bearer $authToken';
+      }
+      final response = await dio.get(
+        url,
+        options: Options(headers: {"Content-Type": "application/json"}),
+      );
+
+      if (response.statusCode == 200) {
+        reviews = [];
+        for (var e in response.data['data']) {
+          reviews.add(ReviewItem.fromJson(jsonEncode(e)));
+        }
+        return reviews;
+      } else {
+        print("Review Response Code Error : ${response.data}");
+        return [];
+      }
+    } catch (e) {
+      print("Reviews Error :${e}");
+      return [];
+    }
+  }
+
+  Future<List<ReviewItem>> getReviewsApisSalon(String salonId) async {
+    try {
+      final String url =
+          "http://13.235.49.214:8800/partner/review/salon/$salonId";
+      final Dio dio = Dio();
+      String? authToken = await AccessTokenManager.getAccessToken();
+
+      if (authToken != null) {
+        dio.options.headers['Authorization'] = 'Bearer $authToken';
+      }
+      final response = await dio.get(
+        url,
+        options: Options(headers: {"Content-Type": "application/json"}),
+      );
+
+      if (response.statusCode == 200) {
+        reviews = [];
+        for (var e in response.data['data']) {
+          reviews.add(ReviewItem.fromJson(jsonEncode(e)));
+        }
+        return reviews;
+      } else {
+        print("Review Response Code Error : ${response.data}");
+        return [];
+      }
+    } catch (e) {
+      print("Reviews Error :${e}");
+      return [];
+    }
   }
 }

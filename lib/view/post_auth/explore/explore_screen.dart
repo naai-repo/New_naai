@@ -1101,16 +1101,28 @@ class _ExploreScreen2State extends State<ExploreScreen2>
                                                   : ColorsConstant
                                                   .lightAppColor,
                                               borderRadius: 3.h,
-                                              onTap: () async{
-                                                if (provider.selectedFilterTypeList.contains(FilterType.Rating)) {
-                                                  provider.selectedFilterTypeList.remove(FilterType.Rating);
-                                                  await provider.initHome(context);
-                                                } else {
-                                                  provider.selectedFilterTypeList.add(FilterType.Rating);
-                                                  await provider.Filter(context);
-                                                }
-                                                Navigator.pop(context);
-                                              },
+                                              onTap: () => showModalBottomSheet(
+                                                context: context,
+                                                isScrollControlled: true,
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius: BorderRadius.vertical(
+                                                    top: Radius.circular(2.h),
+                                                  ),
+                                                ),
+                                                builder: (context) {
+                                                  return Container(
+                                                    width: double.maxFinite,
+                                                    height: 500,
+                                                    decoration: BoxDecoration(
+                                                        color: Colors.white,
+                                                        borderRadius: BorderRadius.only(
+                                                            topLeft: Radius.circular(2.h),
+                                                            topRight:
+                                                            Radius.circular(2.h))),
+                                                    child: const FilterBarberSheet(),
+                                                  );
+                                                },
+                                              ),
                                               shouldShowBoxShadow: false,
                                               isIconSuffix: true,
                                               padding:
@@ -2053,16 +2065,28 @@ class _ExploreScreen3State extends State<ExploreScreen3>
                                                   : ColorsConstant
                                                   .lightAppColor,
                                               borderRadius: 3.h,
-                                              onTap: () async{
-                                                if (provider.selectedFilterTypeList.contains(FilterType.Rating)) {
-                                                  provider.selectedFilterTypeList.remove(FilterType.Rating);
-                                                  await provider.initHome(context);
-                                                } else {
-                                                  provider.selectedFilterTypeList.add(FilterType.Rating);
-                                                  await provider.Filter(context);
-                                                }
-                                                Navigator.pop(context);
-                                              },
+                                              onTap: () => showModalBottomSheet(
+                                                context: context,
+                                                isScrollControlled: true,
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius: BorderRadius.vertical(
+                                                    top: Radius.circular(2.h),
+                                                  ),
+                                                ),
+                                                builder: (context) {
+                                                  return Container(
+                                                    width: double.maxFinite,
+                                                    height: 500,
+                                                    decoration: BoxDecoration(
+                                                        color: Colors.white,
+                                                        borderRadius: BorderRadius.only(
+                                                            topLeft: Radius.circular(2.h),
+                                                            topRight:
+                                                            Radius.circular(2.h))),
+                                                    child: const FilterBarberSheet(),
+                                                  );
+                                                },
+                                              ),
                                               shouldShowBoxShadow: false,
                                               isIconSuffix: true,
                                               padding:

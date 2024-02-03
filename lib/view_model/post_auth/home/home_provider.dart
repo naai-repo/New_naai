@@ -620,7 +620,7 @@ String ?  _addressText;
 
 
   Future<void> getDistanceAndRatingForWomen({required List<double> coords}) async {
-    final apiUrl = UrlConstants.discountAndRatingForWomen;
+    final apiUrl = 'http://13.235.49.214:8800/partner/salon/filter?page=1&limit=20&filter=discount&min=50';
 
     final Map<String, dynamic> requestData = {
       "location": {"type": "Point", "coordinates": coords},
@@ -650,7 +650,7 @@ String ?  _addressText;
   }
 
   Future<void> getDistanceAndRatingForMen({required List<double> coords}) async {
-    final apiUrl = UrlConstants.discountAndRatingForMen;
+    final apiUrl = 'http://13.235.49.214:8800/partner/salon/filter?page=1&limit=20&filter=discount&min=10';
 
     final Map<String, dynamic> requestData = {
       "location": {"type": "Point", "coordinates": coords},
@@ -1901,5 +1901,17 @@ String ?  _addressText;
 
   void addReview(Review review) {
     _allReviewList.add(review);
+  }
+}
+class FilterSalons with ChangeNotifier {
+  int _selectedindex = 0;
+  final List<String> _filterTypes = ['Price','Category','Rating','Discount','Salon Type','Distance'];
+
+  int get getSelectdIndex => _selectedindex;
+  List<String> get getFilterTypes => _filterTypes;
+
+  void changeIndex(int idx) {
+    _selectedindex = idx;
+    notifyListeners();
   }
 }

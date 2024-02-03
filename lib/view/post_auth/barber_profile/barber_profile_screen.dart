@@ -52,7 +52,8 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
         return Consumer<SalonDetailsProvider>(builder: (context, provider, child) {
           BarberProvider barberProvider = context.read<BarberProvider>(); // Use the same instance
           HomeProvider home = context.read<HomeProvider>(); // Use the same instance
-
+          context.read<ReviewsProvider>().getReviewsApisArtist(barberProvider.artistDetails!.id);
+         print('reviews :- ${ context.read<ReviewsProvider>().reviews}');
           if (provider.salonDetails!.data.data.discount == 0 ||
               provider.salonDetails!.data.data.discount == null){
             myShowPrice = provider.totalPrice;
@@ -605,6 +606,8 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
   Widget reviewColumn() {
     return Consumer<BarberProvider>(
       builder: (context, provider, child) {
+        final ref = Provider.of<ReviewsProvider>(context,listen: true);
+
         return GestureDetector(
           onTap: () => FocusManager.instance.primaryFocus!.unfocus(),
           child: Padding(
@@ -614,7 +617,7 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
               children: <Widget>[
                 AddReviewComponent(reviewForSalon: false),
                 Padding(
-                  padding: EdgeInsets.only(top: 2.h, bottom: 1.h),
+                  padding: EdgeInsets.only(top: 2.h),
                   child: Text(
                     StringConstant.userReviews,
                     style: TextStyle(
@@ -624,181 +627,107 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
                     ),
                   ),
                 ),
-                context
-                        .read<HomeProvider>()
-                        .reviewList
-                        .where((review) =>
-                            review.artistId != null &&
-                            review.artistId == provider.artist.id)
-                        .isNotEmpty
-                    ? ListView(
-                        padding: EdgeInsets.zero,
-                        physics: NeverScrollableScrollPhysics(),
-                        shrinkWrap: true,
-                        children: context
-                            .read<HomeProvider>()
-                            .reviewList
-                            .where((review) =>
-                                review.artistId != null &&
-                                review.artistId == provider.artist.id)
-                            .map((reviewItem) => Container(
-                                  margin: EdgeInsets.symmetric(vertical: 1.h),
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: 3.w,
-                                    vertical: 1.5.h,
+                (ref.reviews.isNotEmpty)
+                    ? SizedBox(
+                  height: 500,
+                  child: ListView.builder(
+                      itemCount: ref.reviews.length,
+                      itemBuilder: (context, index) {
+                        final String storeName = provider.salonDetails?.data.data.name ?? 'No Title';
+                        final String title = ref.reviews[index].review.title ?? 'No Title';
+                        final String date = ref.reviews[index].review.createdAt ?? 'No Date';
+                        final String discription = ref.reviews[index].review.description ?? 'No Discription';
+
+                        return Container(
+                          padding: EdgeInsets.all(4.w),
+                          margin: EdgeInsets.only(bottom: 5.w),
+                          decoration: BoxDecoration(
+                              border: Border.all(color: ColorsConstant.divider),
+                              borderRadius: BorderRadius.circular(5.sp)
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "For : $storeName",
+                                style: TextStyle(
+                                    fontFamily: "Poppins",
+                                    color: const Color(0xFF8C9AAC),
+                                    fontSize: 10.sp,
+                                    fontWeight: FontWeight.w500
+                                ),
+                              ),
+                              SizedBox(height: 1.h,),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  CircleAvatar(backgroundColor: Colors.grey,radius: 6.w),
+                                  SizedBox(width: 1.5.h),
+                                  Column(
+                                    mainAxisAlignment: MainAxisAlignment.start,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        title,
+                                        style: TextStyle(
+                                            fontFamily: "Poppins",
+                                            color: const Color(0xFF373737),
+                                            fontSize: 12.sp,
+                                            fontWeight: FontWeight.w600
+                                        ),
+                                      ),
+                                      Text(
+                                        date,
+                                        style: TextStyle(
+                                            fontFamily: "Poppins",
+                                            color: const Color(0xFF8C9AAC),
+                                            fontSize: 10.sp,
+                                            fontWeight: FontWeight.w400
+                                        ),
+                                      ),
+                                    ],
+                                  )
+                                ],
+                              ),
+                              SizedBox(height: 2.h),
+                              SizedBox(
+                                //height: 10.h,
+                                child: Text(
+                                  discription,
+                                  softWrap: true,
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 2,
+                                  style: TextStyle(
+                                      fontFamily: "Poppins",
+                                      color: const Color(0xFF8C9AAC),
+                                      fontSize: 10.sp,
+                                      fontWeight: FontWeight.w400
                                   ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(1.h),
-                                    border: Border.all(
-                                      color:
-                                          ColorsConstant.reviewBoxBorderColor,
+                                ),
+                              ),
+                              SizedBox(height: 2.h,),
+                              Material(
+                                child: InkWell(
+                                  onTap: (){},
+                                  child: Text(
+                                    "View More",
+                                    style: TextStyle(
+                                        fontFamily: "Poppins",
+                                        color: ColorsConstant.appColor,
+                                        fontSize: 10.sp,
+                                        fontWeight: FontWeight.w500
                                     ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Color.fromARGB(
-                                          255,
-                                          229,
-                                          229,
-                                          229,
-                                        ),
-                                        spreadRadius: 0.1,
-                                        blurRadius: 10,
-                                      ),
-                                    ],
                                   ),
-                                  child: Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: <Widget>[
-                                      Expanded(
-                                        child: Column(
-                                          mainAxisSize: MainAxisSize.max,
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.start,
-                                          children: <Widget>[
-                                            Padding(
-                                              padding: EdgeInsets.only(
-                                                top: 0.5.h,
-                                                bottom: 0.2.h,
-                                              ),
-                                              child: Column(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                children: [
-                                                  Text(
-                                                    'Store : ${reviewItem.salonName}',
-                                                    style: TextStyle(
-                                                      fontSize: 10.sp,
-                                                      fontWeight:
-                                                          FontWeight.w500,
-                                                      color: Colors.grey,
-                                                    ),
-                                                  ),
-                                                  reviewItem.artistName != null
-                                                      ? Text(
-                                                          'For : ${reviewItem.artistName}',
-                                                          style: TextStyle(
-                                                            fontSize: 9.sp,
-                                                            fontWeight:
-                                                                FontWeight.w500,
-                                                            color: Colors.grey,
-                                                          ),
-                                                        )
-                                                      : SizedBox.shrink(),
-                                                ],
-                                              ),
-                                            ),
-                                            ListTile(
-                                              minLeadingWidth: 0,
-                                              contentPadding: EdgeInsets.zero,
-                                              visualDensity:
-                                                  VisualDensity.compact,
-                                              dense: true,
-                                              leading: CircleAvatar(
-                                                backgroundImage: AssetImage(
-                                                  'assets/images/salon_dummy_image.png',
-                                                ),
-                                              ),
-                                              title: Text.rich(
-                                                TextSpan(
-                                                  text:
-                                                      reviewItem.userName ?? "",
-                                                  children: [
-                                                    TextSpan(
-                                                      text:
-                                                          '\n${DateFormat("dd MMMM y").format(reviewItem.createdAt ?? DateTime.now())}',
-                                                      style: TextStyle(
-                                                        fontWeight:
-                                                            FontWeight.w500,
-                                                        fontSize: 10.sp,
-                                                        color: Colors.grey,
-                                                      ),
-                                                    ),
-                                                  ],
-                                                  style: TextStyle(
-                                                    fontSize: 12.sp,
-                                                    fontWeight: FontWeight.w500,
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                            Padding(
-                                              padding: EdgeInsets.only(
-                                                top: 1.h,
-                                                bottom: 1.h,
-                                              ),
-                                              child: Row(
-                                                children: <Widget>[
-                                                  ...List.generate(
-                                                    5,
-                                                    (i) => SvgPicture.asset(
-                                                      ImagePathConstant
-                                                          .starIcon,
-                                                      color: i <
-                                                              (int.parse(reviewItem
-                                                                      .rating
-                                                                      ?.round()
-                                                                      .toString() ??
-                                                                  "0"))
-                                                          ? ColorsConstant
-                                                              .appColor
-                                                          : ColorsConstant
-                                                              .greyStar,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                            ReadMoreText(
-                                              reviewItem.comment ?? "",
-                                              style: TextStyle(
-                                                fontSize: 10.sp,
-                                              ),
-                                              trimCollapsedText: "\nView more",
-                                              trimExpandedText: "\nView less",
-                                              trimLines: 2,
-                                              trimMode: TrimMode.Line,
-                                              moreStyle: TextStyle(
-                                                fontWeight: FontWeight.w600,
-                                                color: ColorsConstant.appColor,
-                                              ),
-                                              lessStyle: TextStyle(
-                                                fontWeight: FontWeight.w600,
-                                                color: ColorsConstant.appColor,
-                                              ),
-                                            )
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ))
-                            .toList(),
-                      )
-                    : SizedBox(),
+                                ),
+                              )
+
+                            ],
+                          ),
+                        );
+                      }),)
+                    : const SizedBox(),
               ],
             ),
           ),
@@ -1660,6 +1589,8 @@ class _BarberProfileScreen2State extends State<BarberProfileScreen2> {
   Widget reviewColumn() {
     return Consumer<BarberProvider>(
       builder: (context, provider, child) {
+        final ref = Provider.of<ReviewsProvider>(context,listen: true);
+
         return GestureDetector(
           onTap: () => FocusManager.instance.primaryFocus!.unfocus(),
           child: Padding(
@@ -1667,9 +1598,9 @@ class _BarberProfileScreen2State extends State<BarberProfileScreen2> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                AddReviewComponent2(reviewForSalon: false),
+                AddReviewComponent(reviewForSalon: false),
                 Padding(
-                  padding: EdgeInsets.only(top: 2.h, bottom: 1.h),
+                  padding: EdgeInsets.only(top: 2.h),
                   child: Text(
                     StringConstant.userReviews,
                     style: TextStyle(
@@ -1679,181 +1610,107 @@ class _BarberProfileScreen2State extends State<BarberProfileScreen2> {
                     ),
                   ),
                 ),
-                context
-                    .read<HomeProvider>()
-                    .reviewList
-                    .where((review) =>
-                review.artistId != null &&
-                    review.artistId == provider.artist.id)
-                    .isNotEmpty
-                    ? ListView(
-                  padding: EdgeInsets.zero,
-                  physics: NeverScrollableScrollPhysics(),
-                  shrinkWrap: true,
-                  children: context
-                      .read<HomeProvider>()
-                      .reviewList
-                      .where((review) =>
-                  review.artistId != null &&
-                      review.artistId == provider.artist.id)
-                      .map((reviewItem) => Container(
-                    margin: EdgeInsets.symmetric(vertical: 1.h),
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 3.w,
-                      vertical: 1.5.h,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(1.h),
-                      border: Border.all(
-                        color:
-                        ColorsConstant.reviewBoxBorderColor,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Color.fromARGB(
-                            255,
-                            229,
-                            229,
-                            229,
+                (ref.reviews.isNotEmpty)
+                    ? SizedBox(
+                  height: 500,
+                  child: ListView.builder(
+                      itemCount: ref.reviews.length,
+                      itemBuilder: (context, index) {
+                        final String storeName = provider.salonDetails?.data.data.name ?? 'No Title';
+                        final String title = ref.reviews[index].review.title ?? 'No Title';
+                        final String date = ref.reviews[index].review.createdAt ?? 'No Date';
+                        final String discription = ref.reviews[index].review.description ?? 'No Discription';
+
+                        return Container(
+                          padding: EdgeInsets.all(4.w),
+                          margin: EdgeInsets.only(bottom: 5.w),
+                          decoration: BoxDecoration(
+                              border: Border.all(color: ColorsConstant.divider),
+                              borderRadius: BorderRadius.circular(5.sp)
                           ),
-                          spreadRadius: 0.1,
-                          blurRadius: 10,
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      crossAxisAlignment:
-                      CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Expanded(
                           child: Column(
-                            mainAxisSize: MainAxisSize.max,
-                            crossAxisAlignment:
-                            CrossAxisAlignment.start,
-                            mainAxisAlignment:
-                            MainAxisAlignment.start,
-                            children: <Widget>[
-                              Padding(
-                                padding: EdgeInsets.only(
-                                  top: 0.5.h,
-                                  bottom: 0.2.h,
-                                ),
-                                child: Column(
-                                  crossAxisAlignment:
-                                  CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Store : ${reviewItem.salonName}',
-                                      style: TextStyle(
-                                        fontSize: 10.sp,
-                                        fontWeight:
-                                        FontWeight.w500,
-                                        color: Colors.grey,
-                                      ),
-                                    ),
-                                    reviewItem.artistName != null
-                                        ? Text(
-                                      'For : ${reviewItem.artistName}',
-                                      style: TextStyle(
-                                        fontSize: 9.sp,
-                                        fontWeight:
-                                        FontWeight.w500,
-                                        color: Colors.grey,
-                                      ),
-                                    )
-                                        : SizedBox.shrink(),
-                                  ],
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "For : $storeName",
+                                style: TextStyle(
+                                    fontFamily: "Poppins",
+                                    color: const Color(0xFF8C9AAC),
+                                    fontSize: 10.sp,
+                                    fontWeight: FontWeight.w500
                                 ),
                               ),
-                              ListTile(
-                                minLeadingWidth: 0,
-                                contentPadding: EdgeInsets.zero,
-                                visualDensity:
-                                VisualDensity.compact,
-                                dense: true,
-                                leading: CircleAvatar(
-                                  backgroundImage: AssetImage(
-                                    'assets/images/salon_dummy_image.png',
-                                  ),
-                                ),
-                                title: Text.rich(
-                                  TextSpan(
-                                    text:
-                                    reviewItem.userName ?? "",
+                              SizedBox(height: 1.h,),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  CircleAvatar(backgroundColor: Colors.grey,radius: 6.w),
+                                  SizedBox(width: 1.5.h),
+                                  Column(
+                                    mainAxisAlignment: MainAxisAlignment.start,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      TextSpan(
-                                        text:
-                                        '\n${DateFormat("dd MMMM y").format(reviewItem.createdAt ?? DateTime.now())}',
+                                      Text(
+                                        title,
                                         style: TextStyle(
-                                          fontWeight:
-                                          FontWeight.w500,
-                                          fontSize: 10.sp,
-                                          color: Colors.grey,
+                                            fontFamily: "Poppins",
+                                            color: const Color(0xFF373737),
+                                            fontSize: 12.sp,
+                                            fontWeight: FontWeight.w600
+                                        ),
+                                      ),
+                                      Text(
+                                        date,
+                                        style: TextStyle(
+                                            fontFamily: "Poppins",
+                                            color: const Color(0xFF8C9AAC),
+                                            fontSize: 10.sp,
+                                            fontWeight: FontWeight.w400
                                         ),
                                       ),
                                     ],
-                                    style: TextStyle(
-                                      fontSize: 12.sp,
-                                      fontWeight: FontWeight.w500,
-                                    ),
+                                  )
+                                ],
+                              ),
+                              SizedBox(height: 2.h),
+                              SizedBox(
+                                //height: 10.h,
+                                child: Text(
+                                  discription,
+                                  softWrap: true,
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 2,
+                                  style: TextStyle(
+                                      fontFamily: "Poppins",
+                                      color: const Color(0xFF8C9AAC),
+                                      fontSize: 10.sp,
+                                      fontWeight: FontWeight.w400
                                   ),
                                 ),
                               ),
-                              Padding(
-                                padding: EdgeInsets.only(
-                                  top: 1.h,
-                                  bottom: 1.h,
-                                ),
-                                child: Row(
-                                  children: <Widget>[
-                                    ...List.generate(
-                                      5,
-                                          (i) => SvgPicture.asset(
-                                        ImagePathConstant
-                                            .starIcon,
-                                        color: i <
-                                            (int.parse(reviewItem
-                                                .rating
-                                                ?.round()
-                                                .toString() ??
-                                                "0"))
-                                            ? ColorsConstant
-                                            .appColor
-                                            : ColorsConstant
-                                            .greyStar,
-                                      ),
+                              SizedBox(height: 2.h,),
+                              Material(
+                                child: InkWell(
+                                  onTap: (){},
+                                  child: Text(
+                                    "View More",
+                                    style: TextStyle(
+                                        fontFamily: "Poppins",
+                                        color: ColorsConstant.appColor,
+                                        fontSize: 10.sp,
+                                        fontWeight: FontWeight.w500
                                     ),
-                                  ],
-                                ),
-                              ),
-                              ReadMoreText(
-                                reviewItem.comment ?? "",
-                                style: TextStyle(
-                                  fontSize: 10.sp,
-                                ),
-                                trimCollapsedText: "\nView more",
-                                trimExpandedText: "\nView less",
-                                trimLines: 2,
-                                trimMode: TrimMode.Line,
-                                moreStyle: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  color: ColorsConstant.appColor,
-                                ),
-                                lessStyle: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  color: ColorsConstant.appColor,
+                                  ),
                                 ),
                               )
+
                             ],
                           ),
-                        ),
-                      ],
-                    ),
-                  ))
-                      .toList(),
-                )
-                    : SizedBox(),
+                        );
+                      }),)
+                    : const SizedBox(),
               ],
             ),
           ),
