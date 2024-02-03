@@ -39,6 +39,18 @@ class ExploreProvider with ChangeNotifier {
   bool _applyServiceFilter = false;
   Services _appliedServiceFilter = Services.HAIR;
 
+
+  int _selectedDiscountIndex = -1;
+  int get selectedDiscountIndex => _selectedDiscountIndex;
+
+  int _selectedRatingIndex = -1;
+  int get selectedRatingIndex => _selectedRatingIndex;
+
+  set setSelectedRatingIndex(int i){
+    _selectedRatingIndex = i;
+    notifyListeners();
+  }
+
   //============= GETTERS =============//
   TextEditingController get salonSearchController => _salonSearchController;
   TextEditingController get artistSearchController => _artistSearchController;

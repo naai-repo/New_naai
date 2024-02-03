@@ -122,9 +122,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 Stack(
                                   alignment: Alignment.bottomRight,
                                   children: [
-                                    CircleAvatar(
-                                      radius: 7.h,
-                                     // backgroundImage: NetworkImage(provider.imageUrl)
+                                    ClipOval(
+                                      child: CircleAvatar(
+                                        radius: 7.h,
+                                        backgroundImage: AssetImage('assets/images/dummy_user.jpg'),
+                                      ),
                                     ),
                                     GestureDetector(
                                       onTap: () {

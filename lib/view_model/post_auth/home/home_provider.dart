@@ -66,6 +66,7 @@ class HomeProvider with ChangeNotifier {
   List<SalonData> _salonList = [];
   List<SalonData2> _salonList2 = [];
   List<ArtistData> _artistList2 = [];
+  List<SalonData2> get salonData2 => _salonList2;
   List<Artist> _artistList = [];
   List<Review> _allReviewList = [];
   List<ServiceDetail> _services = [];
@@ -89,6 +90,18 @@ String ?  _addressText;
 
   List<CurrentBooking> _upcomingBooking = [];
   List<PrevBooking> _previousBooking = [];
+
+  //==== FilterSalons Raing & Discounts===/
+  int _selectedDiscountIndex = -1;
+  int get selectedDiscountIndex => _selectedDiscountIndex;
+
+  int _selectedRatingIndex = -1;
+  int get selectedRatingIndex => _selectedRatingIndex;
+
+  set setSelectedRatingIndex(int i){
+    _selectedRatingIndex = i;
+    notifyListeners();
+  }
 
   //============= GETTERS =============//
   List<SalonData> get salonList => _salonList;
@@ -123,23 +136,35 @@ String ?  _addressText;
 
   String formatAppointmentDate(DateTime bookingDate) {
     DateTime currentDate = DateTime.now();
-    Duration difference = currentDate.difference(bookingDate);
+    Duration difference = bookingDate.difference(currentDate);
 
     if (difference.inDays == 0) {
       // Same day
       return "Today";
-    } else if (difference.inDays == 1) {
-      // Yesterday
-      return "1 day ago";
-    } else if (difference.inDays < 7) {
-      // Within the last week
-      return "${difference.inDays} days ago";
+    } else if (difference.isNegative) {
+      // In the past
+      if (difference.inDays == -1) {
+        return "Yesterday";
+      } else if (difference.inDays == -1) {
+        return "${-difference.inDays} days ago";
+      } else {
+        int weeks = (-difference.inDays / 7).ceil();
+        return "${weeks} ${weeks == 1 ? 'week' : 'weeks'} ago";
+      }
     } else {
-      // More than a week ago
-      int weeks = (difference.inDays / 7).floor();
-      return "${weeks} ${weeks == 1 ? 'week' : 'weeks'} ago";
+      // In the future
+      if (difference.inDays == 1) {
+        return "Tomorrow";
+      } else if (difference.inDays < 7) {
+        return "${difference.inDays} days later";
+      } else {
+        int weeks = (difference.inDays / 7).ceil();
+        return "${weeks} ${weeks == 1 ? 'week' : 'weeks'} later";
+      }
     }
   }
+
+
 
   void checkUserIdInSharedPref(String uid) async {
     String storedUid = await SharedPreferenceHelper.getUserId();
@@ -326,6 +351,65 @@ String ?  _addressText;
       await handleFallbackLocationForMen(context);
     }
     Loader.hideLoader(context);
+  }
+  Future<void> filterSalonListByDiscount(
+      BuildContext context, int discount, int idx) async {
+
+    Loader.showLoader(context);
+    try {
+      _selectedDiscountIndex = idx;
+      Position currentLocation = await Geolocator.getCurrentPosition();
+      print('Current Location: ${currentLocation.longitude}, ${currentLocation
+          .latitude}');
+      userAddress =
+      await getAddress(currentLocation.latitude, currentLocation.longitude);
+      print('Addressssss: $userAddress');
+      await Future.wait([
+        getSalonFilterListByDiscount(coords: [currentLocation.longitude, currentLocation.latitude],discount: discount),
+      ]);
+
+      if(selectedRatingIndex == 0) salonData2.sort((a, b) => a.rating.toInt() - b.rating.toInt());
+      if(selectedRatingIndex == 1) salonData2.sort((a, b) => b.rating.toInt() - a.rating.toInt());
+      print("DisCount Filter Sallon Size : ${salonData2.length}");
+    } catch (e) {
+      Loader.hideLoader(context);
+      print("Error getting location: $e");
+      await handleFallbackLocationForMen(context);
+    }
+    notifyListeners();
+
+    Loader.hideLoader(context);
+
+  }
+
+  Future<void> getSalonFilterListByDiscount(
+      {required List<double> coords, required int discount}) async {
+    final apiUrl = UrlConstants.discountAndRatingForMen + discount.toString();
+
+    final Map<String, dynamic> requestData = {
+      "location": {"type": "Point", "coordinates": coords},
+    };
+
+    try {
+      final response = await dio.post(
+        apiUrl,
+        options: Options(headers: {
+          'Content-Type': 'application/json; charset=UTF-8',
+        }),
+        data: requestData,
+      );
+      if (response.statusCode == 200) {
+        salonList2 = SalonApiResponse.fromJson(response.data).data;
+        print("Filters Discounts Salons: ${response.data}");
+      } else {
+        // Handle error response for top artists
+        print("Failed to fetch Filters Discounts Salons");
+        print(response.data);
+      }
+    } catch (e) {
+      // Handle Dio errors for top artists
+      print("Dio error for Filter by Discount salons: $e");
+    }
   }
 
   bool _locationPopupShown = false;
@@ -851,15 +935,15 @@ String ?  _addressText;
   }
 
 
-  Future<void> getAppointments({int index = 0}) async {
+  Future<void> getAppointments() async {
     final String apiUrl = 'http://13.235.49.214:8800/appointments/user/bookings';
-    String? bearerToken =  await AccessTokenManager.getAccessToken();
+    String? bearerToken = await AccessTokenManager.getAccessToken();
 
     try {
       Dio dio = Dio();
 
       dio.options.headers['Authorization'] = 'Bearer $bearerToken';
-print('token is :- $bearerToken');
+      print('token is :- $bearerToken');
       Response response = await dio.get(apiUrl);
 
       if (response.statusCode == 200) {
@@ -876,202 +960,168 @@ print('token is :- $bearerToken');
         _upcomingBooking.addAll(userBookings.currentBookings);
         _upcomingBooking.addAll(userBookings.comingBookings);
 
+        // Update current bookings
         for (var booking in userBookings.currentBookings) {
           var salonId = booking.salonId;
-
           var salonResponse = await Dio().get('http://13.235.49.214:8800/partner/salon/single/$salonId');
 
-          // Check if the salonResponse is not null and contains the expected data
           if (salonResponse.statusCode == 200 && salonResponse.data != null) {
             dynamic apiResponse = ApiResponse.fromJson(salonResponse.data).data.data.name;
-
-            // Set the salonName property
             booking.salonName = apiResponse;
             booking.setSalonName(apiResponse);
+
             print('Salon name for booking ${booking.id}: ${booking.salonName}');
           } else {
-            // Handle the case where the response is null or doesn't contain the expected data
             print('Error fetching salon name for booking ${booking.id}');
           }
-        }
 
-        for (var booking in userBookings.currentBookings[index].artistServiceMap) {
-          var artistId = booking.artistId;
-          print("artist id for booking :- $artistId");
-          var artistResponse = await Dio().get('http://13.235.49.214:8800/partner/artist/single/$artistId');
+          for (var artistBooking in booking.artistServiceMap) {
+            var artistId = artistBooking.artistId;
+            print("artist id for booking :- $artistId");
+            var artistResponse = await Dio().get('http://13.235.49.214:8800/partner/artist/single/$artistId');
 
-          if ( artistResponse.statusCode == 200 &&  artistResponse.data != null) {
-            dynamic apiResponse = ArtistResponse.fromJson( artistResponse.data).data.name;
+            if (artistResponse.statusCode == 200 && artistResponse.data != null) {
+              dynamic apiResponse = ArtistResponse.fromJson(artistResponse.data).data.name;
+              artistBooking.artistName = apiResponse;
+              artistBooking.setartistName(apiResponse);
+              print('artist name for current booking ${booking.id}: $apiResponse');
+            } else {
+              print('Error fetching artist name for booking ${booking.id}');
+            }
 
-            // Set the salonName property
-            booking.artistName = apiResponse;
-            booking.setartistName(apiResponse);
-            print('artist name for previous booking ${booking.id}: $apiResponse');
-          } else {
-            // Handle the case where the response is null or doesn't contain the expected data
-            print('Error fetching artist name for booking ${booking.id}');
+            var serviceId = artistBooking.serviceId;
+            print("service Id for booking :- $serviceId");
+            var serviceResponse = await Dio().get('http://13.235.49.214:8800/partner/service/single/$serviceId');
+
+            if (serviceResponse.statusCode == 200 && serviceResponse.data != null) {
+              dynamic apiResponse = ServiceResponse.fromJson(serviceResponse.data).data.serviceTitle;
+              artistBooking.serviceName = apiResponse;
+              artistBooking.setserviceName(apiResponse);
+              print('service name for current booking ${booking.id}: $apiResponse');
+            } else {
+              print('Error fetching service name for booking ${booking.id}');
+            }
           }
         }
 
-        for (var booking in userBookings.currentBookings[index].artistServiceMap) {
-          var serviceId = booking.serviceId;
-          print("service Id for booking :- $serviceId");
-          var serviceResponse = await Dio().get('http://13.235.49.214:8800/partner/service/single/$serviceId');
-
-          if ( serviceResponse.statusCode == 200 &&  serviceResponse.data != null) {
-            dynamic apiResponse = ServiceResponse.fromJson(serviceResponse.data).data.serviceTitle;
-
-            // Set the salonName property
-            booking.serviceName = apiResponse;
-            booking.setserviceName(apiResponse);
-            print('service name for previous booking ${booking.id}: $apiResponse');
-          } else {
-            // Handle the case where the response is null or doesn't contain the expected data
-            print('Error fetching artist name for booking ${booking.id}');
-          }
-        }
-
+        // Update previous bookings
         for (var booking in userBookings.prevBooking) {
           var salonId = booking.salonId;
-
           var salonResponse = await Dio().get('http://13.235.49.214:8800/partner/salon/single/$salonId');
 
-          // Check if the salonResponse is not null and contains the expected data
           if (salonResponse.statusCode == 200 && salonResponse.data != null) {
             dynamic apiResponse = ApiResponse.fromJson(salonResponse.data).data.data.name;
-
-            // Set the salonName property
             booking.salonName = apiResponse;
             booking.setSalonName(apiResponse);
             print('Salon name for previous booking ${booking.id}: $apiResponse');
           } else {
-            // Handle the case where the response is null or doesn't contain the expected data
             print('Error fetching salon name for booking ${booking.id}');
           }
-        }
 
-        for (var booking in userBookings.prevBooking[index].artistServiceMap) {
-          var artistId = booking.artistId;
-          print("artist id for booking :- $artistId");
-          var artistResponse = await Dio().get('http://13.235.49.214:8800/partner/artist/single/$artistId');
+          for (var artistBooking in booking.artistServiceMap) {
+            var artistId = artistBooking.artistId;
+            print("artist id for booking :- $artistId");
+            var artistResponse = await Dio().get('http://13.235.49.214:8800/partner/artist/single/$artistId');
 
-          if ( artistResponse.statusCode == 200 &&  artistResponse.data != null) {
-            dynamic apiResponse = ArtistResponse.fromJson( artistResponse.data).data.name;
+            if (artistResponse.statusCode == 200 && artistResponse.data != null) {
+              dynamic apiResponse = ArtistResponse.fromJson(artistResponse.data).data.name;
+              artistBooking.artistName = apiResponse;
+              artistBooking.setartistName(apiResponse);
+              print('artist name for previous booking ${booking.id}: $apiResponse');
+            } else {
+              print('Error fetching artist name for booking ${booking.id}');
+            }
 
-            // Set the salonName property
-            booking.artistName = apiResponse;
-            booking.setartistName(apiResponse);
-            print('artist name for previous booking ${booking.id}: $apiResponse');
-          } else {
-            // Handle the case where the response is null or doesn't contain the expected data
-            print('Error fetching artist name for booking ${booking.id}');
+            var serviceId = artistBooking.serviceId;
+            print("service Id for booking :- $serviceId");
+            var serviceResponse = await Dio().get('http://13.235.49.214:8800/partner/service/single/$serviceId');
+
+            if (serviceResponse.statusCode == 200 && serviceResponse.data != null) {
+              dynamic apiResponse = ServiceResponse.fromJson(serviceResponse.data).data.serviceTitle;
+              artistBooking.serviceName = apiResponse;
+              artistBooking.setserviceName(apiResponse);
+              print('service name for previous booking ${booking.id}: $apiResponse');
+            } else {
+              print('Error fetching service name for booking ${booking.id}');
+            }
           }
         }
 
-        for (var booking in userBookings.prevBooking[index].artistServiceMap) {
-          var serviceId = booking.serviceId;
-          print("service Id for booking :- $serviceId");
-          var serviceResponse = await Dio().get('http://13.235.49.214:8800/partner/service/single/$serviceId');
-
-          if ( serviceResponse.statusCode == 200 &&  serviceResponse.data != null) {
-            dynamic apiResponse = ServiceResponse.fromJson(serviceResponse.data).data.serviceTitle;
-
-            // Set the salonName property
-            booking.serviceName = apiResponse;
-            booking.setserviceName(apiResponse);
-            print('service name for previous booking ${booking.id}: $apiResponse');
-          } else {
-            // Handle the case where the response is null or doesn't contain the expected data
-            print('Error fetching artist name for booking ${booking.id}');
-          }
-        }
-
-
+        // Update coming bookings
         for (var booking in userBookings.comingBookings) {
           var salonId = booking.salonId;
-
           var salonResponse = await Dio().get('http://13.235.49.214:8800/partner/salon/single/$salonId');
 
-          // Check if the salonResponse is not null and contains the expected data
           if (salonResponse.statusCode == 200 && salonResponse.data != null) {
             dynamic apiResponse = ApiResponse.fromJson(salonResponse.data).data.data.name;
-
-            // Set the salonName property
             booking.salonName = apiResponse;
             booking.setSalonName(apiResponse);
-            print('Salon name for previous booking ${booking.id}: $apiResponse');
+            print('Salon name for coming booking ${booking.id}: $apiResponse');
           } else {
-            // Handle the case where the response is null or doesn't contain the expected data
             print('Error fetching salon name for booking ${booking.id}');
           }
-        }
 
-        for (var booking in userBookings.comingBookings[index].artistServiceMap) {
-          var artistId = booking.artistId;
-          print("artist id for booking :- $artistId");
-          var artistResponse = await Dio().get('http://13.235.49.214:8800/partner/artist/single/$artistId');
+          for (var artistBooking in booking.artistServiceMap) {
+            var artistId = artistBooking.artistId;
+            print("artist id for booking :- $artistId");
+            var artistResponse = await Dio().get('http://13.235.49.214:8800/partner/artist/single/$artistId');
 
-          if ( artistResponse.statusCode == 200 &&  artistResponse.data != null) {
-            dynamic apiResponse = ArtistResponse.fromJson( artistResponse.data).data.name;
+            if (artistResponse.statusCode == 200 && artistResponse.data != null) {
+              dynamic apiResponse = ArtistResponse.fromJson(artistResponse.data).data.name;
+              artistBooking.artistName = apiResponse;
+              artistBooking.setartistName(apiResponse);
+              print('artist name for coming booking ${booking.id}: $apiResponse');
+            } else {
+              print('Error fetching artist name for booking ${booking.id}');
+            }
 
-            // Set the salonName property
-            booking.artistName = apiResponse;
-            booking.setartistName(apiResponse);
-            print('artist name for previous booking ${booking.id}: $apiResponse');
-          } else {
-            // Handle the case where the response is null or doesn't contain the expected data
-            print('Error fetching artist name for booking ${booking.id}');
+            var serviceId = artistBooking.serviceId;
+            print("service Id for booking :- $serviceId");
+            var serviceResponse = await Dio().get('http://13.235.49.214:8800/partner/service/single/$serviceId');
+
+            if (serviceResponse.statusCode == 200 && serviceResponse.data != null) {
+              dynamic apiResponse = ServiceResponse.fromJson(serviceResponse.data).data.serviceTitle;
+              artistBooking.serviceName = apiResponse;
+              artistBooking.setserviceName(apiResponse);
+              print('service name for coming booking ${booking.id}: $apiResponse');
+            } else {
+              print('Error fetching service name for booking ${booking.id}');
+            }
           }
         }
 
-        for (var booking in userBookings.comingBookings[index].artistServiceMap) {
-          var serviceId = booking.serviceId;
-          print("service Id for booking :- $serviceId");
-          var serviceResponse = await Dio().get('http://13.235.49.214:8800/partner/service/single/$serviceId');
-
-          if ( serviceResponse.statusCode == 200 &&  serviceResponse.data != null) {
-            dynamic apiResponse = ServiceResponse.fromJson(serviceResponse.data).data.serviceTitle;
-
-            // Set the salonName property
-            booking.serviceName = apiResponse;
-            booking.setserviceName(apiResponse);
-            print('service name for previous booking ${booking.id}: $apiResponse');
-          } else {
-            // Handle the case where the response is null or doesn't contain the expected data
-            print('Error fetching artist name for booking ${booking.id}');
-          }
-        }
         // Accessing the parsed data
         print('User ID: ${userBookings.userId}');
         print('Current Bookings:');
         for (var booking in userBookings.currentBookings) {
           print('${booking.id} - ${booking.bookingDate}');
-          print('timeslot  for current start :- ${booking.timeSlot.start}');
           print('timeslot for current start :- ${booking.timeSlot.start}');
+          print('timeslot for current end :- ${booking.timeSlot.end}');
         }
 
         print('Previous Bookings:');
         for (var booking in userBookings.prevBooking) {
           print('${booking.id} - ${booking.bookingDate}');
-          print('timeslot  for prev start :- ${booking.timeSlot.start}');
           print('timeslot for prev start :- ${booking.timeSlot.start}');
+          print('timeslot for prev end :- ${booking.timeSlot.end}');
         }
 
         print('Coming Bookings:');
         for (var booking in userBookings.comingBookings) {
           print('${booking.id} - ${booking.bookingDate}');
-          print('timeslot  for coming start :- ${booking.timeSlot.start}');
           print('timeslot for coming start :- ${booking.timeSlot.start}');
+          print('timeslot for coming end :- ${booking.timeSlot.end}');
         }
       } else {
         // Handle error
-        print('Error issssssssss: ${response.statusCode}, ${response.data}');
+        print('Error: ${response.statusCode}, ${response.data}');
       }
     } catch (error) {
       // Handle DioError or other exceptions
-      print('Error issssssssssss: $error');
+      print('Error: $error');
     }
   }
+
 
   Future<void> initHome2(BuildContext context) async {
     var _serviceEnabled = await _mapLocation.serviceEnabled();

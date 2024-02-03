@@ -18,6 +18,7 @@ import 'package:open_file/open_file.dart' as open_file;
 import 'package:path_provider/path_provider.dart' as path_provider;
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 
+import '../../../models/allbooking.dart';
 import '../../../utils/components/add_review_component.dart';
 
 //Local imports
@@ -752,11 +753,11 @@ class AppointmentDetails extends StatelessWidget {
 
 
 class AppointmentDetails2 extends StatelessWidget {
-  final int index;
+  final CurrentBooking booking;
 
   const AppointmentDetails2({
     super.key,
-    required this.index,
+    required this.booking,
   });
 
   @override
@@ -799,23 +800,23 @@ class AppointmentDetails2 extends StatelessWidget {
                   horizontal: 3.w,
                 ),
                 decoration: BoxDecoration(
-                  color: isBookingDatePassed(provider.upcomingBooking[index].bookingDate)
-                      ? const Color(0xFFF6DE86)
-                      : const Color(0xFF52D185).withOpacity(0.08),
+                  color: isBookingDatePassed(booking.bookingDate)
+                      ? const Color(0xFF52D185).withOpacity(0.08)
+                      :const Color(0xFFF6DE86)
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: <Widget>[
                     Text(
-                      isBookingDatePassed(provider.upcomingBooking[index].bookingDate)
-                          ? StringConstant.upcoming.toUpperCase()
-                          : StringConstant.completed.toUpperCase(),
+                      isBookingDatePassed(booking.bookingDate)
+                          ? StringConstant.completed.toUpperCase()
+                          : StringConstant.upcoming.toUpperCase(),
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 10.sp,
-                        color: isBookingDatePassed(provider.upcomingBooking[index].bookingDate)
-                            ? ColorsConstant.textDark
-                            : const Color(0xFF52D185),
+                        color: isBookingDatePassed(booking.bookingDate)
+                            ? const Color(0xFF52D185)
+                            : ColorsConstant.textDark,
                       ),
                     ),
                     Text.rich(
@@ -825,7 +826,7 @@ class AppointmentDetails2 extends StatelessWidget {
                               text: '${StringConstant.booked}: ',
                               style: StyleConstant.textLight11sp400Style),
                           TextSpan(
-                            text: provider.formatAppointmentDate(provider.upcomingBooking[index].bookingDate),
+                            text: provider.formatAppointmentDate(booking.bookingDate),
                             style: TextStyle(
                               fontWeight: FontWeight.w600,
                               fontSize: 10.sp,
@@ -860,7 +861,7 @@ class AppointmentDetails2 extends StatelessWidget {
                       child: Row(
                         children: [
                           Text(
-                            '${provider.upcomingBooking[index].salonName}',
+                            '${booking.salonName}',
                             style: StyleConstant.textDark12sp600Style,
                           ),
                           Spacer(),
@@ -885,7 +886,7 @@ class AppointmentDetails2 extends StatelessWidget {
                           Column(
                             children:[
                               Text(
-                                '${provider.upcomingBooking[index].artistServiceMap.first.artistName}',
+                                '${booking.artistServiceMap.first.artistName}',
                                 style: StyleConstant.textDark12sp600Style,
                               ),
                             ],
@@ -946,7 +947,7 @@ class AppointmentDetails2 extends StatelessWidget {
                     textInRow(
                       textOne: StringConstant.subtotal,
                       textTwo:
-                      'Rs ${provider.upcomingBooking[index].paymentStatus}',
+                      'Rs ${booking.paymentStatus}',
                     ),
                   ],
                 ),
@@ -957,7 +958,7 @@ class AppointmentDetails2 extends StatelessWidget {
         bottomNavigationBar: Padding(
           padding: EdgeInsets.symmetric(horizontal: 4.w),
           child: Visibility(
-            visible: provider.upcomingBooking[index].paymentStatus.endsWith("pending"),
+            visible: booking.paymentStatus.endsWith("pending"),
             replacement: Padding(
               padding: EdgeInsets.only(bottom: 1.h),
               child: RedButtonWithText(
@@ -1007,7 +1008,7 @@ class AppointmentDetails2 extends StatelessWidget {
     return currentDate.isAfter(bookingDate);
   }
 
-  String formatBookingDate(DateTime bookingDate) {
+  String formatAppointmentDate(DateTime bookingDate) {
     DateTime currentDate = DateTime.now();
     Duration difference = bookingDate.difference(currentDate);
 
@@ -1022,6 +1023,7 @@ class AppointmentDetails2 extends StatelessWidget {
       return "${weeks} ${weeks == 1 ? 'week' : 'weeks'} later";
     }
   }
+
 
   void reviewPopUp(BuildContext context) async {
     int selectedStarIndex = -1;
@@ -1325,7 +1327,7 @@ class AppointmentDetails2 extends StatelessWidget {
                   child: Row(
                     children: [
                       Text(
-                        '${provider.previousBooking[index].salonName}',
+                        '${booking.salonName}',
                         style: StyleConstant.textDark12sp600Style,
                       ),
                       Spacer(),
@@ -1348,7 +1350,7 @@ class AppointmentDetails2 extends StatelessWidget {
                   child: Row(
                     children: [
                       Text(
-                        '${provider.previousBooking[index].artistServiceMap.first.artistName}',
+                        '${booking.artistServiceMap.first.artistName}',
                         style: StyleConstant.textDark12sp600Style,
                       ),
                       Spacer(),
@@ -1407,7 +1409,7 @@ class AppointmentDetails2 extends StatelessWidget {
                   ),
                   SizedBox(height: 0.5.h),
                   Text(
-                    '${provider.upcomingBooking[index].artistServiceMap.first.artistName}',
+                    '${booking.artistServiceMap.first.artistName}',
                     style: StyleConstant.textDark12sp600Style,
                   ),
                   SizedBox(height: 1.5.h),
@@ -1420,7 +1422,7 @@ class AppointmentDetails2 extends StatelessWidget {
                     TextSpan(
                       children: <InlineSpan>[
                         TextSpan(
-                          text: provider.formatAppointmentDate(provider.upcomingBooking[index].bookingDate),
+                          text: provider.formatAppointmentDate(booking.bookingDate),
                           style: StyleConstant.textDark12sp600Style,
                         ),
                         TextSpan(
@@ -1431,7 +1433,7 @@ class AppointmentDetails2 extends StatelessWidget {
                           ),
                         ),
                         TextSpan(
-                          text: provider.upcomingBooking[index].timeSlot.start,
+                          text: booking.timeSlot.start,
                           style: StyleConstant.textDark12sp600Style,
                         ),
                       ],
@@ -1452,7 +1454,7 @@ class AppointmentDetails2 extends StatelessWidget {
                       physics: NeverScrollableScrollPhysics(),
                       scrollDirection: Axis.horizontal,
                       itemBuilder: (context, index2) => Text(
-                        provider.upcomingBooking[index].artistServiceMap.last.serviceName![index2],
+                        booking.artistServiceMap.last.serviceName![index2],
                         style: TextStyle(
                           fontWeight: FontWeight.w500,
                           fontSize: 11.sp,
@@ -1460,7 +1462,7 @@ class AppointmentDetails2 extends StatelessWidget {
                         ),
                       ),
                       separatorBuilder: (context, index) => Text(''),
-                      itemCount: provider.upcomingBooking[index]
+                      itemCount: booking
                           .artistServiceMap.last.serviceName?.length ??
                           0,
                     ),

@@ -69,6 +69,9 @@ class MyApp extends StatelessWidget {
           create: (context) => ProfileProvider(),
         ),
         ChangeNotifierProvider(
+          create: (context) => FilterSalons(),
+        ),
+        ChangeNotifierProvider(
           create: (context) => BarberProvider(),
         ),
       ],

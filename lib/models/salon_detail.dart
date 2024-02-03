@@ -64,7 +64,7 @@ class Artist2 {
   String name;
   double rating;
   String salonId;
-  List<dynamic> services;
+  List<barberServices> services;
   int phoneNumber;
   bool availability;
   bool live;
@@ -109,9 +109,9 @@ class Artist2 {
     name: json["name"] ?? '',
     rating: (json["rating"] ?? 0).toDouble(),
     salonId: json["salonId"] ?? '',
-    services: json["services"] != null
-        ? List<dynamic>.from(json["services"].map((x) => x))
-        : [],
+    services: (json['services'] as List<dynamic>)
+        .map((service) => barberServices.fromJson(service))
+        .toList(),
     phoneNumber: json["phoneNumber"] ?? 0,
     availability: json["availability"] ?? false,
     live: json["live"] ?? false,
@@ -134,7 +134,7 @@ class Artist2 {
     "name": name,
     "rating": rating,
     "salonId": salonId,
-    "services": List<dynamic>.from(services.map((x) => x.toJson())),
+    "services": List<dynamic>.from(services.map((x) => x)),
     "phoneNumber": phoneNumber,
     "availability": availability,
     "live": live,
@@ -336,8 +336,6 @@ class ImageData2 {
   }
 }
 
-
-
 class DataTiming {
   String opening;
   String closing;
@@ -401,7 +399,25 @@ class ServicesWithSubCategory {
     "Hair color": List<dynamic>.from(hairColor.map((x) => x.toJson())),
   };
 }
+class barberServices {
+  final String serviceId;
+  final int price;
+  final String id;
 
+  barberServices({
+    required this.serviceId,
+    required this.price,
+    required this.id,
+  });
+
+  factory barberServices.fromJson(Map<String, dynamic> json) {
+    return barberServices(
+      serviceId: json['serviceId'] ?? '',
+      price: json['price'] ?? 0,
+      id: json['_id'] ?? '',
+    );
+  }
+}
 
 class ServicesWithoutSubCategory {
   String id;

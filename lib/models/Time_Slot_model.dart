@@ -44,29 +44,42 @@ class TimeSlotResponseTimeSlot {
   int key;
   bool possible;
   List<TimeSlotTimeSlot> timeSlot;
-  List<Order> order;
+  List<Order>? order;
 
   TimeSlotResponseTimeSlot({
     required this.key,
     required this.possible,
     required this.timeSlot,
-    required this.order,
+          this.order,
   });
 
-  factory TimeSlotResponseTimeSlot.fromJson(Map<String, dynamic> json) => TimeSlotResponseTimeSlot(
-    key: json["key"],
-    possible: json["possible"],
-    timeSlot: List<TimeSlotTimeSlot>.from(json["timeSlot"].map((x) => TimeSlotTimeSlot.fromJson(x))),
-    order: List<Order>.from(json["order"].map((x) => Order.fromJson(x))),
-  );
+  factory TimeSlotResponseTimeSlot.fromJson(Map<String, dynamic> json) {
+    return TimeSlotResponseTimeSlot(
+      key: json["key"],
+      possible: json["possible"],
+      timeSlot: List<TimeSlotTimeSlot>.from(
+        json["timeSlot"].map(
+              (x) => TimeSlotTimeSlot.fromJson(x),
+        ),
+      ),
+      order: json["order"] != null
+          ? List<Order>.from(
+        json["order"].map(
+              (x) => Order.fromJson(x),
+        ),
+      )
+          : null, // Check for null before mapping
+    );
+  }
 
   Map<String, dynamic> toJson() => {
     "key": key,
     "possible": possible,
     "timeSlot": List<dynamic>.from(timeSlot.map((x) => x.toJson())),
-    "order": List<dynamic>.from(order.map((x) => x.toJson())),
+    "order": order != null ? List<dynamic>.from(order!.map((x) => x.toJson())) : null,
   };
 }
+
 
 class Order {
   TimeService service;

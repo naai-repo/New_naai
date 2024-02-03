@@ -122,7 +122,7 @@ class ArtistServiceMap {
   });
 
   factory ArtistServiceMap.fromJson(Map<String, dynamic> json) => ArtistServiceMap(
-    timeSlot: TimeSlot.fromJson(json["timeSlot"]),
+    timeSlot: TimeSlot.fromJson(json['timeSlot'] ?? {}),
     artistId: json["artistId"],
     serviceId: json["serviceId"],
     id: json["_id"],
@@ -145,6 +145,7 @@ class ArtistServiceMap {
     this.serviceName = name;
   }
 }
+
 class TimeSlot {
   String start;
   String end;
@@ -155,15 +156,19 @@ class TimeSlot {
   });
 
   factory TimeSlot.fromJson(Map<String, dynamic> json) {
-    if (json["timeSlot"] == null) {
-      // Handle the case where 'timeSlot' is null (add appropriate handling logic)
+    if (json["start"] != null && json["end"] != null) {
+      return TimeSlot(
+        start: json["start"],
+        end: json["end"],
+      );
+    } else if (json["timeSlot"] != null) {
+      return TimeSlot(
+        start: json["timeSlot"]["start"] ?? "",
+        end: json["timeSlot"]["end"] ?? "",
+      );
+    } else {
       return TimeSlot(start: "10:30", end: "11:30");
     }
-
-    return TimeSlot(
-      start: (json["start"] as String) ?? "",
-      end: (json["end"] as String) ?? "",
-    );
   }
 
   Map<String, dynamic> toJson() => {
@@ -171,7 +176,6 @@ class TimeSlot {
     "end": end,
   };
 }
-
 
 class PrevBooking {
   TimeSlot timeSlot;

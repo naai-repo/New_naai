@@ -19,6 +19,7 @@ import 'package:naai/view/pre_auth/verify_otp_screen.dart';
 import 'package:naai/view/splash_screen.dart';
 import 'package:naai/utils/routing/named_routes.dart';
 
+import '../../models/allbooking.dart';
 import '../../view/post_auth/profile/profile_screen.dart';
 import '../../view/pre_auth/forget_password_screen.dart';
 
@@ -122,7 +123,8 @@ class RoutingFunctions {
         target = AppointmentDetails(index: settings.arguments as int);
         break;
       case NamedRoutes.appointmentDetailsRoute2:
-        target = AppointmentDetails2(index: settings.arguments as int);
+        CurrentBooking booking = settings.arguments as CurrentBooking;
+        target = AppointmentDetails2(booking: booking);
         break;
       case NamedRoutes.bookingHistoryRoute:
         target = BookingHistoryScreen();

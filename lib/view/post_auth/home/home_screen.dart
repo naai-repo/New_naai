@@ -28,6 +28,7 @@ import 'package:naai/view_model/post_auth/explore/explore_provider.dart';
 import 'package:naai/view_model/post_auth/home/home_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:sizer/sizer.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../models/allbooking.dart';
 import '../../../models/artist_detail.dart';
 import '../../../models/artist_model.dart';
@@ -129,7 +130,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                       itemCount: provider.upcomingBooking.length,
                                       itemBuilder: (context, index) {
                                         return Visibility(
-                                          visible:provider.upcomingBooking[index].id != null,
+                                          visible:provider.upcomingBooking[index].paymentStatus == 'pending',
                                           child: upcomingBookingCard(provider.upcomingBooking[index],index),
                                         );
                                       },
@@ -303,7 +304,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         onTap: () => Navigator.pushNamed(
           context,
           NamedRoutes.appointmentDetailsRoute2,
-          arguments: 0,
+          arguments: provider.upcomingBooking[index],
         ),
         child: Container(
           padding: EdgeInsets.all(1.5.h),
@@ -400,8 +401,23 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                               provider.upcomingBooking[index].timeSlot.end,
                               style: StyleConstant.bookingDateTimeTextStyle,
                               ),
-
                             ),
+                          SizedBox(width: 6.w),
+                          InkWell(
+                            onTap: () {
+                              /*
+                              navigateTo(
+                                geoPoint.latitude,
+                                geoPoint.longitude,
+                              );
+                              */
+                            },
+                            child: SvgPicture.asset(
+                              ImagePathConstant.blackLocationIcon,
+                              height: 4.h,
+                              color: ColorsConstant.appColor,
+                            ),
+                          ),
                         ],
                       ),
                     ],
@@ -413,6 +429,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         ),
       );
     });
+  }
+  static void navigateTo(double lat, double lng) async {
+    var uri = Uri.parse("google.navigation:q=$lat,$lng&mode=d");
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    } else {
+      throw 'Could not launch ${uri.toString()}';
+    }
   }
 
   Widget logoAndNotifications(HomeProvider provider) {

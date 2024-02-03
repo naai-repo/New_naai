@@ -1,10 +1,7 @@
-import 'dart:convert';
-import 'dart:developer';
-import 'dart:ffi';
+import 'package:collection/collection.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:naai/models/artist.dart';
 import 'package:naai/utils/colors_constant.dart';
 import 'package:naai/utils/components/curved_bordered_card.dart';
@@ -265,17 +262,20 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
                                 }
                                 if(provider.selectedTime != null) {
                                   try {
-                                    String? selectedTime = provider.selectedTime;
+                                    String? selectedTime = provider
+                                        .selectedTime;
 
                                     // Convert the selected time to minutes since midnight
                                     int selectedTimeValue =
                                         TimeOfDay
                                             .fromDateTime(
-                                            DateFormat.Hm().parse(selectedTime!))
+                                            DateFormat.Hm().parse(
+                                                selectedTime!))
                                             .hour * 60 +
                                             TimeOfDay
                                                 .fromDateTime(
-                                                DateFormat.Hm().parse(selectedTime))
+                                                DateFormat.Hm().parse(
+                                                    selectedTime))
                                                 .minute;
 
                                     // Find the time slot that contains the selected time
@@ -286,7 +286,8 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
                                         int startSlotValue =
                                             TimeOfDay
                                                 .fromDateTime(
-                                                DateFormat.Hm().parse(slot.slot[0]))
+                                                DateFormat.Hm().parse(
+                                                    slot.slot[0]))
                                                 .hour * 60 +
                                                 TimeOfDay
                                                     .fromDateTime(
@@ -296,7 +297,8 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
                                         int endSlotValue =
                                             TimeOfDay
                                                 .fromDateTime(
-                                                DateFormat.Hm().parse(slot.slot[1]))
+                                                DateFormat.Hm().parse(
+                                                    slot.slot[1]))
                                                 .hour * 60 +
                                                 TimeOfDay
                                                     .fromDateTime(
@@ -304,7 +306,8 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
                                                         slot.slot[1]))
                                                     .minute;
 
-                                        if (selectedTimeValue >= startSlotValue &&
+                                        if (selectedTimeValue >=
+                                            startSlotValue &&
                                             selectedTimeValue < endSlotValue) {
                                           selectedTimeSlot = timeSlot;
                                           break;
@@ -317,70 +320,85 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
 
                                     // Check if a valid time slot was found
                                     if (selectedTimeSlot != null) {
-                                      List<String> timeSlot = selectedTimeSlot
-                                          .timeSlot[0].slot;
+                                      // Find the selected slot using the selected time
+                                      var selectedSlot = selectedTimeSlot.timeSlot.firstWhereOrNull((slot) =>
+                                      TimeOfDay.fromDateTime(DateFormat.Hm().parse(slot.slot[0])).hour * 60 +
+                                          TimeOfDay.fromDateTime(DateFormat.Hm().parse(slot.slot[0])).minute == selectedTimeValue);
 
-                                      Map<String, dynamic> bookingRequestBody = {
-                                        "key": 1,
-                                        "timeSlot": timeSlot,
-                                        "bookingDate": DateFormat('MM-dd-yyyy')
-                                            .format(provider.selectedDate!),
-                                        "salonId": provider.timeslot!.salonId,
-                                        "timeSlots": provider.timeslot!.timeSlots
-                                            .map((ts) => ts.toJson()).toList(),
-                                      };
-                                      Loader.showLoader(context);
-                                      Dio dio = Dio();
-                                      dio.interceptors.add(LogInterceptor(
-                                          requestBody: true,
-                                          responseBody: true,
-                                          logPrint: print));
-                                      String? authToken = await AccessTokenManager
-                                          .getAccessToken();
+                                      if (selectedSlot != null) {
+                                        // Use the selected slot to get the corresponding time slot
+                                        List<String> timeSlot = selectedSlot.slot;
 
-                                      if (authToken != null) {
-                                        dio.options.headers['Authorization'] =
-                                        'Bearer $authToken';
-                                      } else {
-                                        Loader.hideLoader(context);
-                                      }
-                                      Response bookingResponse = await dio.post(
-                                        'http://13.235.49.214:8800/appointments/book',
-                                        data: bookingRequestBody,
-                                      );
-                                      print("data is :$bookingRequestBody");
-                                      Loader.hideLoader(context);
-
-                                      if (bookingResponse.statusCode == 200) {
                                         Map<String,
-                                            dynamic> responseData = bookingResponse
-                                            .data;
-                                        if (responseData['status'] == 'failed') {
-                                          // Show the error message and stop further processing
-                                          ReusableWidgets.showFlutterToast(
-                                              context, responseData['message']);
+                                            dynamic> bookingRequestBody = {
+                                          "key": 1,
+                                          "timeSlot": timeSlot,
+                                          "bookingDate": DateFormat(
+                                              'MM-dd-yyyy')
+                                              .format(provider.selectedDate!),
+                                          "salonId": provider.timeslot!.salonId,
+                                          "timeSlots": provider.timeslot!
+                                              .timeSlots
+                                              .map((ts) => ts.toJson())
+                                              .toList(),
+                                        };
+                                        Loader.showLoader(context);
+                                        Dio dio = Dio();
+                                        dio.interceptors.add(LogInterceptor(
+                                            requestBody: true,
+                                            responseBody: true,
+                                            logPrint: print));
+                                        String? authToken = await AccessTokenManager
+                                            .getAccessToken();
+
+                                        if (authToken != null) {
+                                          dio.options.headers['Authorization'] =
+                                          'Bearer $authToken';
+                                        } else {
+                                          Loader.hideLoader(context);
+                                        }
+                                        Response bookingResponse = await dio
+                                            .post(
+                                          'http://13.235.49.214:8800/appointments/book',
+                                          data: bookingRequestBody,
+                                        );
+                                        print("data is :$bookingRequestBody");
+                                        Loader.hideLoader(context);
+
+                                        if (bookingResponse.statusCode == 200) {
+                                          Map<String,
+                                              dynamic> responseData = bookingResponse
+                                              .data;
+                                          if (responseData['status'] ==
+                                              'failed') {
+                                            // Show the error message and stop further processing
+                                            ReusableWidgets.showFlutterToast(
+                                                context,
+                                                responseData['message']);
+                                            provider.setSchedulingStatus(
+                                                selectSlotFinished: false);
+                                            provider.setSchedulingStatus(
+                                                selectStaffFinished: false);
+                                            provider.setSchedulingStatus(
+                                                onSelectStaff: false);
+                                            return;
+                                          }
+                                          print(
+                                              "Appointment booked successfully!");
+                                        } else {
+                                          Loader.hideLoader(context);
+                                          print("Failed to book appointment");
+                                          print(bookingResponse.data);
                                           provider.setSchedulingStatus(
                                               selectSlotFinished: false);
                                           provider.setSchedulingStatus(
                                               selectStaffFinished: false);
                                           provider.setSchedulingStatus(
                                               onSelectStaff: false);
-                                          return;
                                         }
-                                        print("Appointment booked successfully!");
-                                      } else {
-                                        Loader.hideLoader(context);
-                                        print("Failed to book appointment");
-                                        print(bookingResponse.data);
-                                        provider.setSchedulingStatus(
-                                            selectSlotFinished: false);
-                                        provider.setSchedulingStatus(
-                                            selectStaffFinished: false);
-                                        provider.setSchedulingStatus(
-                                            onSelectStaff: false);
                                       }
                                     }
-                                  } catch (error) {
+                                  }catch (error) {
                                     Loader.hideLoader(context);
                                     // Handle booking errors
                                     print('Error during appointment booking: $error');
@@ -909,8 +927,14 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
 
   bool isTimeSlotAvailable(String element, SalonDetailsProvider provider) {
     return provider.timeslot?.timeSlots.any((timeSlot) =>
-        timeSlot.timeSlot.any((slot) => slot.slot.contains(element))) ?? false;
+        timeSlot.timeSlot.any((slot) => slot.slot[0] == element)) ?? false;
   }
+
+  TimeSlotResponseTimeSlot? getAvailableTimeSlot(String element, SalonDetailsProvider provider) {
+    return provider.timeslot?.timeSlots.firstWhereOrNull((timeSlot) =>
+        timeSlot.timeSlot.any((slot) => slot.slot[0] == element));
+  }
+
 
   Widget timeCard(String element, SalonDetailsProvider provider) {
     bool isAvailable = isTimeSlotAvailable(element, provider);
@@ -955,24 +979,6 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
         ),
       ),
     );
-  }
-  bool isTimeSlotInCategory(TimeSlotResponseTimeSlot element, String category, SalonDetailsProvider provider) {
-    // Implement your logic to check if the time slot belongs to the specified category (morning, afternoon, evening, night)
-    // Return true if in the category, false otherwise
-    // Example: return element.key == 1 && category == "Morning";
-    // Adjust this logic based on your data structure
-    switch (category) {
-      case "Morning":
-        return element.key >= 1 && element.key <= 5;
-      case "Afternoon":
-        return element.key >= 6 && element.key <= 10;
-      case "Evening":
-        return element.key >= 11 && element.key <= 14;
-      case "Night":
-        return element.key >= 15 && element.key <= 18;
-      default:
-        return false;
-    }
   }
 
   Widget slotSelectionWidget() {
@@ -1101,22 +1107,37 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
 
                                         if (response.statusCode == 200) {
                                           try {
-                                            // Check if the response data is a string indicating an error
-                                            if (response.data is String) {
-                                              // Handle the case where the artist ID is not valid
-                                              print(
-                                                  "Artist ID is not valid: ${response
-                                                      .data}");
-                                              // TODO: Handle this scenario appropriately
-                                            } else {
+                                            dynamic responseData = response.data;
+
+                                            if (responseData is String) {
+                                              // Handle the case where the response is a string (possible error message)
+                                              if (responseData == "0000000000000000") {
+                                                // Handle the case where artist ID is '0000000000000000'
+                                                print("Artist ID is '0000000000000000'");
+                                                // TODO: Handle this scenario appropriately
+                                              } else {
+                                                print("Error message: $responseData");
+                                                // TODO: Handle other string response scenarios appropriately
+                                              }
+                                            } else if (responseData is Map<String, dynamic>) {
                                               // Parse the response as TimeSlotResponse
-                                              TimeSlotResponse timeSlotResponse = TimeSlotResponse
-                                                  .fromJson(response.data);
+                                              TimeSlotResponse timeSlotResponse = TimeSlotResponse.fromJson(responseData);
                                               provider.setTimeSlot(timeSlotResponse);
+                                            } else if (responseData is List) {
+                                              // Handle the case where responseData is a List (array of time slots)
+                                              // You may need to iterate through the list and extract necessary information
+                                              for (var timeSlotData in responseData) {
+                                                // Assuming TimeSlotResponseTimeSlot.fromJson is the appropriate method to parse a single time slot
+                                                TimeSlotResponseTimeSlot timeSlot = TimeSlotResponseTimeSlot.fromJson(timeSlotData);
+                                                // Process time slot data as needed
+                                              }
+                                            } else {
+                                              // Handle unexpected response format
+                                              print("Unexpected response format: $responseData");
+                                              // TODO: Handle this scenario appropriately
                                             }
                                           } catch (error) {
-                                            print(
-                                                'Error parsing response: $error');
+                                            print('Error parsing response: $error');
                                             // TODO: Handle errors appropriately
                                           }
                                         } else {
@@ -1124,6 +1145,7 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
                                           print(response.data);
                                           // TODO: Handle errors appropriately
                                         }
+
                                       }catch (error) {
                                         print(
                                             'Error parsing response: $error');
@@ -1555,7 +1577,7 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
                                           Row(
                                             children: <Widget>[
                                               SvgPicture.asset(
-                                                element.targetGender == Gender.MEN
+                                                element.targetGender == 'male'
                                                     ? ImagePathConstant.manIcon
                                                     : ImagePathConstant.womanIcon,
                                                 height: 3.h,
@@ -2252,17 +2274,20 @@ class _CreateBookingScreen2State extends State<CreateBookingScreen2> {
                           }
                           if(provider.selectedTime != null) {
                             try {
-                              String? selectedTime = provider.selectedTime;
+                              String? selectedTime = provider
+                                  .selectedTime;
 
                               // Convert the selected time to minutes since midnight
                               int selectedTimeValue =
                                   TimeOfDay
                                       .fromDateTime(
-                                      DateFormat.Hm().parse(selectedTime!))
+                                      DateFormat.Hm().parse(
+                                          selectedTime!))
                                       .hour * 60 +
                                       TimeOfDay
                                           .fromDateTime(
-                                          DateFormat.Hm().parse(selectedTime))
+                                          DateFormat.Hm().parse(
+                                              selectedTime))
                                           .minute;
 
                               // Find the time slot that contains the selected time
@@ -2273,7 +2298,8 @@ class _CreateBookingScreen2State extends State<CreateBookingScreen2> {
                                   int startSlotValue =
                                       TimeOfDay
                                           .fromDateTime(
-                                          DateFormat.Hm().parse(slot.slot[0]))
+                                          DateFormat.Hm().parse(
+                                              slot.slot[0]))
                                           .hour * 60 +
                                           TimeOfDay
                                               .fromDateTime(
@@ -2283,7 +2309,8 @@ class _CreateBookingScreen2State extends State<CreateBookingScreen2> {
                                   int endSlotValue =
                                       TimeOfDay
                                           .fromDateTime(
-                                          DateFormat.Hm().parse(slot.slot[1]))
+                                          DateFormat.Hm().parse(
+                                              slot.slot[1]))
                                           .hour * 60 +
                                           TimeOfDay
                                               .fromDateTime(
@@ -2291,7 +2318,8 @@ class _CreateBookingScreen2State extends State<CreateBookingScreen2> {
                                                   slot.slot[1]))
                                               .minute;
 
-                                  if (selectedTimeValue >= startSlotValue &&
+                                  if (selectedTimeValue >=
+                                      startSlotValue &&
                                       selectedTimeValue < endSlotValue) {
                                     selectedTimeSlot = timeSlot;
                                     break;
@@ -2304,70 +2332,85 @@ class _CreateBookingScreen2State extends State<CreateBookingScreen2> {
 
                               // Check if a valid time slot was found
                               if (selectedTimeSlot != null) {
-                                List<String> timeSlot = selectedTimeSlot
-                                    .timeSlot[0].slot;
+                                // Find the selected slot using the selected time
+                                var selectedSlot = selectedTimeSlot.timeSlot.firstWhereOrNull((slot) =>
+                                TimeOfDay.fromDateTime(DateFormat.Hm().parse(slot.slot[0])).hour * 60 +
+                                    TimeOfDay.fromDateTime(DateFormat.Hm().parse(slot.slot[0])).minute == selectedTimeValue);
 
-                                Map<String, dynamic> bookingRequestBody = {
-                                  "key": 1,
-                                  "timeSlot": timeSlot,
-                                  "bookingDate": DateFormat('MM-dd-yyyy')
-                                      .format(provider.selectedDate!),
-                                  "salonId": provider.timeslot!.salonId,
-                                  "timeSlots": provider.timeslot!.timeSlots
-                                      .map((ts) => ts.toJson()).toList(),
-                                };
-                                Loader.showLoader(context);
-                                Dio dio = Dio();
-                                dio.interceptors.add(LogInterceptor(
-                                    requestBody: true,
-                                    responseBody: true,
-                                    logPrint: print));
-                                String? authToken = await AccessTokenManager
-                                    .getAccessToken();
+                                if (selectedSlot != null) {
+                                  // Use the selected slot to get the corresponding time slot
+                                  List<String> timeSlot = selectedSlot.slot;
 
-                                if (authToken != null) {
-                                  dio.options.headers['Authorization'] =
-                                  'Bearer $authToken';
-                                } else {
-                                  Loader.hideLoader(context);
-                                }
-                                Response bookingResponse = await dio.post(
-                                  'http://13.235.49.214:8800/appointments/book',
-                                  data: bookingRequestBody,
-                                );
-                                print("data is :$bookingRequestBody");
-                                Loader.hideLoader(context);
-
-                                if (bookingResponse.statusCode == 200) {
                                   Map<String,
-                                      dynamic> responseData = bookingResponse
-                                      .data;
-                                  if (responseData['status'] == 'failed') {
-                                    // Show the error message and stop further processing
-                                    ReusableWidgets.showFlutterToast(
-                                        context, responseData['message']);
+                                      dynamic> bookingRequestBody = {
+                                    "key": 1,
+                                    "timeSlot": timeSlot,
+                                    "bookingDate": DateFormat(
+                                        'MM-dd-yyyy')
+                                        .format(provider.selectedDate!),
+                                    "salonId": provider.timeslot!.salonId,
+                                    "timeSlots": provider.timeslot!
+                                        .timeSlots
+                                        .map((ts) => ts.toJson())
+                                        .toList(),
+                                  };
+                                  Loader.showLoader(context);
+                                  Dio dio = Dio();
+                                  dio.interceptors.add(LogInterceptor(
+                                      requestBody: true,
+                                      responseBody: true,
+                                      logPrint: print));
+                                  String? authToken = await AccessTokenManager
+                                      .getAccessToken();
+
+                                  if (authToken != null) {
+                                    dio.options.headers['Authorization'] =
+                                    'Bearer $authToken';
+                                  } else {
+                                    Loader.hideLoader(context);
+                                  }
+                                  Response bookingResponse = await dio
+                                      .post(
+                                    'http://13.235.49.214:8800/appointments/book',
+                                    data: bookingRequestBody,
+                                  );
+                                  print("data is :$bookingRequestBody");
+                                  Loader.hideLoader(context);
+
+                                  if (bookingResponse.statusCode == 200) {
+                                    Map<String,
+                                        dynamic> responseData = bookingResponse
+                                        .data;
+                                    if (responseData['status'] ==
+                                        'failed') {
+                                      // Show the error message and stop further processing
+                                      ReusableWidgets.showFlutterToast(
+                                          context,
+                                          responseData['message']);
+                                      provider.setSchedulingStatus(
+                                          selectSlotFinished: false);
+                                      provider.setSchedulingStatus(
+                                          selectStaffFinished: false);
+                                      provider.setSchedulingStatus(
+                                          onSelectStaff: false);
+                                      return;
+                                    }
+                                    print(
+                                        "Appointment booked successfully!");
+                                  } else {
+                                    Loader.hideLoader(context);
+                                    print("Failed to book appointment");
+                                    print(bookingResponse.data);
                                     provider.setSchedulingStatus(
                                         selectSlotFinished: false);
                                     provider.setSchedulingStatus(
                                         selectStaffFinished: false);
                                     provider.setSchedulingStatus(
                                         onSelectStaff: false);
-                                    return;
                                   }
-                                  print("Appointment booked successfully!");
-                                } else {
-                                  Loader.hideLoader(context);
-                                  print("Failed to book appointment");
-                                  print(bookingResponse.data);
-                                  provider.setSchedulingStatus(
-                                      selectSlotFinished: false);
-                                  provider.setSchedulingStatus(
-                                      selectStaffFinished: false);
-                                  provider.setSchedulingStatus(
-                                      onSelectStaff: false);
                                 }
                               }
-                            } catch (error) {
+                            }catch (error) {
                               Loader.hideLoader(context);
                               // Handle booking errors
                               print('Error during appointment booking: $error');
@@ -2862,7 +2905,12 @@ class _CreateBookingScreen2State extends State<CreateBookingScreen2> {
 
   bool isTimeSlotAvailable(String element, SalonDetailsProvider provider) {
     return provider.timeslot?.timeSlots.any((timeSlot) =>
-        timeSlot.timeSlot.any((slot) => slot.slot.contains(element))) ?? false;
+        timeSlot.timeSlot.any((slot) => slot.slot[0] == element)) ?? false;
+  }
+
+  TimeSlotResponseTimeSlot? getAvailableTimeSlot(String element, SalonDetailsProvider provider) {
+    return provider.timeslot?.timeSlots.firstWhereOrNull((timeSlot) =>
+        timeSlot.timeSlot.any((slot) => slot.slot[0] == element));
   }
 
   Widget timeCard(String element, SalonDetailsProvider provider) {
@@ -3007,14 +3055,22 @@ class _CreateBookingScreen2State extends State<CreateBookingScreen2> {
                                       // Handle the response
                                       print(response.data);
                                       // TODO: Process the response as needed
-
                                       if (response.statusCode == 200) {
                                         TimeSlotResponse timeSlotResponse = TimeSlotResponse.fromJson(response.data);
                                         provider.setTimeSlot(timeSlotResponse);
-                                        provider.setSelectedServices(timeSlotResponse.timeSlots[0].order.map((order) => order.service).toList());
+
+                                        if (timeSlotResponse.timeSlots.isNotEmpty &&
+                                            timeSlotResponse.timeSlots[0].order != null) {
+                                          provider.setSelectedServices(
+                                            timeSlotResponse.timeSlots[0].order!
+                                                .map((order) => order.service)
+                                                .toList(),
+                                          );
+                                        }
                                         print("Time Slot Response: $timeSlotResponse");
                                         // TODO: Process the response as needed
-                                      } else {
+                                      }
+                                    else {
                                         // Handle the error
                                         print("Failed to fetch time slots");
                                         print(response.data);
@@ -3740,17 +3796,20 @@ class _CreateBookingScreen3State extends State<CreateBookingScreen3> {
                           }
                           if(provider.selectedTime != null) {
                             try {
-                              String? selectedTime = provider.selectedTime;
+                              String? selectedTime = provider
+                                  .selectedTime;
 
                               // Convert the selected time to minutes since midnight
                               int selectedTimeValue =
                                   TimeOfDay
                                       .fromDateTime(
-                                      DateFormat.Hm().parse(selectedTime!))
+                                      DateFormat.Hm().parse(
+                                          selectedTime!))
                                       .hour * 60 +
                                       TimeOfDay
                                           .fromDateTime(
-                                          DateFormat.Hm().parse(selectedTime))
+                                          DateFormat.Hm().parse(
+                                              selectedTime))
                                           .minute;
 
                               // Find the time slot that contains the selected time
@@ -3761,7 +3820,8 @@ class _CreateBookingScreen3State extends State<CreateBookingScreen3> {
                                   int startSlotValue =
                                       TimeOfDay
                                           .fromDateTime(
-                                          DateFormat.Hm().parse(slot.slot[0]))
+                                          DateFormat.Hm().parse(
+                                              slot.slot[0]))
                                           .hour * 60 +
                                           TimeOfDay
                                               .fromDateTime(
@@ -3771,7 +3831,8 @@ class _CreateBookingScreen3State extends State<CreateBookingScreen3> {
                                   int endSlotValue =
                                       TimeOfDay
                                           .fromDateTime(
-                                          DateFormat.Hm().parse(slot.slot[1]))
+                                          DateFormat.Hm().parse(
+                                              slot.slot[1]))
                                           .hour * 60 +
                                           TimeOfDay
                                               .fromDateTime(
@@ -3779,7 +3840,8 @@ class _CreateBookingScreen3State extends State<CreateBookingScreen3> {
                                                   slot.slot[1]))
                                               .minute;
 
-                                  if (selectedTimeValue >= startSlotValue &&
+                                  if (selectedTimeValue >=
+                                      startSlotValue &&
                                       selectedTimeValue < endSlotValue) {
                                     selectedTimeSlot = timeSlot;
                                     break;
@@ -3792,70 +3854,85 @@ class _CreateBookingScreen3State extends State<CreateBookingScreen3> {
 
                               // Check if a valid time slot was found
                               if (selectedTimeSlot != null) {
-                                List<String> timeSlot = selectedTimeSlot
-                                    .timeSlot[0].slot;
+                                // Find the selected slot using the selected time
+                                var selectedSlot = selectedTimeSlot.timeSlot.firstWhereOrNull((slot) =>
+                                TimeOfDay.fromDateTime(DateFormat.Hm().parse(slot.slot[0])).hour * 60 +
+                                    TimeOfDay.fromDateTime(DateFormat.Hm().parse(slot.slot[0])).minute == selectedTimeValue);
 
-                                Map<String, dynamic> bookingRequestBody = {
-                                  "key": 1,
-                                  "timeSlot": timeSlot,
-                                  "bookingDate": DateFormat('MM-dd-yyyy')
-                                      .format(provider.selectedDate!),
-                                  "salonId": provider.timeslot!.salonId,
-                                  "timeSlots": provider.timeslot!.timeSlots
-                                      .map((ts) => ts.toJson()).toList(),
-                                };
-                                Loader.showLoader(context);
-                                Dio dio = Dio();
-                                dio.interceptors.add(LogInterceptor(
-                                    requestBody: true,
-                                    responseBody: true,
-                                    logPrint: print));
-                                String? authToken = await AccessTokenManager
-                                    .getAccessToken();
+                                if (selectedSlot != null) {
+                                  // Use the selected slot to get the corresponding time slot
+                                  List<String> timeSlot = selectedSlot.slot;
 
-                                if (authToken != null) {
-                                  dio.options.headers['Authorization'] =
-                                  'Bearer $authToken';
-                                } else {
-                                  Loader.hideLoader(context);
-                                }
-                                Response bookingResponse = await dio.post(
-                                  'http://13.235.49.214:8800/appointments/book',
-                                  data: bookingRequestBody,
-                                );
-                                print("data is :$bookingRequestBody");
-                                Loader.hideLoader(context);
-
-                                if (bookingResponse.statusCode == 200) {
                                   Map<String,
-                                      dynamic> responseData = bookingResponse
-                                      .data;
-                                  if (responseData['status'] == 'failed') {
-                                    // Show the error message and stop further processing
-                                    ReusableWidgets.showFlutterToast(
-                                        context, responseData['message']);
+                                      dynamic> bookingRequestBody = {
+                                    "key": 1,
+                                    "timeSlot": timeSlot,
+                                    "bookingDate": DateFormat(
+                                        'MM-dd-yyyy')
+                                        .format(provider.selectedDate!),
+                                    "salonId": provider.timeslot!.salonId,
+                                    "timeSlots": provider.timeslot!
+                                        .timeSlots
+                                        .map((ts) => ts.toJson())
+                                        .toList(),
+                                  };
+                                  Loader.showLoader(context);
+                                  Dio dio = Dio();
+                                  dio.interceptors.add(LogInterceptor(
+                                      requestBody: true,
+                                      responseBody: true,
+                                      logPrint: print));
+                                  String? authToken = await AccessTokenManager
+                                      .getAccessToken();
+
+                                  if (authToken != null) {
+                                    dio.options.headers['Authorization'] =
+                                    'Bearer $authToken';
+                                  } else {
+                                    Loader.hideLoader(context);
+                                  }
+                                  Response bookingResponse = await dio
+                                      .post(
+                                    'http://13.235.49.214:8800/appointments/book',
+                                    data: bookingRequestBody,
+                                  );
+                                  print("data is :$bookingRequestBody");
+                                  Loader.hideLoader(context);
+
+                                  if (bookingResponse.statusCode == 200) {
+                                    Map<String,
+                                        dynamic> responseData = bookingResponse
+                                        .data;
+                                    if (responseData['status'] ==
+                                        'failed') {
+                                      // Show the error message and stop further processing
+                                      ReusableWidgets.showFlutterToast(
+                                          context,
+                                          responseData['message']);
+                                      provider.setSchedulingStatus(
+                                          selectSlotFinished: false);
+                                      provider.setSchedulingStatus(
+                                          selectStaffFinished: false);
+                                      provider.setSchedulingStatus(
+                                          onSelectStaff: false);
+                                      return;
+                                    }
+                                    print(
+                                        "Appointment booked successfully!");
+                                  } else {
+                                    Loader.hideLoader(context);
+                                    print("Failed to book appointment");
+                                    print(bookingResponse.data);
                                     provider.setSchedulingStatus(
                                         selectSlotFinished: false);
                                     provider.setSchedulingStatus(
                                         selectStaffFinished: false);
                                     provider.setSchedulingStatus(
                                         onSelectStaff: false);
-                                    return;
                                   }
-                                  print("Appointment booked successfully!");
-                                } else {
-                                  Loader.hideLoader(context);
-                                  print("Failed to book appointment");
-                                  print(bookingResponse.data);
-                                  provider.setSchedulingStatus(
-                                      selectSlotFinished: false);
-                                  provider.setSchedulingStatus(
-                                      selectStaffFinished: false);
-                                  provider.setSchedulingStatus(
-                                      onSelectStaff: false);
                                 }
                               }
-                            } catch (error) {
+                            }catch (error) {
                               Loader.hideLoader(context);
                               // Handle booking errors
                               print('Error during appointment booking: $error');
@@ -4378,7 +4455,12 @@ class _CreateBookingScreen3State extends State<CreateBookingScreen3> {
 
   bool isTimeSlotAvailable(String element, SalonDetailsProvider provider) {
     return provider.timeslot?.timeSlots.any((timeSlot) =>
-        timeSlot.timeSlot.any((slot) => slot.slot.contains(element))) ?? false;
+        timeSlot.timeSlot.any((slot) => slot.slot[0] == element)) ?? false;
+  }
+
+  TimeSlotResponseTimeSlot? getAvailableTimeSlot(String element, SalonDetailsProvider provider) {
+    return provider.timeslot?.timeSlots.firstWhereOrNull((timeSlot) =>
+        timeSlot.timeSlot.any((slot) => slot.slot[0] == element));
   }
 
   Widget timeCard(String element, SalonDetailsProvider provider) {

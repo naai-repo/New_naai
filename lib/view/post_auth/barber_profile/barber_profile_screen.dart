@@ -178,48 +178,6 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
                   ],
                   color: Colors.white,
                 ),
-                /*
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: <Widget>[
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Text(
-                          StringConstant.total,
-                          style: TextStyle(
-                            fontWeight: FontWeight.w500,
-                            fontSize: 10.sp,
-                            color: ColorsConstant.textDark,
-                          ),
-                        ),
-                        Text(
-                            'Rs. ${context
-                                .read<SalonDetailsProvider>()
-                                .totalPrice}',
-                            style: StyleConstant.textDark15sp600Style),
-                      ],
-                    ),
-                    VariableWidthCta(
-                      onTap: () =>
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  CreateBookingScreen2(
-                                    artistName: barberProvider.artist
-                                        .name ??
-                                        '', // Pass the name here
-                                  ),
-                            ),
-                          ),
-                      isActive: true,
-                      buttonText: StringConstant.confirmBooking,
-                    )
-                  ],
-                ),
-                */
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: <Widget>[
@@ -344,90 +302,119 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
                   itemBuilder: (context, index) {
                     Data? serviceDetail3 =  context.read<BarberProvider>().artistDetails;
                     Service2? serviceDetail  = context.read<BarberProvider>().artistDetails!.services[index];
-                    return GestureDetector(
-                      onTap: () {
-                        provider.toggleSelectedServicebarber(serviceDetail!);
-                      },
-                                child: Container(
-                        margin: EdgeInsets.symmetric(
-                          vertical: 1.h,
-                          horizontal: 3.w,
-                        ),
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 3.w,
-                          vertical: 1.h,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(1.h),
-                          border: Border.all(color: ColorsConstant.divider),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: <Widget>[
-                            SizedBox(
-                              width: 50.w,
-                              child: Row(
-                                children: <Widget>[
-                                  SvgPicture.asset(
-                                    serviceDetail3!.targetGender == 'male'
-                                        ? ImagePathConstant.manIcon
-                                        : ImagePathConstant.womanIcon,
-                                    height: 4.h,
-                                  ),
-                                  SizedBox(width: 2.w),
-                                  Expanded(
-                                    child: Text(
-                                      homeProvider.serviceDetailsMap[serviceDetail.serviceId]?.data.serviceTitle ?? '',
-                                      style: TextStyle(
-                                        color: ColorsConstant.textDark,
-                                        fontSize: 10.sp,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ),
-                                ],
+                    bool isAdded = provider.barbergetSelectedServices().contains(serviceDetail);
+                    String? title = homeProvider.serviceDetailsMap[serviceDetail.serviceId]?.data.serviceTitle ?? 'Expample Title';
+                    String? discription = homeProvider.serviceDetailsMap[serviceDetail.serviceId]?.data.description ?? 'Example Discription';
+                    int? totalPrice = homeProvider.serviceDetailsMap[serviceDetail.serviceId]?.data.basePrice ?? 999999;
+                    int? discount = provider.salonDetails?.data.data.discount ?? 0;
+                    String? gender = homeProvider.serviceDetailsMap[serviceDetail.serviceId]?.data.targetGender ?? '';
+                    double? discountPrice = totalPrice - (totalPrice * discount/100);
+                    // serviceDetail3.salonId;
+
+
+                    return Container(
+                      padding: EdgeInsets.all(3.w),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Text(
+                                title,
+                                style: TextStyle(
+                                  color: const Color(0xFF2B2F34),
+                                  fontSize: 12.sp,
+                                  fontFamily: 'Poppins',
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
-                            ),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: <Widget>[
-                                Text(
-                                  "Rs. ${serviceDetail.price}",
+                              SvgPicture.asset(
+                                gender == "male"
+                                    ? ImagePathConstant.manIcon
+                                    : ImagePathConstant.womanIcon,
+                                height: 3.h,
+                              )
+                            ],
+                          ),
+                          (discription.isNotEmpty) ? SizedBox(height: 1.h) : const SizedBox(),
+                          (discription.isNotEmpty) ? Text(
+                              discription,
+                              style: TextStyle(
+                                color: const Color(0xFF8B9AAC),
+                                fontSize: 10.sp,
+                                fontFamily: 'Poppins',
+                                fontWeight: FontWeight.w500,
+                              )) : const SizedBox(),
+                          SizedBox(height: 1.h,),
+                          RichText(text: TextSpan(
+                              children: [
+                                TextSpan(
+                                    text: "Rs. $discountPrice",
+                                    style: TextStyle(
+                                      color: const Color(0xFF373737),
+                                      fontSize: 13.sp,
+                                      fontFamily: 'Helvetica Neue',
+                                      fontWeight: FontWeight.w800,
+                                    )
+                                ),
+
+                                WidgetSpan(child: SizedBox(width: 2.w,)),
+                                TextSpan(
+                                    text: "Rs. $totalPrice",
+                                    style: TextStyle(
+                                      color: const Color(0xFF8B9AAC),
+                                      fontSize: 12.sp,
+                                      fontFamily: 'Helvetica Neue',
+                                      fontWeight: FontWeight.w400,
+                                      decoration: TextDecoration.lineThrough,
+                                    )
+                                ),
+                              ]
+                          )),
+                          SizedBox(height: 2.h,),
+                          TextButton(
+                              onPressed: () async {
+                                provider.toggleSelectedServicebarber(serviceDetail);
+                              },
+                              style: TextButton.styleFrom(
+                                  padding: EdgeInsets.symmetric(horizontal: 6.w,vertical: 2.w),
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10.sp),
+                                      side: BorderSide(color: const Color(0xFFAA2F4C),width: 0.2.w)
+                                  )
+                              ),
+                              child: RichText(text: TextSpan(
                                   style: TextStyle(
-                                    fontSize: 10.sp,
+                                    color: const Color(0xFFAA2F4C),
+                                    fontSize: 12.sp,
+                                    fontFamily: 'Poppins',
                                     fontWeight: FontWeight.w600,
-                                    color: ColorsConstant.textDark,
                                   ),
-                                ),
-                                Checkbox(
-                                  value: selectedServices.contains(serviceDetail),
-                                  activeColor: ColorsConstant.appColor,
-                                  side: BorderSide(
-                                    color: Color.fromARGB(255, 193, 193, 193),
-                                    width: 2,
-                                  ),
-                                  onChanged: (value) {
-                                    provider.toggleSelectedServicebarber(
-                                        serviceDetail!);
-                                  },
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
+                                  children: [
+                                    WidgetSpan(
+                                        alignment: PlaceholderAlignment.middle,
+                                        child: Icon((!isAdded) ? Icons.add : Icons.remove,
+                                          size: 14.sp,color: const Color(0xFFAA2F4C),)),
+                                    WidgetSpan(child: SizedBox(width: 2.w,)),
+                                    TextSpan(
+                                        text: (!isAdded) ? "Add" : "Remove"
+                                    )
+                                  ]
+                              ))
+                          ),
+                        ],
                       ),
                     );
                   },
-                ),
+          ),
           SizedBox(height: 3.h),
         ],
       );
     });
   }
-
   Widget serviceCategoryFilterWidget() {
     return Consumer<BarberProvider>(builder: (context, provider, child) {
       return Container(
@@ -1320,6 +1307,7 @@ class _BarberProfileScreen2State extends State<BarberProfileScreen2> {
   Widget servicesTab() {
     return Consumer<SalonDetailsProvider>(builder: (context, provider, child) {
       BarberProvider barberProvider = context.read<BarberProvider>(); // Use the same instance
+      HomeProvider homeProvider = context.read<HomeProvider>();
       Set<Service2> selectedServices = provider.barbergetSelectedServices();
       print('${barberProvider.Servicetitle}');
       return Column(
@@ -1359,7 +1347,7 @@ class _BarberProfileScreen2State extends State<BarberProfileScreen2> {
               child: Text('Nothing here :('),
             ),
           )
-              : ListView.builder(
+              :  ListView.builder(
             padding: EdgeInsets.zero,
             shrinkWrap: true,
             physics: NeverScrollableScrollPhysics(),
@@ -1367,86 +1355,111 @@ class _BarberProfileScreen2State extends State<BarberProfileScreen2> {
             context.read<BarberProvider>().artistDetails!.services.length,
             itemBuilder: (context, index) {
               Data? serviceDetail3 =  context.read<BarberProvider>().artistDetails;
-              Service2? serviceDetail  =
-              context.read<BarberProvider>().artistDetails!.services[index];
-              //  bool isAdded  = provider.salonDetails!.data.services
-              //      ?.contains(serviceDetail.id) ??
-              //   false;// Assuming paid is a boolean
+              Service2? serviceDetail  = context.read<BarberProvider>().artistDetails!.services[index];
+              bool isAdded = provider.barbergetSelectedServices().contains(serviceDetail);
+              String? title = homeProvider.serviceDetailsMap[serviceDetail.serviceId]?.data.serviceTitle ?? 'Expample Title';
+              String? discription = homeProvider.serviceDetailsMap[serviceDetail.serviceId]?.data.description ?? 'Example Discription';
+              int? totalPrice = homeProvider.serviceDetailsMap[serviceDetail.serviceId]?.data.basePrice ?? 999999;
+              int? discount = provider.salonDetails?.data.data.discount ?? 0;
+              String? gender = homeProvider.serviceDetailsMap[serviceDetail.serviceId]?.data.targetGender ?? '';
+              double? discountPrice = totalPrice - (totalPrice * discount/100);
+              // serviceDetail3.salonId;
 
-              return GestureDetector(
-                onTap: () {
-                  provider.toggleSelectedServicebarber(serviceDetail!);
-                },
-                child: Container(
-                  margin: EdgeInsets.symmetric(
-                    vertical: 1.h,
-                    horizontal: 3.w,
-                  ),
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 3.w,
-                    vertical: 1.h,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(1.h),
-                    border: Border.all(color: ColorsConstant.divider),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      SizedBox(
-                        width: 50.w,
-                        child: Row(
-                          children: <Widget>[
-                            SvgPicture.asset(
-                              serviceDetail3!.targetGender == Gender.MEN
-                                  ? ImagePathConstant.manIcon
-                                  : ImagePathConstant.womanIcon,
-                              height: 4.h,
-                            ),
-                            SizedBox(width: 2.w),
-                            Expanded(
-                              child: Text(
-                                provider.serviceData!.data.serviceTitle ?? '',
-                                style: TextStyle(
-                                  color: ColorsConstant.textDark,
-                                  fontSize: 10.sp,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                          ],
+
+              return Container(
+                padding: EdgeInsets.all(3.w),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(
+                          title,
+                          style: TextStyle(
+                            color: const Color(0xFF2B2F34),
+                            fontSize: 12.sp,
+                            fontFamily: 'Poppins',
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: <Widget>[
-                          Text(
-                            "Rs. ${serviceDetail.price}",
+                        SvgPicture.asset(
+                          gender == "male"
+                              ? ImagePathConstant.manIcon
+                              : ImagePathConstant.womanIcon,
+                          height: 3.h,
+                        )
+                      ],
+                    ),
+                    (discription.isNotEmpty) ? SizedBox(height: 1.h) : const SizedBox(),
+                    (discription.isNotEmpty) ? Text(
+                        discription,
+                        style: TextStyle(
+                          color: const Color(0xFF8B9AAC),
+                          fontSize: 10.sp,
+                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.w500,
+                        )) : const SizedBox(),
+                    SizedBox(height: 1.h,),
+                    RichText(text: TextSpan(
+                        children: [
+                          TextSpan(
+                              text: "Rs. $discountPrice",
+                              style: TextStyle(
+                                color: const Color(0xFF373737),
+                                fontSize: 13.sp,
+                                fontFamily: 'Helvetica Neue',
+                                fontWeight: FontWeight.w800,
+                              )
+                          ),
+
+                          WidgetSpan(child: SizedBox(width: 2.w,)),
+                          TextSpan(
+                              text: "Rs. $totalPrice",
+                              style: TextStyle(
+                                color: const Color(0xFF8B9AAC),
+                                fontSize: 12.sp,
+                                fontFamily: 'Helvetica Neue',
+                                fontWeight: FontWeight.w400,
+                                decoration: TextDecoration.lineThrough,
+                              )
+                          ),
+                        ]
+                    )),
+                    SizedBox(height: 2.h,),
+                    TextButton(
+                        onPressed: () async {
+                          provider.toggleSelectedServicebarber(serviceDetail);
+                        },
+                        style: TextButton.styleFrom(
+                            padding: EdgeInsets.symmetric(horizontal: 6.w,vertical: 2.w),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10.sp),
+                                side: BorderSide(color: const Color(0xFFAA2F4C),width: 0.2.w)
+                            )
+                        ),
+                        child: RichText(text: TextSpan(
                             style: TextStyle(
-                              fontSize: 10.sp,
+                              color: const Color(0xFFAA2F4C),
+                              fontSize: 12.sp,
+                              fontFamily: 'Poppins',
                               fontWeight: FontWeight.w600,
-                              color: ColorsConstant.textDark,
                             ),
-                          ),
-                          Checkbox(
-                            value: selectedServices.contains(serviceDetail),
-                            activeColor: ColorsConstant.appColor,
-                            side: BorderSide(
-                              color: Color.fromARGB(255, 193, 193, 193),
-                              width: 2,
-                            ),
-                            onChanged: (value) {
-                              provider.toggleSelectedServicebarber(
-                                  serviceDetail!);
-                            },
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+                            children: [
+                              WidgetSpan(
+                                  alignment: PlaceholderAlignment.middle,
+                                  child: Icon((!isAdded) ? Icons.add : Icons.remove,
+                                    size: 14.sp,color: const Color(0xFFAA2F4C),)),
+                              WidgetSpan(child: SizedBox(width: 2.w,)),
+                              TextSpan(
+                                  text: (!isAdded) ? "Add" : "Remove"
+                              )
+                            ]
+                        ))
+                    ),
+                  ],
                 ),
               );
             },

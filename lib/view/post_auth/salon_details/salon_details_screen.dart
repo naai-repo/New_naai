@@ -360,6 +360,7 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
       );
     });
   }
+
    Widget servicesTab() {
     return Consumer<SalonDetailsProvider>(builder: (context, provider, child) {
     //  List<DataService> selectedServices = [];
@@ -1579,7 +1580,7 @@ class _SalonDetailsScreen2State extends State<SalonDetailsScreen2> {
                         child: Row(
                           children: <Widget>[
                             SvgPicture.asset(
-                              serviceDetail.targetGender == Gender.MEN
+                              serviceDetail.targetGender == "male"
                                   ? ImagePathConstant.manIcon
                                   : ImagePathConstant.womanIcon,
                               height: 4.h,
@@ -1882,12 +1883,12 @@ class _SalonDetailsScreen2State extends State<SalonDetailsScreen2> {
                               }
 
                               // If the API calls are successful, navigate to the next screen
-                              Navigator.pushNamed(context, NamedRoutes.barberProfileRoute, arguments: artistId);
+                              Navigator.pushNamed(context, NamedRoutes.barberProfileRoute2, arguments: artistId);
                             } catch (error) {
                               Loader.hideLoader(context);
                               // Handle the case where the API call was not successful
                               // You can show an error message or take appropriate action
-                              Navigator.pushNamed(context, NamedRoutes.bottomNavigationRoute);
+                              Navigator.pushNamed(context, NamedRoutes.bottomNavigationRoute2);
                               print('Failed to fetch details: $error');
                             }
                           },

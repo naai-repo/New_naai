@@ -83,3 +83,44 @@ class RedButtonWithText extends StatelessWidget {
     );
   }
 }
+class FilterButton extends StatelessWidget {
+  final void Function() onTap;
+  final Widget child;
+  final EdgeInsetsGeometry? padding;
+  final EdgeInsetsGeometry? margin;
+  final double? width;
+  final double? height;
+  final BorderRadius? borderRadius;
+  final Color bgColor;
+  final BoxBorder? border;
+
+  const FilterButton(
+      {super.key,
+        required this.onTap,
+        required this.child,
+        this.padding,
+        this.margin,
+        this.width,
+        this.height,
+        this.borderRadius,
+        required this.bgColor,this.border});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      borderRadius: borderRadius,
+      clipBehavior: Clip.hardEdge,
+      color: bgColor,
+      child: InkWell(
+        borderRadius: borderRadius,
+        onTap: onTap,
+        child: Container(
+          padding: padding,
+          margin: margin,
+          decoration: BoxDecoration(borderRadius: borderRadius, border: border),
+          child: child,
+        ),
+      ),
+    );
+  }
+}
