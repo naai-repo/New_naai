@@ -413,6 +413,7 @@ class SalonDetailsProvider with ChangeNotifier {
 
     Loader.hideLoader(context);
   }
+  
   void setShowPrice(double totalPrice, num discountPercentage) {
     _showPrice = totalPrice - (totalPrice * discountPercentage/100);
   }
@@ -427,6 +428,7 @@ class SalonDetailsProvider with ChangeNotifier {
     // Calculate total price by summing up the base prices of selected services
     return _barberselectedServices.fold(0.0, (sum, service) => sum + service.price);
   }
+  
   /// Get details related to a given service.
   dynamic getServiceDetails({
     required String serviceId,

@@ -209,81 +209,16 @@ class _ExploreScreenState extends State<ExploreScreen>
                                             ),
                                           ),
                                           builder: (context) {
-                                            return Column(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: <Widget>[
-                                                Text(
-                                                  StringConstant.filter,
-                                                  style: TextStyle(
-                                                    fontSize: 20.sp,
-                                                    fontWeight: FontWeight.w600,
-                                                    color:
-                                                        ColorsConstant.appColor,
-                                                  ),
-                                                ),
-                                                Divider(
-                                                  thickness: 2,
-                                                  color:
-                                                      ColorsConstant.textLight,
-                                                ),
-                                                SizedBox(height: 2.h),
-                                                SizedBox(
-                                                  width: 30.w,
-                                                  child: RedButtonWithText(
-                                                    buttonText:
-                                                        StringConstant.rating,
-                                                    icon: CircleAvatar(
-                                                      radius: 1.5.h,
-                                                      backgroundColor:
-                                                          Colors.white,
-                                                      child: Icon(
-                                                        Icons.close,
-                                                        color: ColorsConstant
-                                                            .appColor,
-                                                        size: 2.h,
-                                                      ),
-                                                    ),
-                                                    textColor: provider
-                                                            .selectedFilterTypeList
-                                                            .contains(FilterType
-                                                                .Rating)
-                                                        ? Colors.white
-                                                        : ColorsConstant
-                                                            .appColor,
-                                                    fontSize: 10.sp,
-                                                    border: Border.all(
-                                                        color: ColorsConstant
-                                                            .appColor),
-                                                    fillColor: provider
-                                                            .selectedFilterTypeList
-                                                            .contains(FilterType
-                                                                .Rating)
-                                                        ? ColorsConstant
-                                                            .appColor
-                                                        : ColorsConstant
-                                                            .lightAppColor,
-                                                    borderRadius: 3.h,
-                                                    onTap: () async{
-                                                      if (provider.selectedFilterTypeList.contains(FilterType.Rating)) {
-                                                        provider.selectedFilterTypeList.remove(FilterType.Rating);
-                                                        await provider.initHome(context);
-                                                      } else {
-                                                        provider.selectedFilterTypeList.add(FilterType.Rating);
-                                                        await provider.Filter(context);
-                                                      }
-                                                      Navigator.pop(context);
-                                                    },
-                                                    shouldShowBoxShadow: false,
-                                                    isIconSuffix: true,
-                                                    padding:
-                                                        EdgeInsets.symmetric(
-                                                      vertical: 1.5.w,
-                                                      horizontal: 2.5.w,
-                                                    ),
-                                                  ),
-                                                ),
-                                                SizedBox(height: 2.h),
-                                              ],
+                                            return Container(
+                                              width: double.maxFinite,
+                                              height: 500,
+                                              decoration: BoxDecoration(
+                                                  color: Colors.white,
+                                                  borderRadius: BorderRadius.only(
+                                                      topLeft: Radius.circular(2.h),
+                                                      topRight:
+                                                          Radius.circular(2.h))),
+                                              child: const FilterBarberSheet(),
                                             );
                                           },
                                         ),
@@ -359,7 +294,7 @@ class _ExploreScreenState extends State<ExploreScreen>
                     List<Response<dynamic>> responses = await Future.wait(apiCalls);
 
                     Loader.hideLoader(context);
-
+                    
                     // Check the responses for each API call
                     for (var response in responses) {
                       if (response.data != null && response.data is Map<String, dynamic>) {
@@ -392,6 +327,7 @@ class _ExploreScreenState extends State<ExploreScreen>
                               message: serviceResponse.message,
                               data:    serviceResponse.data);
                           salonDetailsProvider.setServiceDetails(serviceresponse);
+                          
                           if (serviceResponse != null && serviceResponse.data != null) {
                             // Handle service response
                           } else {
@@ -2789,4 +2725,368 @@ class _ExploreScreen3State extends State<ExploreScreen3>
     );
   }
 }
+
+
+class FilterBarberSheet extends StatelessWidget {
+  const FilterBarberSheet({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final ref = Provider.of<FilterSalons>(context, listen: true);
+    List<Widget> screens = [
+      priceWidget(),
+      priceWidget(),
+      ratingWidget(),
+      discountWidget(),
+      distanceWidget()
+    ];
+    final refHome = Provider.of<HomeProvider>(context,listen: true);
+    bool isFilterSelected = refHome.selectedDiscountIndex != -1 || refHome.selectedRatingIndex != -1;
+      
+    return LayoutBuilder(builder: (context, constraints) {
+        double height = (constraints.maxHeight)/100;
+        
+        return Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            padding: EdgeInsets.symmetric(vertical: 1.w, horizontal: 5.w),
+            decoration: BoxDecoration(
+                borderRadius: BorderRadius.only(topLeft: Radius.circular(2.h))),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text(
+                  "Filters",
+                  style: TextStyle(
+                      color: Colors.black,
+                      fontSize: 13.sp,
+                      fontWeight: FontWeight.bold),
+                ),
+                TextButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
+                    child: Text(
+                      "Close",
+                      style: TextStyle(color: Colors.black, fontSize: 11.sp),
+                    ))
+              ],
+            ),
+          ),
+          Divider(
+            height: 0.5.h,
+            color: ColorsConstant.divider,
+          ),
+          SizedBox(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  width: 35.w,
+                  height: (isFilterSelected) ? 70 * height : 85 * height,
+                  // color: ColorsConstant.appColorAccent,
+                  child: Material(
+                    color: ColorsConstant.appColorAccent,
+                    child: ListView.builder(
+                        itemCount: ref.getFilterTypes.length,
+                        itemBuilder: (context, idx) {
+                          Color itemBgColor = (ref.getSelectdIndex == idx)
+                              ? Colors.white
+                              : Colors.transparent;
+                          Color itemTColor = (ref.getSelectdIndex == idx)
+                              ? Colors.black
+                              : ColorsConstant.appColor;
+                          FontWeight weight = (ref.getSelectdIndex == idx)
+                              ? FontWeight.w600
+                              : FontWeight.normal;
+                          return Container(
+                            color: itemBgColor,
+                            child: Column(
+                              children: [
+                                ListTile(
+                                  titleAlignment: ListTileTitleAlignment.center,
+                                  onTap: () {
+                                    if (ref.getSelectdIndex != idx) {
+                                      ref.changeIndex(idx);
+                                    }
+                                  },
+                                  title: Text(
+                                    ref.getFilterTypes[idx],
+                                    style: TextStyle(
+                                        color: itemTColor,
+                                        fontSize: 10.sp,
+                                        fontWeight: weight),
+                                  ),
+                                ),
+                                Divider(
+                                  thickness: 0.05.h,
+                                  height: 0.1,
+                                  color: ColorsConstant.divider,
+                                )
+                              ],
+                            ),
+                          );
+                        }),
+                  ),
+                ),
+                Expanded(
+                    child: (ref.getSelectdIndex < screens.length)
+                        ? screens[ref.getSelectdIndex]
+                        : const SizedBox())
+              ],
+            ),
+          ),
+         (isFilterSelected) ? Container(
+            width: double.maxFinite,
+           // height: 15 * height,
+            padding: EdgeInsets.all(5.w),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.symmetric(horizontal: BorderSide(color: ColorsConstant.divider,width: 0.2.w))
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                   FilterButton(
+                      onTap: () async {
+                          refHome.salonData2.shuffle();
+                          refHome.salonList2 = refHome.salonData2;
+                          refHome.filterSalonListByDiscount(context,0,-1);
+                          refHome.setSelectedRatingIndex = -1;
+                      },
+                      bgColor: ColorsConstant.appColorAccent,
+                      borderRadius: BorderRadius.circular(8.sp),
+                      border: Border.all(color: ColorsConstant.appColor,width: 0.1.w),
+                      padding: EdgeInsets.symmetric(horizontal: 6.w,vertical: 3.w),
+                      child: Text(
+                        "Clear Filters",
+                        style: TextStyle(
+                          fontSize: 10.sp,
+                          color: ColorsConstant.appColor
+                        ),
+                  )),
+                   FilterButton(
+                      onTap: () async {
+                          Navigator.pop(context);
+                      },
+                      bgColor: ColorsConstant.appColor,
+                      borderRadius: BorderRadius.circular(8.sp),
+                      border: Border.all(color: ColorsConstant.appColor,width: 0.1.w),
+                      padding: EdgeInsets.symmetric(horizontal: 6.w,vertical: 3.w),
+                      child: Text(
+                        "Show Results",
+                        style: TextStyle(
+                          fontSize: 10.sp,
+                          color: Colors.white
+                        ),
+                  )),
+              ],
+            ),
+          ) : const SizedBox()
+        ],
+      );
+    }
+    );
+  }
+
+  Widget distanceWidget() {
+    return Container(
+      padding: EdgeInsets.all(5.w),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text("Select Distance"),
+          SizedBox(
+            height: 1.h,
+          ),
+          const RangeSliderWidget()
+        ],
+      ),
+    );
+  }
+
+  Widget discountWidget() {
+    return Container(
+      padding: EdgeInsets.all(5.w),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text("Discounts"),
+          SizedBox(
+            height: 1.h,
+          ),
+          const DiscountsButtons()
+        ],
+      ),
+    );
+  }
+
+  Widget ratingWidget() {
+    return Container(
+      padding: EdgeInsets.all(5.w),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text("Rating"),
+          SizedBox(
+            height: 1.h,
+          ),
+          const RatingButtions()
+        ],
+      ),
+    );
+  }
+
+  Widget priceWidget() {
+    return Container(
+      padding: EdgeInsets.all(5.w),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text("Select Gender"),
+          SizedBox(
+            height: 1.h,
+          ),
+          Row(
+            children: [
+              RedButtonWithText(buttonText: "Male", onTap: () {}),
+              SizedBox(width: 5.w),
+              RedButtonWithText(buttonText: "Female", onTap: () {}),
+            ],
+          )
+        ],
+      ),
+    );
+  }
+}
+
+class DiscountsButtons extends StatefulWidget {
+  const DiscountsButtons({super.key});
+
+  @override
+  State<DiscountsButtons> createState() => _DiscountsButtonsState();
+}
+
+class _DiscountsButtonsState extends State<DiscountsButtons> {
+  int selectedDiscountIndex = 0;
+  List<String> discounts = ["10", "20", "30", "40", "50"];
+
+  @override
+  Widget build(BuildContext context) {
+    List<Widget> buttons = [];
+    Color selectButtonColor = ColorsConstant.appColor,unselectButtonColor = ColorsConstant.appColorAccent,
+    borderButtonColor = ColorsConstant.appColor;
+    final ref = Provider.of<HomeProvider>(context, listen: true);
+    selectedDiscountIndex = ref.selectedDiscountIndex;
+    print('Discount Select Idx : $selectedDiscountIndex');
+    
+    for (int i = 0; i < discounts.length; i++) {
+      buttons.add(FilterButton(
+          onTap: () async {
+              if(i != selectedDiscountIndex){
+                  await ref.filterSalonListByDiscount(context,int.parse(discounts[i]),i);
+              }
+          },
+          bgColor: (selectedDiscountIndex != -1 && i == selectedDiscountIndex) ? selectButtonColor : unselectButtonColor,
+          borderRadius: BorderRadius.circular(8.sp),
+          border: Border.all(color: borderButtonColor,width: 0.1.w),
+          padding: EdgeInsets.symmetric(horizontal: 5.w,vertical: 2.w),
+          child: Text(
+            "${discounts[i].toString()}% Off or more",
+             style: TextStyle(
+              fontSize: 9.sp,
+              color: (selectedDiscountIndex != -1 && i == selectedDiscountIndex) ? unselectButtonColor : selectButtonColor
+            ),
+          )));
+    }
+    return Wrap(
+      spacing: double.maxFinite,
+      runSpacing: 2.w,
+      children: buttons,
+    );
+  }
+}
+
+class RatingButtions extends StatelessWidget {
+  const RatingButtions({super.key});
+  
+  @override
+  Widget build(BuildContext context) {
+    int selectedRatingIndex = -1;
+    List<String> ratingsText = ["Low to High", "High to Low"];
+    List<Widget> buttons = [];
+    Color selectButtonColor = ColorsConstant.appColor,unselectButtonColor = ColorsConstant.appColorAccent,
+    borderButtonColor = ColorsConstant.appColor;
+    final ref = Provider.of<HomeProvider>(context, listen: true);
+    selectedRatingIndex = ref.selectedRatingIndex;
+    print('Rating Select Idx : $selectedRatingIndex');
+    
+    for (int i = 0; i < ratingsText.length; i++) {
+      buttons.add(FilterButton(
+          onTap: () async {
+              if(i != selectedRatingIndex){
+                  if(selectedRatingIndex == 1) ref.salonData2.sort((a, b) => a.rating.toInt() - b.rating.toInt());
+                  if(selectedRatingIndex == 0) ref.salonData2.sort((a, b) => b.rating.toInt() - a.rating.toInt());
+                  ref.salonList2 = ref.salonData2;
+                  ref.setSelectedRatingIndex = i;
+              }
+          },
+          bgColor: (selectedRatingIndex != -1 && i == selectedRatingIndex) ? selectButtonColor : unselectButtonColor,
+          borderRadius: BorderRadius.circular(8.sp),
+          border: Border.all(color: borderButtonColor,width: 0.1.w),
+          padding: EdgeInsets.symmetric(horizontal: 5.w,vertical: 2.w),
+          child: Text(
+            ratingsText[i],
+             style: TextStyle(
+              fontSize: 9.sp,
+              color: (selectedRatingIndex != -1 && i == selectedRatingIndex) ? unselectButtonColor : selectButtonColor
+            ),
+          )));
+    }
+    return Wrap(
+      spacing: double.maxFinite,
+      runSpacing: 2.w,
+      children: buttons,
+    );
+  }
+}
+
+class RangeSliderWidget extends StatefulWidget {
+  const RangeSliderWidget({super.key});
+
+  @override
+  State<RangeSliderWidget> createState() => _RangeSliderWidgetState();
+}
+
+class _RangeSliderWidgetState extends State<RangeSliderWidget> {
+  double range = 0, end = 0;
+  @override
+  Widget build(BuildContext context) {
+    return RangeSlider(
+      values: RangeValues(range, end),
+      onChanged: (v) {},
+      onChangeEnd: (v) {
+        setState(() {
+          end = v.end;
+          range = v.start;
+        });
+      },
+      max: 100,
+      min: 0,
+      labels: RangeLabels("0", "1"),
+    );
+  }
+}
+
+
 

@@ -65,6 +65,8 @@ class HomeProvider with ChangeNotifier {
 
   List<SalonData> _salonList = [];
   List<SalonData2> _salonList2 = [];
+  List<SalonData2> get salonData2 => _salonList2;
+
   List<ArtistData> _artistList2 = [];
   List<Artist> _artistList = [];
   List<Review> _allReviewList = [];
@@ -90,6 +92,18 @@ String ?  _addressText;
   List<CurrentBooking> _upcomingBooking = [];
   List<PrevBooking> _previousBooking = [];
 
+   //==== FilterSalons Raing & Discounts===/
+  int _selectedDiscountIndex = -1;
+  int get selectedDiscountIndex => _selectedDiscountIndex;
+
+  int _selectedRatingIndex = -1;
+  int get selectedRatingIndex => _selectedRatingIndex;
+  
+  set setSelectedRatingIndex(int i){
+      _selectedRatingIndex = i;
+      notifyListeners();
+  }
+
   //============= GETTERS =============//
   List<SalonData> get salonList => _salonList;
   List<SalonData2> get salonList2 => _salonList2;
@@ -107,8 +121,6 @@ String ?  _addressText;
 
   List<Booking> get lastOrNextBooking => _lastOrNextBooking;
   List<Booking> get allBookings => _allBookings;
-
-
 
   List<CurrentBooking> get upcomingBooking => _upcomingBooking;
   List<PrevBooking> get previousBooking => _previousBooking;
@@ -147,6 +159,7 @@ String ?  _addressText;
       await SharedPreferenceHelper.setUserId(uid);
     }
   }
+  
   List<ArtistData> getDisplayedArtists() {
     // Logic to return the currently displayed artists
     return artistList2.take(displayedArtistCount).toList();
@@ -328,6 +341,68 @@ String ?  _addressText;
     Loader.hideLoader(context);
   }
 
+   //FilterSalon Functions to call Api's & update
+  Future<void> filterSalonListByDiscount(
+      BuildContext context, int discount, int idx) async {
+
+       Loader.showLoader(context);
+        try {
+          _selectedDiscountIndex = idx;
+          Position currentLocation = await Geolocator.getCurrentPosition();
+          print('Current Location: ${currentLocation.longitude}, ${currentLocation
+                  .latitude}');
+          userAddress =
+          await getAddress(currentLocation.latitude, currentLocation.longitude);
+          print('Addressssss: $userAddress');
+          await Future.wait([
+            getSalonFilterListByDiscount(coords: [currentLocation.longitude, currentLocation.latitude],discount: discount),
+          ]);
+
+          if(selectedRatingIndex == 0) salonData2.sort((a, b) => a.rating.toInt() - b.rating.toInt());
+          if(selectedRatingIndex == 1) salonData2.sort((a, b) => b.rating.toInt() - a.rating.toInt());
+          print("DisCount Filter Sallon Size : ${salonData2.length}");
+        } catch (e) {
+          Loader.hideLoader(context);
+          print("Error getting location: $e");
+          await handleFallbackLocationForMen(context);
+        }
+        notifyListeners();
+        
+        Loader.hideLoader(context);
+    
+  }
+
+  Future<void> getSalonFilterListByDiscount(
+      {required List<double> coords, required int discount}) async {
+    final apiUrl = UrlConstants.discountAndRatingForMen + discount.toString();
+    
+    final Map<String, dynamic> requestData = {
+      "location": {"type": "Point", "coordinates": coords},
+    };
+
+    try {
+      final response = await dio.post(
+        apiUrl,
+        options: Options(headers: {
+          'Content-Type': 'application/json; charset=UTF-8',
+        }),
+        data: requestData,
+      );
+      if (response.statusCode == 200) {
+        salonList2 = SalonApiResponse.fromJson(response.data).data;
+        print("Filters Discounts Salons: ${response.data}");
+      } else {
+        // Handle error response for top artists
+        print("Failed to fetch Filters Discounts Salons");
+        print(response.data);
+      }
+    } catch (e) {
+      // Handle Dio errors for top artists
+      print("Dio error for Filter by Discount salons: $e");
+    }
+  }
+
+  
   bool _locationPopupShown = false;
   bool get isLocationPopupShown => _locationPopupShown;
 
@@ -561,7 +636,6 @@ String ?  _addressText;
       }
     } catch (e) {
       // Handle Dio errors for top artists
-      print("Dio error for top artists: $e");
     }
   }
 
@@ -624,6 +698,7 @@ String ?  _addressText;
       print("Dio error for top artists: $e");
     }
   }
+  
 
 
   Future locationPopUp(BuildContext context) async {
@@ -1851,5 +1926,20 @@ print('token is :- $bearerToken');
 
   void addReview(Review review) {
     _allReviewList.add(review);
+  }
+}
+
+
+// Provider for FilterSalons
+class FilterSalons with ChangeNotifier {
+  int _selectedindex = 0;
+  final List<String> _filterTypes = ['Price','Category','Rating','Discount','Salon Type','Distance'];
+
+  int get getSelectdIndex => _selectedindex;
+  List<String> get getFilterTypes => _filterTypes;
+
+  void changeIndex(int idx) {
+    _selectedindex = idx;
+    notifyListeners();
   }
 }

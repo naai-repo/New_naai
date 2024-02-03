@@ -37,7 +37,7 @@ class BarberProfileScreen extends StatefulWidget {
 class _BarberProfileScreenState extends State<BarberProfileScreen> {
   int selectedTab = 0;
   num myShowPrice = 0;
-
+  late SalonDetailsProvider salonDetailsProvider;
 
   @override
   void initState() {
@@ -298,6 +298,7 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
       BarberProvider barberProvider = context.read<BarberProvider>(); // Use the same instance
       HomeProvider homeProvider = context.read<HomeProvider>();
       Set<Service2> selectedServices = provider.barbergetSelectedServices();
+
       return Column(
         children: <Widget>[
           GestureDetector(
@@ -339,85 +340,114 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
                   padding: EdgeInsets.zero,
                   shrinkWrap: true,
                   physics: NeverScrollableScrollPhysics(),
-                  itemCount:
-                      context.read<BarberProvider>().artistDetails!.services.length,
+                  itemCount: context.read<BarberProvider>().artistDetails!.services.length,
                   itemBuilder: (context, index) {
                     Data? serviceDetail3 =  context.read<BarberProvider>().artistDetails;
                     Service2? serviceDetail  = context.read<BarberProvider>().artistDetails!.services[index];
-                    return GestureDetector(
-                      onTap: () {
-                        provider.toggleSelectedServicebarber(serviceDetail!);
-                      },
-                                child: Container(
-                        margin: EdgeInsets.symmetric(
-                          vertical: 1.h,
-                          horizontal: 3.w,
-                        ),
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 3.w,
-                          vertical: 1.h,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(1.h),
-                          border: Border.all(color: ColorsConstant.divider),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: <Widget>[
-                            SizedBox(
-                              width: 50.w,
-                              child: Row(
-                                children: <Widget>[
-                                  SvgPicture.asset(
-                                    serviceDetail3!.targetGender == 'male'
-                                        ? ImagePathConstant.manIcon
-                                        : ImagePathConstant.womanIcon,
-                                    height: 4.h,
-                                  ),
-                                  SizedBox(width: 2.w),
-                                  Expanded(
-                                    child: Text(
-                                      homeProvider.serviceDetailsMap[serviceDetail.serviceId]?.data.serviceTitle ?? '',
-                                      style: TextStyle(
-                                        color: ColorsConstant.textDark,
-                                        fontSize: 10.sp,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: <Widget>[
+                    
+                    bool isAdded = provider.barbergetSelectedServices().contains(serviceDetail);
+                    String? title = homeProvider.serviceDetailsMap[serviceDetail.serviceId]?.data.serviceTitle ?? 'Expample Title';
+                    String? discription = homeProvider.serviceDetailsMap[serviceDetail.serviceId]?.data.description ?? 'Example Discription';
+                    int? totalPrice = homeProvider.serviceDetailsMap[serviceDetail.serviceId]?.data.basePrice ?? 999999;
+                    int? discount = provider.salonDetails?.data.data.discount ?? 0;
+                    double? discountPrice = totalPrice - (totalPrice * discount/100);
+                   // serviceDetail3.salonId;
+                   
+
+                    return Container(
+                      padding: EdgeInsets.all(3.w),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
                                 Text(
-                                  "Rs. ${serviceDetail.price}",
-                                  style: TextStyle(
-                                    fontSize: 10.sp,
-                                    fontWeight: FontWeight.w600,
-                                    color: ColorsConstant.textDark,
-                                  ),
+                                title,
+                                style: TextStyle(
+                                  color: const Color(0xFF2B2F34),
+                                  fontSize: 12.sp,
+                                  fontFamily: 'Poppins',
+                                  fontWeight: FontWeight.w700,
                                 ),
-                                Checkbox(
-                                  value: selectedServices.contains(serviceDetail),
-                                  activeColor: ColorsConstant.appColor,
-                                  side: BorderSide(
-                                    color: Color.fromARGB(255, 193, 193, 193),
-                                    width: 2,
-                                  ),
-                                  onChanged: (value) {
-                                    provider.toggleSelectedServicebarber(
-                                        serviceDetail!);
-                                  },
-                                ),
-                              ],
+                              ),
+                              SvgPicture.asset(
+                                      serviceDetail3!.targetGender == "men"
+                                          ? ImagePathConstant.manIcon
+                                          : ImagePathConstant.womanIcon,
+                                      height: 3.h,
+                                    )
+                            ],
+                          ),
+                          (discription.isNotEmpty) ? SizedBox(height: 1.h) : const SizedBox(),
+                          (discription.isNotEmpty) ? Text(
+                            discription,
+                            style: TextStyle(
+                              color: const Color(0xFF8B9AAC),
+                              fontSize: 10.sp,
+                              fontFamily: 'Poppins',
+                              fontWeight: FontWeight.w500,
+                            )) : const SizedBox(),
+                          SizedBox(height: 1.h,),
+                          RichText(text: TextSpan(
+                            children: [
+                               TextSpan(
+                                text: "Rs. $discountPrice",
+                                style: TextStyle(
+                                    color: const Color(0xFF373737),
+                                    fontSize: 13.sp,
+                                    fontFamily: 'Helvetica Neue',
+                                    fontWeight: FontWeight.w800,
+                                  )
+                               ),
+                              
+                               WidgetSpan(child: SizedBox(width: 2.w,)),
+                               TextSpan(
+                                text: "Rs. $totalPrice",
+                                style: TextStyle(
+                                    color: const Color(0xFF8B9AAC),
+                                      fontSize: 12.sp,
+                                      fontFamily: 'Helvetica Neue',
+                                      fontWeight: FontWeight.w400,
+                                      decoration: TextDecoration.lineThrough,
+                                  )
+                               ),
+                            ]
+                          )),
+                          SizedBox(height: 2.h,),
+                           TextButton(
+                            onPressed: () async {
+                              provider.toggleSelectedServicebarber(serviceDetail);
+                            }, 
+                            style: TextButton.styleFrom(
+                              padding: EdgeInsets.symmetric(horizontal: 6.w,vertical: 2.w),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10.sp),
+                                  side: BorderSide(color: const Color(0xFFAA2F4C),width: 0.2.w)
+                                  )
                             ),
-                          ],
-                        ),
+                            child: RichText(text: TextSpan(
+                              style: TextStyle(
+                                color: const Color(0xFFAA2F4C),
+                                fontSize: 12.sp,
+                                fontFamily: 'Poppins',
+                                fontWeight: FontWeight.w600,
+                              ),
+                               children: [
+                                  WidgetSpan(
+                                    alignment: PlaceholderAlignment.middle,
+                                    child: Icon((!isAdded) ? Icons.add : Icons.remove,
+                                    size: 14.sp,color: const Color(0xFFAA2F4C),)),
+                                  WidgetSpan(child: SizedBox(width: 2.w,)),
+                                   TextSpan(
+                                      text: (!isAdded) ? "Add" : "Remove"
+                                  )
+                               ]
+                            ))
+                          ),
+                        ],
                       ),
                     );
                   },
@@ -960,7 +990,8 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
                 child: GestureDetector(
                   onTap: () async {
                     String salonId = barberProvider.artistDetails!.salonId;
-                    SalonDetailsProvider salonDetailsProvider = context.read<SalonDetailsProvider>();
+                    salonDetailsProvider = context.read<SalonDetailsProvider>();
+
                     try {
                       Loader.showLoader(context);
                       final response = await Dio().get(
@@ -981,7 +1012,6 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
 
                       // Pass the salonDetails to SalonDetailsProvider
                       salonDetailsProvider.setSalonDetails(salonDetails);
-
                       // If the API call is successful, navigate to the SalonDetailsScreen
                       Navigator.pushNamed(context, NamedRoutes.salonDetailsRoute, arguments: salonId);
                     } catch (error) {
@@ -2211,3 +2241,4 @@ void showSignInDialog(BuildContext context) {
     },
   );
 }
+

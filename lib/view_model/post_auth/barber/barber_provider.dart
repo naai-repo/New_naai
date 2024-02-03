@@ -35,18 +35,20 @@ class BarberProvider with ChangeNotifier {
   Artist _artist = Artist();
   SalonData _selectedSalonData = SalonData();
   bool _shouldSetArtistData = true;
-
   TextEditingController _searchController = TextEditingController();
+
+
 
   //============= GETTERS =============//
   int get selectedArtistIndex => _selectedArtistIndex;
-
   List<Gender> get selectedGendersFilter => _selectedGendersFilter;
   List<Services> get selectedServiceCategories => _selectedServiceCategories;
   List<ServiceDetail> get serviceList => _serviceList;
   List<ServiceDetail> get filteredServiceList => _filteredServiceList;
   // List<Review> get artistReviewList => _artistReviewList;
 
+
+  
   Artist get artist => _artist;
   SalonData get selectedSalonData => _selectedSalonData;
   bool get shouldSetArtistData => _shouldSetArtistData;
@@ -179,8 +181,7 @@ class BarberProvider with ChangeNotifier {
     notifyListeners();
   }
 
-
-
+   
   /// Set the value of [_selectedGendersFilter] according to the gender filter selected
   /// by user
   void setSelectedGendersFilter({required Gender selectedGender}) {

@@ -39,6 +39,18 @@ class ExploreProvider with ChangeNotifier {
   bool _applyServiceFilter = false;
   Services _appliedServiceFilter = Services.HAIR;
 
+  //==== FilterSalons Raing & Discounts===/
+  int _selectedDiscountIndex = -1;
+  int get selectedDiscountIndex => _selectedDiscountIndex;
+
+  int _selectedRatingIndex = -1;
+  int get selectedRatingIndex => _selectedRatingIndex;
+  
+  set setSelectedRatingIndex(int i){
+      _selectedRatingIndex = i;
+      notifyListeners();
+  }
+
   //============= GETTERS =============//
   TextEditingController get salonSearchController => _salonSearchController;
   TextEditingController get artistSearchController => _artistSearchController;
@@ -105,6 +117,7 @@ class ExploreProvider with ChangeNotifier {
       return "Error: $e";
     }
   }
+  
   Future<void> initHome(BuildContext context) async {
     var _serviceEnabled = await _mapLocation.serviceEnabled();
     if (!_serviceEnabled) {
@@ -200,7 +213,6 @@ class ExploreProvider with ChangeNotifier {
     }
   }
 
-
   Future<void> OnlyArtist(BuildContext context) async {
 
     Loader.showLoader(context);
@@ -266,7 +278,6 @@ class ExploreProvider with ChangeNotifier {
 
     Loader.hideLoader(context);
   }
-
 
 
   Future<void> updateUserLocation({
@@ -423,7 +434,7 @@ class ExploreProvider with ChangeNotifier {
       print("Dio error for top artists: $e");
     }
   }
-
+  
 
   /// Method to initialize values of Explore screen viz. [_salonData] and [_userCurrentLatLng]
   void initExploreScreen(BuildContext context) async {
@@ -640,3 +651,4 @@ class ExploreProvider with ChangeNotifier {
     notifyListeners();
   }
 }
+
