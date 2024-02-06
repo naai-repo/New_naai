@@ -21,6 +21,7 @@ import '../../../models/Profile_model.dart';
 import '../../../models/user.dart';
 import '../../../utils/access_token.dart';
 import '../../../utils/loading_indicator.dart';
+import '../../../view_model/post_auth/home/home_provider.dart';
 import '../../../view_model/pre_auth/loginResult.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -522,6 +523,7 @@ class _ProfileScreen2State extends State<ProfileScreen2> {
   Widget build(BuildContext context) {
     return Consumer<ProfileProvider>(
       builder: (context, provider, child) {
+        AuthenticationProvider AuthProvider = context.read<AuthenticationProvider>();
 
         return Scaffold(
           body: Stack(
@@ -597,6 +599,7 @@ class _ProfileScreen2State extends State<ProfileScreen2> {
                                             ),
                                           ),
                                         onPressed: () async{
+                                          AuthProvider.resetMobielNumberController();
                                           await saveIsGuestStatus(false);
                                           Navigator.pushReplacementNamed(
                                             context,

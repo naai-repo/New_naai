@@ -1,194 +1,243 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
 
-class ReviewItem {
-  final ReviewData review;
-  final List<RepliesData> replies;
+ReviewBarber reviewBarberFromJson(String str) => ReviewBarber.fromJson(json.decode(str));
 
-  ReviewItem({
+String reviewBarberToJson(ReviewBarber data) => json.encode(data.toJson());
+
+class ReviewBarber {
+  String status;
+  String message;
+  List<Datum> data;
+
+  ReviewBarber({
+    required this.status,
+    required this.message,
+    required this.data,
+  });
+
+  factory ReviewBarber.fromJson(Map<String, dynamic> json) => ReviewBarber(
+    status: json["status"],
+    message: json["message"],
+    data: List<Datum>.from((json["data"] ?? []).map((x) => Datum.fromJson(x))),
+  );
+
+  Map<String, dynamic> toJson() => {
+    "status": status,
+    "message": message,
+    "data": List<dynamic>.from(data.map((x) => x.toJson())),
+  };
+}
+
+class Datum {
+  Review review;
+ // List<dynamic> replies;
+
+  Datum({
     required this.review,
-    required this.replies,
+ //   required this.replies,
   });
 
+  factory Datum.fromJson(Map<String, dynamic> json) => Datum(
+    review: Review.fromJson(json["review"]),
+ //   replies: List<dynamic>.from(json["replies"].map((x) => x)),
+  );
 
-  ReviewItem copyWith({
-    ReviewData? review,
-    List<RepliesData>? replies,
-  }) {
-    return ReviewItem(
-      review: review ?? this.review,
-      replies: replies ?? this.replies,
-    );
-  }
-
-  Map<String, dynamic> toMap() {
-    return <String, dynamic>{
-      'review': review.toMap(),
-      'replies': replies.map((x) => x.toMap()).toList(),
-    };
-  }
-
-  factory ReviewItem.fromMap(Map<String, dynamic> map) {
-    return ReviewItem(
-      review: ReviewData.fromMap(map['review']),
-      replies: List<RepliesData>.from((map['replies'] as List<dynamic>).map<RepliesData>((x) => RepliesData.fromMap(x),),),
-    );
-  }
-
-  String toJson() => json.encode(toMap());
-
-  factory ReviewItem.fromJson(String source) => ReviewItem.fromMap(json.decode(source));
-
-  @override
-  String toString() => 'ReviewItem(review: $review, replies: $replies)';
+  Map<String, dynamic> toJson() => {
+    "review": review.toJson(),
+  //  "replies": List<dynamic>.from(replies.map((x) => x)),
+  };
 }
 
-class ReviewData {
-  final String ? title;
-  final String ? description;
-  final int ? rating;
-  final String ? userId;
-  final String ? salonId;
-  final List<dynamic>? replies;
-  final String ? createdAt;
-  final String ? updatedAt;
+class Review {
+  String id;
+  String title;
+  String description;
+  int rating;
+  String userId;
+  String salonId;
+  String artistId;
+ // List<dynamic> replies;
+  String createdAt;
+  String updatedAt;
+  String userName;
+  bool ? isExpanded;
+  int v;
 
-  ReviewData({
-    this.title,
-    this.description,
-    this.rating,
-    this.userId,
-    this.salonId,
-    this.replies,
-    this.createdAt,
-    this.updatedAt,
+  Review({
+    required this.id,
+    required this.title,
+    required this.description,
+    required this.rating,
+    required this.userId,
+    required this.salonId,
+    required this.artistId,
+ //   required this.replies,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.userName,
+    this.isExpanded,
+    required this.v,
   });
 
+  factory Review.fromJson(Map<String, dynamic> json) => Review(
+    id: json["_id"] ?? '',
+    title: json["title"],
+    description: json["description"] ?? '',
+    rating: json["rating"] ?? '',
+    userId: json["userId"] ?? '',
+    salonId: json["salonId"] ?? '',
+    artistId: json["artistId"] ?? '',
+   // replies: List<dynamic>.from(json["replies"].map((x) => x)),
+    createdAt: json["createdAt"] ?? '',
+    updatedAt: json["updatedAt"] ?? '',
+    userName: json["userName"] ?? '',
+    isExpanded: json['isExpanded'] ?? false,
+    v: json["__v"],
+  );
 
-  ReviewData copyWith({
-    String ? title,
-    String ? description,
-    int ? rating,
-    String ? userId,
-    String ? salonId,
-    List<dynamic>? replies,
-    String ? createdAt,
-    String ? updatedAt,
-  }) {
-    return ReviewData(
-      title: title ?? this.title,
-      description: description ?? this.description,
-      rating: rating ?? this.rating,
-      userId: userId ?? this.userId,
-      salonId: salonId ?? this.salonId,
-      replies: replies ?? this.replies,
-      createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt ?? this.updatedAt,
-    );
-  }
-
-  Map<String, dynamic> toMap() {
-    return <String, dynamic>{
-      'title': title,
-      'description': description,
-      'rating': rating,
-      'userId': userId,
-      'salonId': salonId,
-      'replies': replies?.map((x) => x.toMap()).toList(),
-      'createdAt': createdAt,
-      'updatedAt': updatedAt,
-    };
-  }
-
-  factory ReviewData.fromMap(Map<String, dynamic> map) {
-    return ReviewData(
-      title: map['title'],
-      description: map['description'],
-      rating: map['rating'],
-      userId: map['userId'],
-      salonId: map['salonId'],
-      replies: map['replies'] != null ? List<dynamic>.from((map['replies'] as List<dynamic>)) : null,
-      createdAt: map['createdAt'],
-      updatedAt: map['updatedAt'],
-    );
-  }
-
-  String toJson() => json.encode(toMap());
-
-  factory ReviewData.fromJson(String source) => ReviewData.fromMap(json.decode(source));
-
-  @override
-  String toString() {
-    return 'ReviewData(title: $title, description: $description, rating: $rating, userId: $userId, salonId: $salonId, replies: $replies, createdAt: $createdAt, updatedAt: $updatedAt)';
+  Map<String, dynamic> toJson() => {
+    "_id": id,
+    "title": title,
+    "description": description,
+    "rating": rating,
+    "userId": userId,
+    "salonId": salonId,
+    "artistId": artistId,
+  //  "replies": List<dynamic>.from(replies.map((x) => x)),
+    "createdAt": createdAt,
+    "updatedAt": updatedAt,
+    "userName" : userName,
+    'isExpanded': isExpanded,
+    "__v": v,
+  };
+  void setArtistName(String name){
+    this.userName = name;
   }
 }
 
-class RepliesData {
-  final String? title;
-  final String? description;
-  final String? userId;
-  final List<dynamic>? replies;
-  final String? createdAt;
-  final String? updatedAt;
 
-  RepliesData({
-    this.title,
-    this.description,
-    this.userId,
-    this.replies,
-    this.createdAt,
-    this.updatedAt,
+
+SalonReviewBarber SalonReviewBarberFromJson(String str) => SalonReviewBarber.fromJson(json.decode(str));
+
+String SalonReviewBarberToJson(SalonReviewBarber data) => json.encode(data.toJson());
+
+class SalonReviewBarber {
+  String status;
+  String message;
+  List<SalonDatum> data;
+
+  SalonReviewBarber({
+    required this.status,
+    required this.message,
+    required this.data,
   });
 
+  factory SalonReviewBarber.fromJson(Map<String, dynamic> json) => SalonReviewBarber(
+    status: json["status"],
+    message: json["message"],
+    data: List<SalonDatum>.from((json["data"] ?? []).map((x) => SalonDatum.fromJson(x))),
+  );
 
-  RepliesData copyWith({
-    String? title,
-    String? description,
-    String? userId,
-    List<dynamic>? replies,
-    String? createdAt,
-    String? updatedAt,
-  }) {
-    return RepliesData(
-      title: title ?? this.title,
-      description: description ?? this.description,
-      userId: userId ?? this.userId,
-      replies: replies ?? this.replies,
-      createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt ?? this.updatedAt,
-    );
+  Map<String, dynamic> toJson() => {
+    "status": status,
+    "message": message,
+    "data": List<dynamic>.from(data.map((x) => x.toJson())),
+  };
+}
+
+class SalonDatum {
+  SalonReview salonreview;
+ // List<dynamic> replies;
+
+  SalonDatum({
+    required this.salonreview,
+//    required this.replies,
+  });
+
+  factory SalonDatum.fromJson(Map<String, dynamic> json) => SalonDatum(
+    salonreview: SalonReview.fromJson(json["review"]),
+  //  replies: List<dynamic>.from(json["replies"].map((x) => x)),
+  );
+
+  Map<String, dynamic> toJson() => {
+    "review": salonreview.toJson(),
+  //  "replies": List<dynamic>.from(replies.map((x) => x)),
+  };
+}
+
+class SalonReview {
+  String id;
+  String title;
+  String description;
+  int rating;
+  String userId;
+  String salonId;
+  String artistId;
+ // List<dynamic> replies;
+  String createdAt;
+  String updatedAt;
+  String userName;
+  bool ? isExpanded;
+  String artistName;
+  int v;
+
+  SalonReview({
+    required this.id,
+    required this.title,
+    required this.description,
+    required this.rating,
+    required this.userId,
+    required this.salonId,
+    required this.artistId,
+    //required this.replies,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.userName,
+    this.isExpanded,
+    required this.v,
+    required this.artistName
+  });
+
+  factory SalonReview.fromJson(Map<String, dynamic> json) => SalonReview(
+    id: json["_id"] ?? '',
+    title: json["title"],
+    description: json["description"] ?? '',
+    rating: json["rating"] ?? '',
+    userId: json["userId"] ?? '',
+    salonId: json["salonId"] ?? '',
+    artistId: json["artistId"] ?? '',
+   // replies: List<dynamic>.from(json["replies"].map((x) => x)),
+    createdAt: json["createdAt"] ?? '',
+    updatedAt: json["updatedAt"] ?? '',
+    userName: json["userName"] ?? '',
+    isExpanded: json['isExpanded'] ?? false,
+    artistName: json['artistName']?? '',
+    v: json["__v"],
+  );
+
+  Map<String, dynamic> toJson() => {
+    "_id": id,
+    "title": title,
+    "description": description,
+    "rating": rating,
+    "userId": userId,
+    "salonId": salonId,
+    "artistId": artistId,
+  //  "replies": List<dynamic>.from(replies.map((x) => x)),
+    "createdAt": createdAt,
+    "updatedAt": updatedAt,
+    "userName" : userName,
+    'isExpanded': isExpanded,
+    'artistName': artistName,
+    "__v": v,
+  };
+  void setUserName(String name){
+    this.userName = name;
   }
-
-  Map<String, dynamic> toMap() {
-    return <String, dynamic>{
-      'title': title,
-      'description': description,
-      'userId': userId,
-      'replies': replies,
-      'createdAt': createdAt,
-      'updatedAt': updatedAt,
-    };
-  }
-
-  factory RepliesData.fromMap(Map<String, dynamic> map) {
-    return RepliesData(
-      title: map['title'] != null ? map['title'] as String : null,
-      description: map['description'] != null ? map['description'] as String : null,
-      userId: map['userId'] != null ? map['userId'] as String : null,
-      replies: map['replies'] != null ? List<dynamic>.from((map['replies'] as List<dynamic>)) : null,
-      createdAt: map['createdAt'] != null ? map['createdAt'] as String : null,
-      updatedAt: map['updatedAt'] != null ? map['updatedAt'] as String : null,
-    );
-  }
-
-  String toJson() => json.encode(toMap());
-
-  factory RepliesData.fromJson(String source) => RepliesData.fromMap(json.decode(source));
-
-  @override
-  String toString() {
-    return 'RepliesData(title: $title, description: $description, userId: $userId, replies: $replies, createdAt: $createdAt, updatedAt: $updatedAt)';
+  void setArtistName(String name){
+    this.artistName = name;
   }
 }
+

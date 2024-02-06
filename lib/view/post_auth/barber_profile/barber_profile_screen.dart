@@ -52,8 +52,7 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
         return Consumer<SalonDetailsProvider>(builder: (context, provider, child) {
           BarberProvider barberProvider = context.read<BarberProvider>(); // Use the same instance
           HomeProvider home = context.read<HomeProvider>(); // Use the same instance
-          context.read<ReviewsProvider>().getReviewsApisArtist(barberProvider.artistDetails!.id);
-         print('reviews :- ${ context.read<ReviewsProvider>().reviews}');
+          context.read<ReviewsProvider>().fetchReviews(barberProvider.artistDetails!.id);
           if (provider.salonDetails!.data.data.discount == 0 ||
               provider.salonDetails!.data.data.discount == null){
             myShowPrice = provider.totalPrice;
@@ -152,12 +151,9 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
                 ),
               ],
             ),
-              bottomNavigationBar: Stack(
-                  alignment: Alignment.center,
-                  children: <Widget>[
-                  servicesAndReviewTabBar(),
-              if (servicesSelected)
-          Container(
+              bottomNavigationBar:Visibility(
+              visible:(servicesSelected),
+           child:  Container(
                 margin: EdgeInsets.only(
                   bottom: 2.h,
                   right: 5.w,
@@ -219,6 +215,7 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
                         List<String> selectedServiceIds = provider.barbergetSelectedServices()
                             .map((service) => service.serviceId)
                             .toList();
+
                         await provider.fetchArtist(context,salonId, selectedServiceIds);
                         provider.setSchedulingStatus(onSelectStaff: true);
                         Navigator.push(
@@ -241,10 +238,9 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
                     )
                   ],
                 ),
-              )
-                 //   : SizedBox()
-              ],
               ),
+              ),
+
           );
         }
         );
@@ -304,11 +300,11 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
                     Data? serviceDetail3 =  context.read<BarberProvider>().artistDetails;
                     Service2? serviceDetail  = context.read<BarberProvider>().artistDetails!.services[index];
                     bool isAdded = provider.barbergetSelectedServices().contains(serviceDetail);
-                    String? title = homeProvider.serviceDetailsMap[serviceDetail.serviceId]?.data.serviceTitle ?? 'Expample Title';
-                    String? discription = homeProvider.serviceDetailsMap[serviceDetail.serviceId]?.data.description ?? 'Example Discription';
-                    int? totalPrice = homeProvider.serviceDetailsMap[serviceDetail.serviceId]?.data.basePrice ?? 999999;
-                    int? discount = provider.salonDetails?.data.data.discount ?? 0;
-                    String? gender = homeProvider.serviceDetailsMap[serviceDetail.serviceId]?.data.targetGender ?? '';
+                    String? title = barberProvider.serviceDetailsMap[serviceDetail.serviceId]?.data.serviceTitle ?? '';
+                    String? discription = barberProvider.serviceDetailsMap[serviceDetail.serviceId]?.data.description ?? '';
+                    int? totalPrice = barberProvider.serviceDetailsMap[serviceDetail.serviceId]?.data.basePrice ?? 0  ;
+                    int? discount = barberProvider.salonDetails?.data.data.discount ?? 0;
+                    String? gender = barberProvider.serviceDetailsMap[serviceDetail.serviceId]?.data.targetGender ?? '';
                     double? discountPrice = totalPrice - (totalPrice * discount/100);
                     // serviceDetail3.salonId;
 
@@ -606,7 +602,7 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
   Widget reviewColumn() {
     return Consumer<BarberProvider>(
       builder: (context, provider, child) {
-        final ref = Provider.of<ReviewsProvider>(context,listen: true);
+        final ref = Provider.of<ReviewsProvider>(context, listen: true);
 
         return GestureDetector(
           onTap: () => FocusManager.instance.primaryFocus!.unfocus(),
@@ -631,102 +627,169 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
                     ? SizedBox(
                   height: 500,
                   child: ListView.builder(
-                      itemCount: ref.reviews.length,
-                      itemBuilder: (context, index) {
-                        final String storeName = provider.salonDetails?.data.data.name ?? 'No Title';
-                        final String title = ref.reviews[index].review.title ?? 'No Title';
-                        final String date = ref.reviews[index].review.createdAt ?? 'No Date';
-                        final String discription = ref.reviews[index].review.description ?? 'No Discription';
+                    itemCount: ref.reviews.length,
+                    itemBuilder: (context, index) {
+                      final String storeName = provider.salonDetails?.data.data.name ?? '';
+                      final String title = ref.reviews[index].userName ?? '';
+                      String date = ref.reviews[index].createdAt ?? '';
+                      final String discription = ref.reviews[index].description ?? '';
+                      bool isExpanded = ref.reviews[index].isExpanded ?? false;
+                      final int rating =  ref.reviews[index].rating ?? 0;
+                      if (date != 'No Date') {
+                        final DateTime dateTime = DateTime.parse(date);
+                        final formattedDate = DateFormat('dd-MM-yyyy').format(dateTime);
+                        print('Formatted Date: $formattedDate');
+                        date = formattedDate;
+                      } else {
+                        print('Date is not available');
+                      }
 
-                        return Container(
-                          padding: EdgeInsets.all(4.w),
-                          margin: EdgeInsets.only(bottom: 5.w),
-                          decoration: BoxDecoration(
-                              border: Border.all(color: ColorsConstant.divider),
-                              borderRadius: BorderRadius.circular(5.sp)
-                          ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                "For : $storeName",
-                                style: TextStyle(
-                                    fontFamily: "Poppins",
-                                    color: const Color(0xFF8C9AAC),
-                                    fontSize: 10.sp,
-                                    fontWeight: FontWeight.w500
-                                ),
+                      return Container(
+                        padding: EdgeInsets.all(4.w),
+                        margin: EdgeInsets.only(bottom: 5.w),
+                        decoration: BoxDecoration(
+                            border: Border.all(color: ColorsConstant.divider),
+                            borderRadius: BorderRadius.circular(5.sp)),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Store : $storeName",
+                              style: TextStyle(
+                                  fontFamily: "Poppins",
+                                  color: const Color(0xFF8C9AAC),
+                                  fontSize: 10.sp,
+                                  fontWeight: FontWeight.w500),
+                            ),
+                            Text(
+                              "For : ${provider.artistDetails?.name ?? ''}",
+                              style: TextStyle(
+                                  fontFamily: "Poppins",
+                                  color: const Color(0xFF8C9AAC),
+                                  fontSize: 10.sp,
+                                  fontWeight: FontWeight.w500),
+                            ),
+                            SizedBox(height: 1.h,),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                CircleAvatar(
+                                    backgroundImage: AssetImage('assets/images/salon_dummy_image.png'),
+                                     radius: 6.w),
+                                SizedBox(width: 1.5.h),
+                                Column(
+                                  mainAxisAlignment: MainAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      title,
+                                      style: TextStyle(
+                                          fontFamily: "Poppins",
+                                          color: const Color(0xFF373737),
+                                          fontSize: 12.sp,
+                                          fontWeight: FontWeight.w600),
+                                    ),
+                                    Text(
+                                      date,
+                                      style: TextStyle(
+                                          fontFamily: "Poppins",
+                                          color: const Color(0xFF8C9AAC),
+                                          fontSize: 10.sp,
+                                          fontWeight: FontWeight.w500),
+                                    ),
+                                  ],
+                                )
+                              ],
+                            ),
+                            SizedBox(height: 2.h),
+                            Padding(
+                              padding: EdgeInsets.only(
+                                top: 1.h,
+                                bottom: 1.h,
                               ),
-                              SizedBox(height: 1.h,),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  CircleAvatar(backgroundColor: Colors.grey,radius: 6.w),
-                                  SizedBox(width: 1.5.h),
-                                  Column(
-                                    mainAxisAlignment: MainAxisAlignment.start,
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        title,
-                                        style: TextStyle(
-                                            fontFamily: "Poppins",
-                                            color: const Color(0xFF373737),
-                                            fontSize: 12.sp,
-                                            fontWeight: FontWeight.w600
-                                        ),
-                                      ),
-                                      Text(
-                                        date,
-                                        style: TextStyle(
-                                            fontFamily: "Poppins",
-                                            color: const Color(0xFF8C9AAC),
-                                            fontSize: 10.sp,
-                                            fontWeight: FontWeight.w400
-                                        ),
-                                      ),
-                                    ],
-                                  )
-                                ],
-                              ),
-                              SizedBox(height: 2.h),
-                              SizedBox(
-                                //height: 10.h,
-                                child: Text(
-                                  discription,
-                                  softWrap: true,
-                                  overflow: TextOverflow.ellipsis,
-                                  maxLines: 2,
-                                  style: TextStyle(
-                                      fontFamily: "Poppins",
-                                      color: const Color(0xFF8C9AAC),
-                                      fontSize: 10.sp,
-                                      fontWeight: FontWeight.w400
-                                  ),
-                                ),
-                              ),
-                              SizedBox(height: 2.h,),
-                              Material(
-                                child: InkWell(
-                                  onTap: (){},
-                                  child: Text(
-                                    "View More",
-                                    style: TextStyle(
-                                        fontFamily: "Poppins",
-                                        color: ColorsConstant.appColor,
-                                        fontSize: 10.sp,
-                                        fontWeight: FontWeight.w500
+                              child: Row(
+                                children: <Widget>[
+                                  ...List.generate(
+                                    5,
+                                        (i) => SvgPicture.asset(
+                                      ImagePathConstant
+                                          .starIcon,
+                                      color: i <
+                                          (int.parse(rating.toString()))
+                                          ? ColorsConstant
+                                          .appColor
+                                          : ColorsConstant
+                                          .greyStar,
                                     ),
                                   ),
-                                ),
-                              )
-
-                            ],
-                          ),
-                        );
-                      }),)
+                                ],
+                              ),
+                            ),
+                            SizedBox(height: 2.h),
+                            SizedBox(
+                              //height: 10.h,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    discription,
+                                    softWrap: true,
+                                    overflow: isExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
+                                    maxLines: isExpanded ? null : 1,
+                                    style: TextStyle(
+                                        fontFamily: "Poppins",
+                                        color: const Color(0xFF8C9AAC),
+                                        fontSize: 10.sp,
+                                        fontWeight: FontWeight.w400),
+                                  ),
+                                  if (isExpanded)
+                                    Material(
+                                      child: InkWell(
+                                        onTap: () {
+                                          setState(() {
+                                            ref.reviews[index].isExpanded = false;
+                                          });
+                                        },
+                                        child: Text(
+                                          "View Less",
+                                          style: TextStyle(
+                                              fontFamily: "Poppins",
+                                              color: ColorsConstant.appColor,
+                                              fontSize: 10.sp,
+                                              fontWeight: FontWeight.w500),
+                                        ),
+                                      ),
+                                    ),
+                                  if (!isExpanded)
+                                    if (discription.length > 30)
+                                      Material(
+                                        child: InkWell(
+                                          onTap: () {
+                                            setState(() {
+                                              ref.reviews[index].isExpanded = true;
+                                            });
+                                          },
+                                          child: Text(
+                                            "View More",
+                                            style: TextStyle(
+                                                fontFamily: "Poppins",
+                                                color: ColorsConstant.appColor,
+                                                fontSize: 10.sp,
+                                                fontWeight: FontWeight.w500),
+                                          ),
+                                        ),
+                                      ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                )
                     : const SizedBox(),
               ],
             ),
@@ -1054,6 +1117,9 @@ class _BarberProfileScreen2State extends State<BarberProfileScreen2> {
       builder: (context, barberProvider, child) {
         return Consumer<SalonDetailsProvider>(builder: (context, provider, child) {
           BarberProvider barberProvider = context.read<BarberProvider>(); // Use the same instance
+          HomeProvider home = context.read<HomeProvider>(); // Use the same instance
+          context.read<ReviewsProvider>().fetchReviews(barberProvider.artistDetails!.id);
+          print('reviews :- ${ context.read<ReviewsProvider>().reviews}');
           if (provider.salonDetails!.data.data.discount == 0 ||
               provider.salonDetails!.data.data.discount == null){
             myShowPrice = provider.totalPrice;
@@ -1152,79 +1218,75 @@ class _BarberProfileScreen2State extends State<BarberProfileScreen2> {
                 ),
               ],
             ),
-            bottomNavigationBar: Stack(
-              alignment: Alignment.center,
-              children: <Widget>[
-                servicesAndReviewTabBar(),
-                if (servicesSelected)
-                  Container(
-                    margin: EdgeInsets.only(
-                      bottom: 2.h,
-                      right: 5.w,
-                      left: 5.w,
+            bottomNavigationBar:Visibility(
+
+            visible: (servicesSelected),
+             child: Container(
+                margin: EdgeInsets.only(
+                  bottom: 2.h,
+                  right: 5.w,
+                  left: 5.w,
+                ),
+                padding: EdgeInsets.symmetric(
+                  vertical: 1.h,
+                  horizontal: 3.w,
+                ),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(1.h),
+                  boxShadow: <BoxShadow>[
+                    BoxShadow(
+                      offset: Offset(0, 2.0),
+                      color: Colors.grey,
+                      spreadRadius: 0.2,
+                      blurRadius: 15,
                     ),
-                    padding: EdgeInsets.symmetric(
-                      vertical: 1.h,
-                      horizontal: 3.w,
-                    ),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(1.h),
-                      boxShadow: <BoxShadow>[
-                        BoxShadow(
-                          offset: Offset(0, 2.0),
-                          color: Colors.grey,
-                          spreadRadius: 0.2,
-                          blurRadius: 15,
-                        ),
-                      ],
-                      color: Colors.white,
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  ],
+                  color: Colors.white,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: <Widget>[
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
-                        Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: <Widget>[
-                            Text(
-                              StringConstant.total,
-                              style: TextStyle(
-                                fontWeight: FontWeight.w500,
-                                fontSize: 10.sp,
-                                color: ColorsConstant.textDark,
-                              ),
-                            ),
-                            Text('Rs.${myShowPrice}',
-                                style: StyleConstant.textDark15sp600Style),
-                          ],
+                        Text(
+                          StringConstant.total,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w500,
+                            fontSize: 10.sp,
+                            color: ColorsConstant.textDark,
+                          ),
                         ),
-                        provider.salonDetails!.data.data.discount==0||provider.salonDetails!.data.data.discount==null
-                            ?
-                        SizedBox()
-                            : Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: <Widget>[
-                            SizedBox(
-                              height: 2.5.h,
-                            ),
-                            Text('${provider.totalPrice}',
-                                style: StyleConstant
-                                    .textDark12sp500StyleLineThrough),
-                          ],
-                        ),
-                        VariableWidthCta(
-                          onTap: () {
-                           showSignInDialog(context);
-                          },
-                          isActive: true,
-                          buttonText: StringConstant.confirmBooking,
-                        )
+                        Text('Rs.${myShowPrice}',
+                            style: StyleConstant.textDark15sp600Style),
                       ],
                     ),
-                  )
-                //   : SizedBox()
-              ],
+                    provider.salonDetails!.data.data.discount==0||provider.salonDetails!.data.data.discount==null
+                        ?
+                    SizedBox()
+                        : Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        SizedBox(
+                          height: 2.5.h,
+                        ),
+                        Text('${provider.totalPrice}',
+                            style: StyleConstant
+                                .textDark12sp500StyleLineThrough),
+                      ],
+                    ),
+                    VariableWidthCta(
+                      onTap: () async{
+                        showSignInDialog(context);
+                      },
+                      isActive: true,
+                      buttonText: StringConstant.confirmBooking,
+                    )
+                  ],
+                ),
+              ),
             ),
           );
         }
@@ -1238,7 +1300,6 @@ class _BarberProfileScreen2State extends State<BarberProfileScreen2> {
       BarberProvider barberProvider = context.read<BarberProvider>(); // Use the same instance
       HomeProvider homeProvider = context.read<HomeProvider>();
       Set<Service2> selectedServices = provider.barbergetSelectedServices();
-      print('${barberProvider.Servicetitle}');
       return Column(
         children: <Widget>[
           GestureDetector(
@@ -1276,7 +1337,7 @@ class _BarberProfileScreen2State extends State<BarberProfileScreen2> {
               child: Text('Nothing here :('),
             ),
           )
-              :  ListView.builder(
+                : ListView.builder(
             padding: EdgeInsets.zero,
             shrinkWrap: true,
             physics: NeverScrollableScrollPhysics(),
@@ -1286,11 +1347,11 @@ class _BarberProfileScreen2State extends State<BarberProfileScreen2> {
               Data? serviceDetail3 =  context.read<BarberProvider>().artistDetails;
               Service2? serviceDetail  = context.read<BarberProvider>().artistDetails!.services[index];
               bool isAdded = provider.barbergetSelectedServices().contains(serviceDetail);
-              String? title = homeProvider.serviceDetailsMap[serviceDetail.serviceId]?.data.serviceTitle ?? 'Expample Title';
-              String? discription = homeProvider.serviceDetailsMap[serviceDetail.serviceId]?.data.description ?? 'Example Discription';
-              int? totalPrice = homeProvider.serviceDetailsMap[serviceDetail.serviceId]?.data.basePrice ?? 999999;
-              int? discount = provider.salonDetails?.data.data.discount ?? 0;
-              String? gender = homeProvider.serviceDetailsMap[serviceDetail.serviceId]?.data.targetGender ?? '';
+              String? title = barberProvider.serviceDetailsMap[serviceDetail.serviceId]?.data.serviceTitle ?? '';
+              String? discription = barberProvider.serviceDetailsMap[serviceDetail.serviceId]?.data.description ?? '';
+              int? totalPrice = barberProvider.serviceDetailsMap[serviceDetail.serviceId]?.data.basePrice ?? 0  ;
+              int? discount = barberProvider.salonDetails?.data.data.discount ?? 0;
+              String? gender = barberProvider.serviceDetailsMap[serviceDetail.serviceId]?.data.targetGender ?? '';
               double? discountPrice = totalPrice - (totalPrice * discount/100);
               // serviceDetail3.salonId;
 
@@ -1398,7 +1459,6 @@ class _BarberProfileScreen2State extends State<BarberProfileScreen2> {
       );
     });
   }
-
   Widget serviceCategoryFilterWidget() {
     return Consumer<BarberProvider>(builder: (context, provider, child) {
       return Container(
@@ -1589,7 +1649,7 @@ class _BarberProfileScreen2State extends State<BarberProfileScreen2> {
   Widget reviewColumn() {
     return Consumer<BarberProvider>(
       builder: (context, provider, child) {
-        final ref = Provider.of<ReviewsProvider>(context,listen: true);
+        final ref = Provider.of<ReviewsProvider>(context, listen: true);
 
         return GestureDetector(
           onTap: () => FocusManager.instance.primaryFocus!.unfocus(),
@@ -1598,7 +1658,7 @@ class _BarberProfileScreen2State extends State<BarberProfileScreen2> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                AddReviewComponent(reviewForSalon: false),
+                AddReviewComponent2(reviewForSalon: false),
                 Padding(
                   padding: EdgeInsets.only(top: 2.h),
                   child: Text(
@@ -1614,102 +1674,170 @@ class _BarberProfileScreen2State extends State<BarberProfileScreen2> {
                     ? SizedBox(
                   height: 500,
                   child: ListView.builder(
-                      itemCount: ref.reviews.length,
-                      itemBuilder: (context, index) {
-                        final String storeName = provider.salonDetails?.data.data.name ?? 'No Title';
-                        final String title = ref.reviews[index].review.title ?? 'No Title';
-                        final String date = ref.reviews[index].review.createdAt ?? 'No Date';
-                        final String discription = ref.reviews[index].review.description ?? 'No Discription';
+                    itemCount: ref.reviews.length,
+                    itemBuilder: (context, index) {
+                      final String storeName = provider.salonDetails?.data.data.name ?? '';
+                      final String title = ref.reviews[index].userName ?? '';
+                      String date = ref.reviews[index].createdAt ?? '';
+                      final String discription = ref.reviews[index].description ?? '';
+                      bool isExpanded = ref.reviews[index].isExpanded ?? false;
+                      final int rating =  ref.reviews[index].rating ?? 0;
+                      if (date != 'No Date') {
+                        final DateTime dateTime = DateTime.parse(date);
+                        final formattedDate = DateFormat('dd-MM-yyyy').format(dateTime);
+                        print('Formatted Date: $formattedDate');
+                        date = formattedDate;
+                      } else {
+                        print('Date is not available');
+                      }
 
-                        return Container(
-                          padding: EdgeInsets.all(4.w),
-                          margin: EdgeInsets.only(bottom: 5.w),
-                          decoration: BoxDecoration(
-                              border: Border.all(color: ColorsConstant.divider),
-                              borderRadius: BorderRadius.circular(5.sp)
-                          ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                "For : $storeName",
-                                style: TextStyle(
-                                    fontFamily: "Poppins",
-                                    color: const Color(0xFF8C9AAC),
-                                    fontSize: 10.sp,
-                                    fontWeight: FontWeight.w500
-                                ),
+                      return Container(
+                        padding: EdgeInsets.all(4.w),
+                        margin: EdgeInsets.only(bottom: 5.w),
+                        decoration: BoxDecoration(
+                            border: Border.all(color: ColorsConstant.divider),
+                            borderRadius: BorderRadius.circular(5.sp)),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Store : $storeName",
+                              style: TextStyle(
+                                  fontFamily: "Poppins",
+                                  color: const Color(0xFF8C9AAC),
+                                  fontSize: 10.sp,
+                                  fontWeight: FontWeight.w500),
+                            ),
+                            Text(
+                              "For : ${provider.artistDetails?.name ?? ''}",
+                              style: TextStyle(
+                                  fontFamily: "Poppins",
+                                  color: const Color(0xFF8C9AAC),
+                                  fontSize: 10.sp,
+                                  fontWeight: FontWeight.w500),
+                            ),
+                            SizedBox(height: 1.h,),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                CircleAvatar(
+                                    backgroundImage: AssetImage('assets/images/dummy_user.jpg'),
+                                    radius: 6.w),
+                                SizedBox(width: 1.5.h),
+                                Column(
+                                  mainAxisAlignment: MainAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      title,
+                                      style: TextStyle(
+                                          fontFamily: "Poppins",
+                                          color: const Color(0xFF373737),
+                                          fontSize: 12.sp,
+                                          fontWeight: FontWeight.w600),
+                                    ),
+                                    Text(
+                                      date,
+                                      style: TextStyle(
+                                          fontFamily: "Poppins",
+                                          color: const Color(0xFF8C9AAC),
+                                          fontSize: 10.sp,
+                                          fontWeight: FontWeight.w500),
+                                    ),
+                                  ],
+                                )
+                              ],
+                            ),
+                            SizedBox(height: 2.h),
+                            Padding(
+                              padding: EdgeInsets.only(
+                                top: 1.h,
+                                bottom: 1.h,
                               ),
-                              SizedBox(height: 1.h,),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  CircleAvatar(backgroundColor: Colors.grey,radius: 6.w),
-                                  SizedBox(width: 1.5.h),
-                                  Column(
-                                    mainAxisAlignment: MainAxisAlignment.start,
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        title,
-                                        style: TextStyle(
-                                            fontFamily: "Poppins",
-                                            color: const Color(0xFF373737),
-                                            fontSize: 12.sp,
-                                            fontWeight: FontWeight.w600
-                                        ),
-                                      ),
-                                      Text(
-                                        date,
-                                        style: TextStyle(
-                                            fontFamily: "Poppins",
-                                            color: const Color(0xFF8C9AAC),
-                                            fontSize: 10.sp,
-                                            fontWeight: FontWeight.w400
-                                        ),
-                                      ),
-                                    ],
-                                  )
-                                ],
-                              ),
-                              SizedBox(height: 2.h),
-                              SizedBox(
-                                //height: 10.h,
-                                child: Text(
-                                  discription,
-                                  softWrap: true,
-                                  overflow: TextOverflow.ellipsis,
-                                  maxLines: 2,
-                                  style: TextStyle(
-                                      fontFamily: "Poppins",
-                                      color: const Color(0xFF8C9AAC),
-                                      fontSize: 10.sp,
-                                      fontWeight: FontWeight.w400
-                                  ),
-                                ),
-                              ),
-                              SizedBox(height: 2.h,),
-                              Material(
-                                child: InkWell(
-                                  onTap: (){},
-                                  child: Text(
-                                    "View More",
-                                    style: TextStyle(
-                                        fontFamily: "Poppins",
-                                        color: ColorsConstant.appColor,
-                                        fontSize: 10.sp,
-                                        fontWeight: FontWeight.w500
+                              child: Row(
+                                children: <Widget>[
+                                  ...List.generate(
+                                    5,
+                                        (i) => SvgPicture.asset(
+                                      ImagePathConstant
+                                          .starIcon,
+                                      color: i <
+                                          (int.parse(rating.toString()))
+                                          ? ColorsConstant
+                                          .appColor
+                                          : ColorsConstant
+                                          .greyStar,
                                     ),
                                   ),
-                                ),
-                              )
-
-                            ],
-                          ),
-                        );
-                      }),)
+                                ],
+                              ),
+                            ),
+                            SizedBox(height: 2.h),
+                              SizedBox(
+                              //height: 10.h,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    discription,
+                                    softWrap: true,
+                                    overflow: isExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
+                                    maxLines: isExpanded ? null : 1,
+                                    style: TextStyle(
+                                        fontFamily: "Poppins",
+                                        color: const Color(0xFF8C9AAC),
+                                        fontSize: 10.sp,
+                                        fontWeight: FontWeight.w400),
+                                  ),
+                                  if (isExpanded)
+                                    Material(
+                                      child: InkWell(
+                                        onTap: () {
+                                          setState(() {
+                                            ref.reviews[index].isExpanded = false;
+                                          });
+                                        },
+                                        child: Text(
+                                          "View Less",
+                                          style: TextStyle(
+                                              fontFamily: "Poppins",
+                                              color: ColorsConstant.appColor,
+                                              fontSize: 10.sp,
+                                              fontWeight: FontWeight.w500),
+                                        ),
+                                      ),
+                                    ),
+                                  if (!isExpanded)
+                                    if (discription.length > 30)
+                                    Material(
+                                      child: InkWell(
+                                        onTap: () {
+                                          setState(() {
+                                            ref.reviews[index].isExpanded = true;
+                                          });
+                                        },
+                                        child: Text(
+                                          "View More",
+                                          style: TextStyle(
+                                              fontFamily: "Poppins",
+                                              color: ColorsConstant.appColor,
+                                              fontSize: 10.sp,
+                                              fontWeight: FontWeight.w500),
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                            SizedBox(height: 2.h,),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                )
                     : const SizedBox(),
               ],
             ),
@@ -1718,6 +1846,7 @@ class _BarberProfileScreen2State extends State<BarberProfileScreen2> {
       },
     );
   }
+
 
   Widget reviewerImageAndName({String? imageUrl, required String userName}) {
     return Column(

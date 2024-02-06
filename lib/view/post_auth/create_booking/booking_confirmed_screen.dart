@@ -1,5 +1,8 @@
+import 'package:collection/collection.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:intl/intl.dart';
 import 'package:naai/utils/colors_constant.dart';
 import 'package:naai/utils/image_path_constant.dart';
 import 'package:naai/utils/string_constant.dart';
@@ -7,7 +10,11 @@ import 'package:naai/view_model/post_auth/salon_details/salon_details_provider.d
 import 'package:provider/provider.dart';
 import 'package:sizer/sizer.dart';
 
+import '../../../models/Time_Slot_model.dart';
+import '../../../utils/access_token.dart';
+import '../../../utils/loading_indicator.dart';
 import '../../../utils/routing/named_routes.dart';
+import '../../widgets/reusable_widgets.dart';
 
 class BookingConfirmedSreen extends StatelessWidget {
   const BookingConfirmedSreen({super.key});
@@ -82,7 +89,7 @@ class BookingConfirmedSreen extends StatelessWidget {
                 ),
                 SizedBox(height: 4.h),
                 GestureDetector(
-                  onTap: () {
+                  onTap: () async{
                     provider.setSchedulingStatus(onSelectStaff: true);
                     provider.resetCurrentBooking2();
                     Navigator.pushNamed(

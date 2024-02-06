@@ -164,6 +164,7 @@ class StringConstant {
   static const String invoice = 'Invoice';
   static const String askForReview = 'Ask for review';
   static const String startAppointment = 'Start Appointment';
+  static const String Resheduling = 'RE-Scheduling';
   static const String barber = 'Barber';
   static const String appointmentDateAndTime = 'Appointment Date & Time';
 }

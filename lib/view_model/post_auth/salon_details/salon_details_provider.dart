@@ -24,6 +24,7 @@ import '../../../models/Time_Slot_model.dart';
 import '../../../models/artist_detail.dart';
 import '../../../models/artist_request.dart';
 import '../../../models/artist_services.dart';
+import '../../../models/re-scheduling.dart';
 import '../../../models/salon_detail.dart';
 import '../../../models/service_response.dart';
 import '../../../utils/access_token.dart';
@@ -38,9 +39,18 @@ class SalonDetailsProvider with ChangeNotifier {
   // List<Review> _salonReviewList = [];
   ArtistRequest? _apiAResponse;
   List<TimeService> _selectedbarberServices = [];
-
+  Map<String, ServiceResponse> serviceDetailsMap = {}; // Use a map to store service details
   List<TimeService> get selectedServices => _selectedbarberServices;
+  SchedulingResponse? _savedSchedulingResponse;
 
+  // Getter to retrieve the saved scheduling response
+  SchedulingResponse? get savedSchedulingResponse => _savedSchedulingResponse;
+
+  // Method to save the scheduling response
+  void saveSchedulingResponse(SchedulingResponse response) {
+    _savedSchedulingResponse = response;
+    notifyListeners(); // Notify listeners to trigger updates in UI
+  }
   void setSelectedServices(List<TimeService> services) {
     _selectedbarberServices = services;
     notifyListeners();
@@ -1047,6 +1057,10 @@ class SalonDetailsProvider with ChangeNotifier {
     _barberselectedServices.clear();
   //  _totalPrice = 0; // Reset total price
   //  _showPrice = 0; // Reset show price
+    _isOnSelectStaffType = true;
+    _isOnSelectSlot = false;
+    _isOnPaymentPage = false;
+    _isNextButtonActive = false;
 _selectedDate = null;
 _selectedTime = null;
 

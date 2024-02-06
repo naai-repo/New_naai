@@ -395,13 +395,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                             ),
                           ),
                           SizedBox(width: 1.w),
-                          TimeDateCard(
-                            fillColor: ColorsConstant.textDark,
-                            child: Text(
-                              provider.upcomingBooking[index].timeSlot.end,
-                              style: StyleConstant.bookingDateTimeTextStyle,
-                              ),
-                            ),
                           SizedBox(width: 6.w),
                           InkWell(
                             onTap: () {
@@ -646,7 +639,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                     barberDetailsProvider.setSalonDetails(salonDetails);
                                   } else if (response.requestOptions.uri.pathSegments.contains('service')) {
                                     ServiceResponse serviceResponse = ServiceResponse.fromJson(response.data);
-                                    provider.serviceDetailsMap[serviceResponse.data.id] = serviceResponse; // Store service details in the map
+                                    barberDetailsProvider.serviceDetailsMap[serviceResponse.data.id] = serviceResponse; // Store service details in the map
                                     print('service name is :- ${serviceResponse.data.serviceTitle}');
                                   }
                                 } else {
@@ -738,7 +731,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                     barberDetailsProvider.setSalonDetails(salonDetails);
                                   } else if (response.requestOptions.uri.pathSegments.contains('service')) {
                                     ServiceResponse serviceResponse = ServiceResponse.fromJson(response.data);
-                                    provider.serviceDetailsMap[serviceResponse.data.id] = serviceResponse; // Store service details in the map
+                                    barberDetailsProvider.serviceDetailsMap[serviceResponse.data.id] = serviceResponse; // Store service details in the map
                                     print('service name is :- ${serviceResponse.data.serviceTitle}');
                                   }
                                 } else {
@@ -836,8 +829,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     : BorderRadius.vertical(
                         top: Radius.circular(3.h),
                       ),
-                child: Image.network(
-                  imagePath ?? 'https://drive.google.com/uc?export=view&id=1zw2jQ0_wgXb0Dr5lAgXvCfu5Ic0ajFE0',
+                child: imagePath != null && imagePath.isNotEmpty
+                    ? Image.network(
+                  imagePath,
+                  fit: BoxFit.cover,
+                )
+                    : Image.asset(
+                  'assets/images/salon_dummy_image.png',
                   fit: BoxFit.cover,
                 ),
               ),
@@ -1062,12 +1060,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                     borderRadius: BorderRadius.horizontal(
                                       right: Radius.circular(1.h),
                                     ),
-                                  child: salon.images.isNotEmpty
-                 ? Image.network(
-                                    salon.images[0].url,
-                                    fit: BoxFit.cover,
-                                  )
-                      : Placeholder(),
+                                    child: salon.images != null && salon.images.isNotEmpty
+                                        ? Image.network(
+                                      salon.images[0].url,
+                                      fit: BoxFit.cover,
+                                    )
+                                        : Image.asset(
+                                      'assets/images/salon_dummy_image.png',
+                                      fit: BoxFit.cover,
+                                    ),
                                   ),
                                 ),
                                 salon.discount == 0 || salon.discount == null
@@ -1934,7 +1935,6 @@ class _HomeScreen2State extends State<HomeScreen2>with WidgetsBindingObserver {
                             List<Service> services = artist.services;
 
                             BarberProvider barberDetailsProvider = context.read<BarberProvider>();
-
                             try {
                               Loader.showLoader(context);
 
@@ -1979,16 +1979,8 @@ class _HomeScreen2State extends State<HomeScreen2>with WidgetsBindingObserver {
                                     barberDetailsProvider.setSalonDetails(salonDetails);
                                   } else if (response.requestOptions.uri.pathSegments.contains('service')) {
                                     ServiceResponse serviceResponse = ServiceResponse.fromJson(response.data);
-                                    ServiceResponse serviceresponse = ServiceResponse(
-                                        status: serviceResponse.status,
-                                        message: serviceResponse.message,
-                                        data:    serviceResponse.data);
-                                    salonDetailsProvider.setServiceDetails(serviceresponse);
-                                    if (serviceResponse != null && serviceResponse.data != null) {
-                                      // Handle service response
-                                    } else {
-                                      print('Failed to fetch service details: Invalid response format');
-                                    }
+                                    barberDetailsProvider.serviceDetailsMap[serviceResponse.data.id] = serviceResponse; // Store service details in the map
+                                    print('service name is :- ${serviceResponse.data.serviceTitle}');
                                   }
                                 } else {
                                   print('Failed to fetch details: Invalid response format');
@@ -2033,8 +2025,6 @@ class _HomeScreen2State extends State<HomeScreen2>with WidgetsBindingObserver {
                             List<Service> services = artist.services;
 
                             BarberProvider barberDetailsProvider = context.read<BarberProvider>();
-                            List<ServiceResponse> serviceDetailsList = []; // Move the definition here
-
                             try {
                               Loader.showLoader(context);
 
@@ -2079,18 +2069,8 @@ class _HomeScreen2State extends State<HomeScreen2>with WidgetsBindingObserver {
                                     barberDetailsProvider.setSalonDetails(salonDetails);
                                   } else if (response.requestOptions.uri.pathSegments.contains('service')) {
                                     ServiceResponse serviceResponse = ServiceResponse.fromJson(response.data);
-                                    serviceDetailsList.add(serviceResponse);
-                                    salonDetailsProvider.setServiceDetailsList(serviceDetailsList); // Set the list in the provider
-                                    ServiceResponse serviceresponse = ServiceResponse(
-                                        status: serviceResponse.status,
-                                        message: serviceResponse.message,
-                                        data:    serviceResponse.data);
-                                    salonDetailsProvider.setServiceDetails(serviceresponse);
-                                    if (serviceResponse != null && serviceResponse.data != null) {
-                                      // Handle service response
-                                    } else {
-                                      print('Failed to fetch service details: Invalid response format');
-                                    }
+                                    barberDetailsProvider.serviceDetailsMap[serviceResponse.data.id] = serviceResponse; // Store service details in the map
+                                    print('service name is :- ${serviceResponse.data.serviceTitle}');
                                   }
                                 } else {
                                   print('Failed to fetch details: Invalid response format');
@@ -2187,8 +2167,13 @@ class _HomeScreen2State extends State<HomeScreen2>with WidgetsBindingObserver {
                     : BorderRadius.vertical(
                   top: Radius.circular(3.h),
                 ),
-                child: Image.network(
-                  imagePath ?? 'https://drive.google.com/uc?export=view&id=1zw2jQ0_wgXb0Dr5lAgXvCfu5Ic0ajFE0',
+                child: imagePath != null && imagePath.isNotEmpty
+                    ? Image.network(
+                  imagePath,
+                  fit: BoxFit.cover,
+                )
+                    : Image.asset(
+                  'assets/images/salon_dummy_image.png',
                   fit: BoxFit.cover,
                 ),
               ),
@@ -5058,12 +5043,15 @@ class _HomeScreen4State extends State<HomeScreen4> with WidgetsBindingObserver {
                                     borderRadius: BorderRadius.horizontal(
                                       right: Radius.circular(1.h),
                                     ),
-                                    child: salon.images.isNotEmpty
+                                    child: salon.images != null && salon.images.isNotEmpty
                                         ? Image.network(
                                       salon.images[0].url,
                                       fit: BoxFit.cover,
                                     )
-                                        : Placeholder(),
+                                        : Image.asset(
+                                      'assets/images/salon_dummy_image.png',
+                                      fit: BoxFit.cover,
+                                    ),
                                   ),
                                 ),
                                 salon.discount == 0 || salon.discount == null

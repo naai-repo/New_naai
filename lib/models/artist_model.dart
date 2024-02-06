@@ -131,3 +131,16 @@ class Location {
     );
   }
 }
+/*
+for(var username in reviewItem.data) {
+          var userId = username.userId;
+          print('userId:- $userId');
+          var userResponse = await Dio().get(
+              'http://13.235.49.214:8800/customer/user/$userId');
+          if (userResponse.data != null && userResponse.data is Map<String, dynamic>) {
+            dynamic userprofile = ProfileResponse.fromJson(userResponse.data);
+            username.setUserName(userprofile);
+            print('Username is :- ${userprofile}');
+          }
+        }
+ */

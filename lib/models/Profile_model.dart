@@ -11,7 +11,7 @@ String profileResponseToJson(ProfileResponse data) => json.encode(data.toJson())
 class ProfileResponse {
   String status;
   String message;
-  Data data;
+  UserData data;
 
   ProfileResponse({
     required this.status,
@@ -22,7 +22,7 @@ class ProfileResponse {
   factory ProfileResponse.fromJson(Map<String, dynamic> json) => ProfileResponse(
     status: json["status"]?? '',
     message: json["message"]?? '',
-    data: Data.fromJson(json["data"]),
+    data: UserData.fromJson(json["data"]),
   );
 
   Map<String, dynamic> toJson() => {
@@ -32,7 +32,7 @@ class ProfileResponse {
   };
 }
 
-class Data {
+class UserData {
   Location location;
   String id;
   String name;
@@ -45,7 +45,7 @@ class Data {
   int v;
   String status;
 
-  Data({
+  UserData({
     required this.location,
     required this.id,
     required this.name,
@@ -59,7 +59,7 @@ class Data {
     required this.status,
   });
 
-  factory Data.fromJson(Map<String, dynamic> json) => Data(
+  factory UserData.fromJson(Map<String, dynamic> json) => UserData(
     location: Location.fromJson(json["location"]),
     id: json["_id"],
     name: json["name"],

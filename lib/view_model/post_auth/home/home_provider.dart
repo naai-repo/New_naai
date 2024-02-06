@@ -268,7 +268,7 @@ String ?  _addressText;
     try {
       List<Placemark> placemarks = await placemarkFromCoordinates(latitude, longitude);
       Placemark place = placemarks[0];
-      return "${place.locality}, ${place.country}";
+      return "${place.locality},${place.administrativeArea}";
     } catch (e) {
       print("Error getting address: $e");
       return "Error: $e";
@@ -415,16 +415,58 @@ String ?  _addressText;
   bool _locationPopupShown = false;
   bool get isLocationPopupShown => _locationPopupShown;
 
+  Future<void> updateUserLocationFromAPI({required String userId}) async {
+    final url = 'http://13.235.49.214:8800/customer/user/location/$userId';
+
+    final dio = Dio();
+
+    try {
+      final response = await dio.get(url);
+      if (response.statusCode == 200) {
+        final data = response.data;
+        final coordinates = data['data'][0]['coordinates'] as List<dynamic>;
+
+        // Convert coordinates to List<double>
+        final double longitude = coordinates[0].toDouble();
+        final double latitude = coordinates[1].toDouble();
+
+        // Use the coordinates obtained from the API to update user location
+        await Future.wait([
+          getTopSalons(coords: [longitude, latitude]),
+          getTopArtists(coords: [longitude, latitude]),
+          updateUserLocation(userId: userId, coords: [longitude, latitude]),
+          // Additional asynchronous tasks based on location
+        ]);
+      } else {
+        print("Failed to fetch coordinates from API: ${response.statusCode}");
+      }
+    } catch (e) {
+      print("Error fetching coordinates from API: $e");
+    }
+  }
+
+
+
   Future<void> initHome(BuildContext context) async {
     var _serviceEnabled = await _mapLocation.serviceEnabled();
 
-    if (!_locationPopupShown) {
-      await locationPopUp(context);
-      _locationPopupShown = true;
+    final box = await Hive.openBox('userBox');
+    final double savedLatitude = box.get('savedLatitude') ?? 0.0;
+    final double savedLongitude = box.get('savedLongitude') ?? 0.0;
+    if (savedLatitude == 0.0 && savedLongitude == 0.0) {
+      // If saved coordinates don't exist, show location popup
+      if (!_locationPopupShown) {
+        await locationPopUp(context);
+        _locationPopupShown = true;
+      }
     }
 
     if (!_serviceEnabled) {
       _serviceEnabled = await _mapLocation.requestService();
+      final userId = box.get('userId') ?? '654a925f1c6156295deed42d';
+
+      // Call API to get coordinates if location is off
+      await updateUserLocationFromAPI(userId: userId);
       if (!_serviceEnabled) return;
     }
 
@@ -437,8 +479,6 @@ String ?  _addressText;
     }
 
     Loader.showLoader(context);
-    final box = await Hive.openBox('userBox');
-    final userId = box.get('userId') ?? '';
 
     try {
       Position currentLocation = await Geolocator.getCurrentPosition();
@@ -447,6 +487,7 @@ String ?  _addressText;
         // Use current location if available
         print('Current Location: ${currentLocation.longitude}, ${currentLocation.latitude}');
         userAddress = await getAddress(currentLocation.latitude, currentLocation.longitude);
+        final userId = box.get('userId') ?? '';
         await updateUserLocation(
           userId: userId,
           coords: [currentLocation.longitude, currentLocation.latitude],
@@ -480,15 +521,10 @@ String ?  _addressText;
     if (savedLatitude != 0.0 && savedLongitude != 0.0) {
       print('Using saved coordinates: $savedLongitude, $savedLatitude');
       userAddress = await getAddress(savedLatitude, savedLongitude);
-      await updateUserLocation(
-        userId: userId,
-        coords: [savedLongitude, savedLatitude],
-      );
       await Future.wait([
         getTopSalons(coords: [savedLongitude, savedLatitude]),
         getTopArtists(coords: [savedLongitude, savedLatitude]),
         getAppointments(),
-        // Additional asynchronous tasks based on location
       ]);
     } else {
       // Handle the case when both current location and saved coordinates are not available
@@ -709,11 +745,9 @@ String ?  _addressText;
     }
   }
 
-
   Future locationPopUp(BuildContext context) async {
-    var _permissionGranted = await _mapLocation.hasPermission();
-    if (_permissionGranted == location.PermissionStatus.denied) {
-      await showModalBottomSheet(isScrollControlled: true,
+      await showModalBottomSheet(enableDrag: false,
+        isScrollControlled: true,
         isDismissible: false,
         backgroundColor: Colors.white,
         shape: const RoundedRectangleBorder(
@@ -774,11 +808,15 @@ String ?  _addressText;
                               side:BorderSide(color: ColorsConstant.appColor),
                             ),
                             onPressed: () async {
-                              await Geolocator.requestPermission();
-                            //  _mapLocation.requestService();
-                         //    await _mapLocation.requestPermission();
-                                Navigator.pop(context);
+                              var permissionResult = await Geolocator.requestPermission();
+                              var isLocationServiceEnabled = await Geolocator.isLocationServiceEnabled();
 
+                              if (permissionResult != LocationPermission.always ||
+                                  !isLocationServiceEnabled) {
+                                await showLocationPermissionDialog(context);
+                              } else {
+                                Navigator.pop(context);
+                              }
                             },
                           ),
                         ),
@@ -819,13 +857,10 @@ String ?  _addressText;
           );
         },
       );
-    }
   }
 
   Future locationPopUp2(BuildContext context) async {
-    var _permissionGranted = await _mapLocation.hasPermission();
-    if (_permissionGranted == location.PermissionStatus.denied) {
-      await showModalBottomSheet(
+      await showModalBottomSheet(enableDrag: false,
         isScrollControlled: true,
         isDismissible: false,
         backgroundColor: Colors.white,
@@ -886,11 +921,14 @@ String ?  _addressText;
                                 ),
                               ),
                               onPressed: () async {
-                                await Geolocator.requestPermission();
-                                //  _mapLocation.requestService();
-                                //    await _mapLocation.requestPermission();
-                                Navigator.pop(context);
-
+                                var permissionResult = await Geolocator.requestPermission();
+                                var isLocationServiceEnabled = await Geolocator.isLocationServiceEnabled();
+                                if (permissionResult != LocationPermission.always ||
+                                    !isLocationServiceEnabled) {
+                                  await showLocationPermissionDialog(context);
+                                } else {
+                                  Navigator.pop(context);
+                                }
                               },
                             ),
                           ),
@@ -931,7 +969,6 @@ String ?  _addressText;
           );
         },
       );
-    }
   }
 
 
@@ -1126,13 +1163,20 @@ String ?  _addressText;
   Future<void> initHome2(BuildContext context) async {
     var _serviceEnabled = await _mapLocation.serviceEnabled();
 
-    if (!_locationPopupShown) {
-      await locationPopUp2(context);
-      _locationPopupShown = true;
+    final box = await Hive.openBox('userBox');
+    final double savedLatitude = box.get('savedLatitude') ?? 0.0;
+    final double savedLongitude = box.get('savedLongitude') ?? 0.0;
+    if (savedLatitude == 0.0 && savedLongitude == 0.0) {
+      // If saved coordinates don't exist, show location popup
+      if (!_locationPopupShown) {
+        await locationPopUp2(context);
+        _locationPopupShown = true;
+      }
     }
 
     if (!_serviceEnabled) {
       _serviceEnabled = await _mapLocation.requestService();
+      await loadSavedCoordinates(context);
       if (!_serviceEnabled) return;
     }
 
@@ -1145,8 +1189,8 @@ String ?  _addressText;
     }
 
     Loader.showLoader(context);
-    final box = await Hive.openBox('userBox');
-    final userId = box.get('userId') ?? '654a925f1c6156295deed42d';
+  //  final box = await Hive.openBox('userBox');
+  //  final userId = box.get('userId') ?? '654a925f1c6156295deed42d';
 
     try {
       Position currentLocation = await Geolocator.getCurrentPosition();
@@ -1155,10 +1199,6 @@ String ?  _addressText;
         // Use current location if available
         print('Current Location: ${currentLocation.longitude}, ${currentLocation.latitude}');
         userAddress = await getAddress(currentLocation.latitude, currentLocation.longitude);
-        await updateUserLocation(
-          userId: userId,
-          coords: [currentLocation.longitude, currentLocation.latitude],
-        );
       } else {
         // Use saved coordinates if current location is not available
         await loadSavedCoordinates(context); // Load and use saved coordinates
@@ -1711,7 +1751,6 @@ String ?  _addressText;
   Future<void> showLocationPermissionDialog(BuildContext context) async {
     return showDialog<void>(
       context: context,
-      barrierDismissible: false,
       builder: (BuildContext context) {
         return AlertDialog(
           content: SingleChildScrollView(

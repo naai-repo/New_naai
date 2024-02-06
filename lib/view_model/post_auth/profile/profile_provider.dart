@@ -24,11 +24,11 @@ class ProfileProvider with ChangeNotifier {
 
 
 
-  Data? _userData; // Replace UserProfile with your actual model
+  UserData? _userData; // Replace UserProfile with your actual model
 
-  Data? get userData => _userData;
+  UserData? get userData => _userData;
 
-  void setUserData(Data userData) {
+  void setUserData(UserData userData) {
     _userData = userData;
     notifyListeners();
   }

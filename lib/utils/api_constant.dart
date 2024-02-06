@@ -12,7 +12,7 @@ class UrlConstants{
   static const updateUser = '${baseUrl}customer/user/update';
   static const updateLocation = '${baseUrl}customer/user/location/set';
   static const topSalon = '${baseUrl}partner/salon/topSalons?page=1&limit=20';
-  static const topArtist = '${baseUrl}partner/artist/topArtists';
+  static const topArtist = '${baseUrl}partner/artist/topArtists?page=1&limit=30&type=male';
 
   static const discountAndRating = '${baseUrl}partner/salon/filter?&filter=discount';
   static const discountAndRatingForMen = '${baseUrl}partner/salon/filter?page=1&limit=20&filter=discount&min=';

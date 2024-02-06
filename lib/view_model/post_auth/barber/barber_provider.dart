@@ -4,7 +4,6 @@ import 'package:dio/dio.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:naai/models/artist.dart';
-import 'package:naai/models/review.dart';
 import 'package:naai/models/service_detail.dart';
 import 'package:naai/services/database.dart';
 import 'package:naai/utils/enums.dart';
@@ -16,6 +15,7 @@ import 'package:naai/view_model/post_auth/home/home_provider.dart';
 import 'package:naai/view_model/post_auth/salon_details/salon_details_provider.dart';
 import 'package:provider/provider.dart';
 
+import '../../../models/Profile_model.dart';
 import '../../../models/artist_detail.dart';
 import '../../../models/artist_model.dart';
 import '../../../models/review_barber.dart';
@@ -274,46 +274,7 @@ class BarberProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> submitReview(
-    BuildContext context, {
-    required int stars,
-    required String text,
-  }) async {
-    if (stars < 1) {
-      ReusableWidgets.showFlutterToast(context, "Please add stars");
-      return;
-    }
-    Loader.showLoader(context);
-    Review review = Review(
-      artistId: artist.id,
-      artistName: artist.name,
-      salonId: artist.salonId,
-      salonName: artist.salonName,
-      comment: text,
-      createdAt: DateTime.now(),
-      userId: context.read<HomeProvider>().userData.id,
-      userName: context.read<HomeProvider>().userData.name,
-      rating: stars.toDouble(),
-    );
 
-    try {
-      await DatabaseService().addReview(reviewData: review).onError(
-            (FirebaseException error, stackTrace) => throw ExceptionHandling(
-              message: error.message ?? "",
-            ),
-          );
-      context.read<HomeProvider>().reviewList.add(review);
-      context.read<HomeProvider>().changeRatings(context);
-      Loader.hideLoader(context);
-    } catch (e) {
-      Loader.hideLoader(context);
-      ReusableWidgets.showFlutterToast(
-        context,
-        '$e',
-      );
-    }
-    notifyListeners();
-  }
 
   /// Set the index of selected artist
   void setSelectedArtistIndex(int artistIndex) {
@@ -344,67 +305,107 @@ class BarberProvider with ChangeNotifier {
   }
 }
 class ReviewsProvider with ChangeNotifier {
-  List<ReviewItem> reviews = [];
+  final Dio _dio = Dio(); // Initialize Dio instance
+  List<Review> reviews = []; // Add a property to store reviews
+List <SalonReview> salonReviews = [];
 
-  Future<List<ReviewItem>> getReviewsApisArtist(String artistId) async {
+  Future<void> fetchReviews(String artistId) async {
     try {
-      final String url =
-          "http://13.235.49.214:8800/partner/review/artist/$artistId";
-      final Dio dio = Dio();
-      String? authToken = await AccessTokenManager.getAccessToken();
 
-      if (authToken != null) {
-        dio.options.headers['Authorization'] = 'Bearer $authToken';
-      }
-      final response = await dio.get(
-        url,
-        options: Options(headers: {"Content-Type": "application/json"}),
-      );
 
-      if (response.statusCode == 200) {
-        reviews = [];
-        for (var e in response.data['data']) {
-          reviews.add(ReviewItem.fromJson(jsonEncode(e)));
+        Options options = Options(
+          validateStatus: (status) {
+            return status == 200 || status == 404;
+          },
+        );
+
+        // Make the GET request
+        Response response = await _dio.get(
+          'http://13.235.49.214:8800/partner/review/artist/$artistId',
+          options: options,
+        );
+
+        if (response.statusCode == 200) {
+          Map<String, dynamic> responseData = response.data;
+
+          ReviewBarber reviewBarber = ReviewBarber.fromJson(responseData);
+          reviews = reviewBarber.data.map((datum) => datum.review).toList();
+
+          for (var artistReview in reviewBarber.data) {
+            var userId = artistReview.review.userId;
+            var artistReviewResponse = await Dio().get(
+                'http://13.235.49.214:8800/customer/user/$userId');
+
+            dynamic reviewResponse = ProfileResponse.fromJson(
+                artistReviewResponse.data).data.name;
+
+            artistReview.review.setArtistName(reviewResponse);
+          }
+        } else if (response.statusCode == 404) {
+          // Handle the case when no reviews are found
+          reviews = []; // or leave reviews as is, depending on your use case
+          print('No reviews found for the artist.');
         }
-        return reviews;
-      } else {
-        print("Review Response Code Error : ${response.data}");
-        return [];
-      }
-    } catch (e) {
-      print("Reviews Error :${e}");
-      return [];
+        else {
+          print('Error: ${response.statusCode}');
+        }
+
+    } catch (error) {
+      // Handle any Dio errors
+      print('Dio Error: $error');
     }
+    notifyListeners(); // Notify listeners after updating reviews
   }
 
-  Future<List<ReviewItem>> getReviewsApisSalon(String salonId) async {
+
+  Future<void> fetchSalonReviews(String salonId) async {
+
     try {
-      final String url =
-          "http://13.235.49.214:8800/partner/review/salon/$salonId";
-      final Dio dio = Dio();
-      String? authToken = await AccessTokenManager.getAccessToken();
+        Options options = Options(
+          validateStatus: (status) {
+            return status == 200 || status == 404; // Include status code 404 as valid
+          },
+        );
+        // Make the GET request
+        Response response = await _dio.get(
+          'http://13.235.49.214:8800/partner/review/salon/$salonId',
+          options: options,
+        );
+        if (response.statusCode == 200) {
+          SalonReviewBarber salonBarber = SalonReviewBarber.fromJson(response.data);
+          salonReviews = salonBarber.data.map((salonDatum) => salonDatum.salonreview).toList();
 
-      if (authToken != null) {
-        dio.options.headers['Authorization'] = 'Bearer $authToken';
-      }
-      final response = await dio.get(
-        url,
-        options: Options(headers: {"Content-Type": "application/json"}),
-      );
+          // Fetch user names for all salon reviews
+          for (var salonReview in salonBarber.data) {
+            var userId = salonReview.salonreview.userId;
+            var salonReviewResponse = await Dio().get('http://13.235.49.214:8800/customer/user/$userId');
+            dynamic salonReviewsResponse = ProfileResponse.fromJson(salonReviewResponse.data).data.name;
 
-      if (response.statusCode == 200) {
-        reviews = [];
-        for (var e in response.data['data']) {
-          reviews.add(ReviewItem.fromJson(jsonEncode(e)));
+            salonReview.salonreview.setUserName(salonReviewsResponse);
+          }
+
+          // Fetch artist names for all salon reviews
+          for (var salonReview in salonBarber.data) {
+            var artistId = salonReview.salonreview.artistId;
+            var salonReviewResponse = await Dio().get('http://13.235.49.214:8800/partner/artist/single/$artistId');
+            dynamic salonReviewsResponse = ArtistResponse.fromJson(salonReviewResponse.data).data.name;
+
+            salonReview.salonreview.setArtistName(salonReviewsResponse);
+          }
         }
-        return reviews;
-      } else {
-        print("Review Response Code Error : ${response.data}");
-        return [];
-      }
-    } catch (e) {
-      print("Reviews Error :${e}");
-      return [];
+
+        else if (response.statusCode == 404) {
+          // Handle the case when no reviews are found
+          salonReviews = []; // or leave reviews as is, depending on your use case
+          print('No reviews found for the artist.');
+        }
+        else {
+          print('Error: ${response.statusCode}');
+        }
+    } catch (error) {
+      // Handle any Dio errors
+      print('Dio Error: $error');
     }
+    notifyListeners();
   }
 }

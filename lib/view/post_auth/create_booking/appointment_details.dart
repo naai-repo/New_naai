@@ -8,6 +8,7 @@ import 'package:naai/utils/components/red_button_with_text.dart';
 import 'package:naai/utils/image_path_constant.dart';
 import 'package:naai/utils/string_constant.dart';
 import 'package:naai/utils/style_constant.dart';
+import 'package:naai/view/post_auth/create_booking/create_booking_screen.dart';
 import 'package:naai/view_model/post_auth/home/home_provider.dart';
 import 'package:naai/view_model/post_auth/profile/profile_provider.dart';
 import 'package:provider/provider.dart';
@@ -20,6 +21,7 @@ import 'package:path_provider_platform_interface/path_provider_platform_interfac
 
 import '../../../models/allbooking.dart';
 import '../../../utils/components/add_review_component.dart';
+import '../../../view_model/post_auth/salon_details/salon_details_provider.dart';
 
 //Local imports
 
@@ -762,7 +764,7 @@ class AppointmentDetails2 extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<HomeProvider>(builder: (context, provider, child) {
+    return Consumer2<HomeProvider,SalonDetailsProvider>(builder: (context, provider,salonprovider ,child) {
       return Scaffold(
         backgroundColor: Colors.white,
         appBar: AppBar(
@@ -872,32 +874,34 @@ class AppointmentDetails2 extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 8.0),
-                    const Align(
+                    Align(
                       alignment: Alignment.topLeft,
                       child: Text(
                         "Artist Name:-",
                         style: TextStyle(fontSize: 16.0),
                       ),
                     ),
-                    Align(
-                      alignment: Alignment.topLeft,
-                      child: Row(
-                        children: [
-                          Column(
-                            children:[
-                              Text(
-                                '${booking.artistServiceMap.first.artistName}',
-                                style: StyleConstant.textDark12sp600Style,
+                    for (var artistService in booking.artistServiceMap)
+                      Align(
+                        alignment: Alignment.topLeft,
+                        child: Row(
+                          children: [
+                            Text(
+                              '${artistService.artistName}',
+                              style: StyleConstant.textDark12sp600Style,
+                            ),
+                            Spacer(),
+                            IconButton(
+                              onPressed: () {
+                                // Add functionality here for when the save icon is pressed
+                              },
+                              icon: SvgPicture.asset(
+                                ImagePathConstant.saveIcon,
                               ),
-                            ],
-                          ),
-                          Spacer(),
-                          SvgPicture.asset(
-                            ImagePathConstant.saveIcon,
-                          )
-                        ],
+                            )
+                          ],
+                        ),
                       ),
-                    ),
                     SizedBox(height: 3.h),
                     Row(
                       children: <Widget>[
@@ -977,8 +981,29 @@ class AppointmentDetails2 extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
                 RedButtonWithText(
-                  buttonText: StringConstant.startAppointment,
-                  onTap: () {},
+                  buttonText: StringConstant.Resheduling ,
+                  onTap: () async{
+                    String salonId =booking.salonId;
+                    List<String> selectedServiceIds = booking.artistServiceMap
+                        .map((service) => service.serviceId)
+                        .toList();
+                    await salonprovider.fetchArtist(context,salonId, selectedServiceIds);
+                    salonprovider.setSchedulingStatus(onSelectStaff: true);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            CreateBookingScreen2(
+                              artistName: booking.artistServiceMap.first.artistName,
+                              artistId: booking.artistServiceMap.first.artistId,
+                            ),
+                      ),
+
+                    );
+                    print('artist id : ${booking.artistServiceMap.first.artistName}');
+                    print('artist name : ${booking.artistServiceMap.first.artistId}');
+                    print(' service : ${selectedServiceIds}');
+                  },
                   fillColor: ColorsConstant.textDark,
                   shouldShowBoxShadow: false,
                   padding: EdgeInsets.symmetric(vertical: 1.5.h),
@@ -1389,92 +1414,100 @@ class AppointmentDetails2 extends StatelessWidget {
   }
 
   Widget appointmentOverview(HomeProvider provider) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Container(
-          color:  Color(0xFFE9EDF7),
-          width: 50.h,
-          child: CurvedBorderedCard(
-            fillColor: const Color(0xFFE9EDF7),
-            removeBottomPadding: false,
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 4.w),
-              child: Column(
+    return Container(
+      color: Color(0xFFE9EDF7),
+      width: 50.h,
+      child: CurvedBorderedCard(
+        fillColor: const Color(0xFFE9EDF7),
+        removeBottomPadding: false,
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 4.w),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                'Barber',
+                style: StyleConstant.textLight11sp400Style,
+              ),
+              SizedBox(height: 0.5.h),
+              Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Text(
-                    StringConstant.barber,
-                    style: StyleConstant.textLight11sp400Style,
-                  ),
-                  SizedBox(height: 0.5.h),
-                  Text(
-                    '${booking.artistServiceMap.first.artistName}',
-                    style: StyleConstant.textDark12sp600Style,
-                  ),
-                  SizedBox(height: 1.5.h),
-                  Text(
-                    StringConstant.appointmentDateAndTime,
-                    style: StyleConstant.textLight11sp400Style,
-                  ),
-                  SizedBox(height: 0.5.h),
-                  Text.rich(
-                    TextSpan(
-                      children: <InlineSpan>[
-                        TextSpan(
-                          text: provider.formatAppointmentDate(booking.bookingDate),
-                          style: StyleConstant.textDark12sp600Style,
-                        ),
-                        TextSpan(
-                          text: ' | ',
-                          style: TextStyle(
-                            fontSize: 13.sp,
-                            color: ColorsConstant.textLight,
-                          ),
-                        ),
-                        TextSpan(
-                          text: booking.timeSlot.start,
-                          style: StyleConstant.textDark12sp600Style,
-                        ),
-                      ],
+                  for (var artistService in booking.artistServiceMap)
+                    Text(
+                      '${artistService.artistName} ',
+                      style: StyleConstant.textDark12sp600Style,
                     ),
-                    textAlign: TextAlign.start,
-                  ),
-                  SizedBox(height: 1.5.h),
-                  Text(
-                    StringConstant.services,
-                    style: StyleConstant.textLight11sp400Style,
-                  ),
-                  SizedBox(height: 0.5.h),
-                  ConstrainedBox(
-                    constraints: BoxConstraints(maxHeight: 5.h),
-                    child: ListView.separated(
-                      shrinkWrap: true,
-                      padding: EdgeInsets.zero,
-                      physics: NeverScrollableScrollPhysics(),
-                      scrollDirection: Axis.horizontal,
-                      itemBuilder: (context, index2) => Text(
-                        booking.artistServiceMap.last.serviceName![index2],
-                        style: TextStyle(
-                          fontWeight: FontWeight.w500,
-                          fontSize: 11.sp,
-                          color: const Color(0xFF212121),
-                        ),
-                      ),
-                      separatorBuilder: (context, index) => Text(''),
-                      itemCount: booking
-                          .artistServiceMap.last.serviceName?.length ??
-                          0,
-                    ),
-                  )
                 ],
               ),
-            ),
+              SizedBox(height: 1.5.h),
+              Text(
+                'Appointment Date and Time',
+                style: StyleConstant.textLight11sp400Style,
+              ),
+              SizedBox(height: 0.5.h),
+              Text.rich(
+                TextSpan(
+                  children: <InlineSpan>[
+                    TextSpan(
+                      text: provider.formatAppointmentDate(booking.bookingDate),
+                      style: StyleConstant.textDark12sp600Style,
+                    ),
+                    TextSpan(
+                      text: ' | ',
+                      style: TextStyle(
+                        fontSize: 13.sp,
+                        color: ColorsConstant.textLight,
+                      ),
+                    ),
+                    TextSpan(
+                      text: booking.timeSlot.start,
+                      style: StyleConstant.textDark12sp600Style,
+                    ),
+                  ],
+                ),
+                textAlign: TextAlign.start,
+              ),
+              SizedBox(height: 1.5.h),
+              Text(
+                'Service',
+                style: StyleConstant.textLight11sp400Style,
+              ),
+              SizedBox(height: 0.5.h),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  for (var artistService in booking.artistServiceMap)
+                    ConstrainedBox(
+                      constraints: BoxConstraints(maxHeight: 5.h),
+                      child: ListView.separated(
+                        shrinkWrap: true,
+                        padding: EdgeInsets.zero,
+                        physics: NeverScrollableScrollPhysics(),
+                        scrollDirection: Axis.horizontal,
+                        itemBuilder: (context, index2) =>
+                            Text('${artistService.serviceName![index2]}',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w500,
+                            fontSize: 11.sp,
+                            color: const Color(0xFF212121),
+                          ),
+                        ),
+                        separatorBuilder: (context, index) => Text(''),
+                        itemCount: artistService.serviceName?.length ?? 0,
+                      ),
+                    ),
+                ],
+              ),
+            ],
           ),
         ),
-      ],
+      ),
     );
   }
+
+
+
 
   ///! This is the code for invoice
   Future<void> generateInvoice() async {

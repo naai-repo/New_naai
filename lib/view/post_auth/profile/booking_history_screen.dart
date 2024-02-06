@@ -96,15 +96,27 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
                           child: MediaQuery.removePadding(
                             context: context,
                             removeTop: true,
-                            child: ListView.builder(
+                            child: provider.previousBooking.isNotEmpty
+                                ? ListView.builder(
                               padding: EdgeInsets.zero,
                               physics: NeverScrollableScrollPhysics(),
                               shrinkWrap: true,
-                              itemCount: provider.previousBooking.first.artistServiceMap.length,
+                              itemCount: 1, // Set itemCount to 1
                               itemBuilder: (context, index) {
-                                PrevBooking booking = provider.previousBooking[index];
+                                PrevBooking booking = provider.previousBooking.first;
                                 return previousBookingCard();
                               },
+                            )
+                                : Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    'No previous bookings available.',
+                                    style: TextStyle(fontSize: 16),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),

@@ -4,6 +4,8 @@
 
 import 'dart:convert';
 
+import 'package:naai/models/artist_model.dart';
+
 ApiResponse apiResponseFromJson(String str) => ApiResponse.fromJson(json.decode(str));
 
 String apiResponseToJson(ApiResponse data) => json.encode(data.toJson());
@@ -64,7 +66,7 @@ class Artist2 {
   String name;
   double rating;
   String salonId;
-  List<barberServices> services;
+  List<Service> services;
   int phoneNumber;
   bool availability;
   bool live;
@@ -110,7 +112,7 @@ class Artist2 {
     rating: (json["rating"] ?? 0).toDouble(),
     salonId: json["salonId"] ?? '',
     services: (json['services'] as List<dynamic>)
-        .map((service) => barberServices.fromJson(service))
+        .map((service) => Service.fromJson(service))
         .toList(),
     phoneNumber: json["phoneNumber"] ?? 0,
     availability: json["availability"] ?? false,

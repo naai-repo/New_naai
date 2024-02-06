@@ -45,119 +45,175 @@ class _SalonReviewContainerState extends State<SalonReviewContainer> {
                     ),
                   ),
                 ),
-                (ref.reviews.isNotEmpty)
+                (ref.salonReviews.isNotEmpty)
                     ? SizedBox(
                   height: 500,
                   child: ListView.builder(
-                      itemCount: ref.reviews.length,
-                      itemBuilder: (context, index) {
-                        final String storeName =
-                            provider.salonDetails?.data.data.name ??
-                                'No Title';
-                        final String title =
-                            ref.reviews[index].review.title ?? 'No Title';
-                        final String date =
-                            ref.reviews[index].review.createdAt ??
-                                'No Date';
-                        final String discription =
-                            ref.reviews[index].review.description ??
-                                'No Discription';
+                    itemCount: ref.salonReviews.length,
+                    itemBuilder: (context, index) {
+                      final String storeName = provider.salonDetails?.data.data.name ?? '';
+                      final String title = ref.salonReviews[index].userName ?? '';
+                      String date = ref.salonReviews[index].createdAt ?? '';
+                      final String discription = ref.salonReviews[index].description ?? '';
+                      final String artistName = ref.salonReviews[index].artistName ?? '';
+                      bool isExpanded = ref.salonReviews[index].isExpanded ?? false;
+                      final int rating =  ref.salonReviews[index].rating ?? 0;
+                      if (date != 'No Date') {
+                        final DateTime dateTime = DateTime.parse(date);
+                        final formattedDate = DateFormat('dd-MM-yyyy').format(dateTime);
+                        print('Formatted Date: $formattedDate');
+                        date = formattedDate;
+                      } else {
+                        print('Date is not available');
+                      }
 
-                        return Container(
-                          padding: EdgeInsets.all(4.w),
-                          margin: EdgeInsets.only(bottom: 5.w),
-                          decoration: BoxDecoration(
-                              border: Border.all(
-                                  color: ColorsConstant.divider),
-                              borderRadius: BorderRadius.circular(5.sp)),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                "For : $storeName",
-                                style: TextStyle(
-                                    fontFamily: "Poppins",
-                                    color: const Color(0xFF8C9AAC),
-                                    fontSize: 10.sp,
-                                    fontWeight: FontWeight.w500),
+                      return Container(
+                        padding: EdgeInsets.all(4.w),
+                        margin: EdgeInsets.only(bottom: 5.w),
+                        decoration: BoxDecoration(
+                            border: Border.all(color: ColorsConstant.divider),
+                            borderRadius: BorderRadius.circular(5.sp)),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Store : $storeName",
+                              style: TextStyle(
+                                  fontFamily: "Poppins",
+                                  color: const Color(0xFF8C9AAC),
+                                  fontSize: 10.sp,
+                                  fontWeight: FontWeight.w500),
+                            ),
+                            if(artistName.isNotEmpty && artistName !=null)
+                            Text(
+                              "For : $artistName",
+                              style: TextStyle(
+                                  fontFamily: "Poppins",
+                                  color: const Color(0xFF8C9AAC),
+                                  fontSize: 10.sp,
+                                  fontWeight: FontWeight.w500),
+                            ),
+                            SizedBox(height: 1.h,),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                CircleAvatar(
+                                    backgroundImage: AssetImage('assets/images/salon_dummy_image.png'),
+                                    radius: 6.w),
+                                SizedBox(width: 1.5.h),
+                                Column(
+                                  mainAxisAlignment: MainAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      title,
+                                      style: TextStyle(
+                                          fontFamily: "Poppins",
+                                          color: const Color(0xFF373737),
+                                          fontSize: 12.sp,
+                                          fontWeight: FontWeight.w600),
+                                    ),
+                                    Text(
+                                      date,
+                                      style: TextStyle(
+                                          fontFamily: "Poppins",
+                                          color: const Color(0xFF8C9AAC),
+                                          fontSize: 10.sp,
+                                          fontWeight: FontWeight.w500),
+                                    ),
+                                  ],
+                                )
+                              ],
+                            ),
+                            SizedBox(height: 2.h),
+                            Padding(
+                              padding: EdgeInsets.only(
+                                top: 1.h,
+                                bottom: 1.h,
                               ),
-                              SizedBox(
-                                height: 1.h,
-                              ),
-                              Row(
-                                mainAxisAlignment:
-                                MainAxisAlignment.start,
-                                crossAxisAlignment:
-                                CrossAxisAlignment.start,
-                                children: [
-                                  CircleAvatar(
-                                      backgroundColor: Colors.grey,
-                                      radius: 6.w),
-                                  SizedBox(width: 1.5.h),
-                                  Column(
-                                    mainAxisAlignment:
-                                    MainAxisAlignment.start,
-                                    crossAxisAlignment:
-                                    CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        title,
-                                        style: TextStyle(
-                                            fontFamily: "Poppins",
-                                            color:
-                                            const Color(0xFF373737),
-                                            fontSize: 12.sp,
-                                            fontWeight: FontWeight.w600),
-                                      ),
-                                      Text(
-                                        date,
-                                        style: TextStyle(
-                                            fontFamily: "Poppins",
-                                            color:
-                                            const Color(0xFF8C9AAC),
-                                            fontSize: 10.sp,
-                                            fontWeight: FontWeight.w400),
-                                      ),
-                                    ],
-                                  )
+                              child: Row(
+                                children: <Widget>[
+                                  ...List.generate(
+                                    5,
+                                        (i) => SvgPicture.asset(
+                                      ImagePathConstant
+                                          .starIcon,
+                                      color: i <
+                                          (int.parse(rating.toString()))
+                                          ? ColorsConstant
+                                          .appColor
+                                          : ColorsConstant
+                                          .greyStar,
+                                    ),
+                                  ),
                                 ],
                               ),
-                              SizedBox(height: 2.h),
-                              SizedBox(
-                                //height: 10.h,
-                                child: Text(
-                                  discription,
-                                  softWrap: true,
-                                  overflow: TextOverflow.ellipsis,
-                                  maxLines: 2,
-                                  style: TextStyle(
-                                      fontFamily: "Poppins",
-                                      color: const Color(0xFF8C9AAC),
-                                      fontSize: 10.sp,
-                                      fontWeight: FontWeight.w400),
-                                ),
-                              ),
-                              SizedBox(
-                                height: 2.h,
-                              ),
-                              Material(
-                                child: InkWell(
-                                  onTap: () {},
-                                  child: Text(
-                                    "View More",
+                            ),
+                            SizedBox(height: 2.h),
+                            SizedBox(
+                              //height: 10.h,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    discription,
+                                    softWrap: true,
+                                    overflow: isExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
+                                    maxLines: isExpanded ? null : 1,
                                     style: TextStyle(
                                         fontFamily: "Poppins",
-                                        color: ColorsConstant.appColor,
+                                        color: const Color(0xFF8C9AAC),
                                         fontSize: 10.sp,
-                                        fontWeight: FontWeight.w500),
+                                        fontWeight: FontWeight.w400),
                                   ),
-                                ),
-                              )
-                            ],
-                          ),
-                        );
-                      }),
+                                  if (isExpanded)
+                                    Material(
+                                      child: InkWell(
+                                        onTap: () {
+                                          setState(() {
+                                            ref.salonReviews[index].isExpanded = false;
+                                          });
+                                        },
+                                        child: Text(
+                                          "View Less",
+                                          style: TextStyle(
+                                              fontFamily: "Poppins",
+                                              color: ColorsConstant.appColor,
+                                              fontSize: 10.sp,
+                                              fontWeight: FontWeight.w500),
+                                        ),
+                                      ),
+                                    ),
+                                  if (!isExpanded)
+                                    if (discription.length >= 35)
+                                      Material(
+                                        child: InkWell(
+                                          onTap: () {
+                                            setState(() {
+                                              ref.salonReviews[index].isExpanded = true;
+                                            });
+                                          },
+                                          child: Text(
+                                            "View More",
+                                            style: TextStyle(
+                                                fontFamily: "Poppins",
+                                                color: ColorsConstant.appColor,
+                                                fontSize: 10.sp,
+                                                fontWeight: FontWeight.w500),
+                                          ),
+                                        ),
+                                      ),
+                                ],
+                              ),
+                            ),
+                            SizedBox(height: 2.h,),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
                 )
                     : const SizedBox(),
               ],
@@ -224,119 +280,175 @@ class _SalonReviewContainer2State extends State<SalonReviewContainer2> {
                     ),
                   ),
                 ),
-                (ref.reviews.isNotEmpty)
+                (ref.salonReviews.isNotEmpty)
                     ? SizedBox(
                   height: 500,
                   child: ListView.builder(
-                      itemCount: ref.reviews.length,
-                      itemBuilder: (context, index) {
-                        final String storeName =
-                            provider.salonDetails?.data.data.name ??
-                                'No Title';
-                        final String title =
-                            ref.reviews[index].review.title ?? 'No Title';
-                        final String date =
-                            ref.reviews[index].review.createdAt ??
-                                'No Date';
-                        final String discription =
-                            ref.reviews[index].review.description ??
-                                'No Discription';
+                    itemCount: ref.salonReviews.length,
+                    itemBuilder: (context, index) {
+                      final String storeName = provider.salonDetails?.data.data.name ?? '';
+                      final String title = ref.salonReviews[index].userName ?? '';
+                      String date = ref.salonReviews[index].createdAt ?? '';
+                      final String discription = ref.salonReviews[index].description ?? '';
+                      final String artistName = ref.salonReviews[index].artistName ?? '';
+                      bool isExpanded = ref.salonReviews[index].isExpanded ?? false;
+                      final int rating =  ref.salonReviews[index].rating ?? 0;
+                      if (date != 'No Date') {
+                        final DateTime dateTime = DateTime.parse(date);
+                        final formattedDate = DateFormat('dd-MM-yyyy').format(dateTime);
+                        print('Formatted Date: $formattedDate');
+                        date = formattedDate;
+                      } else {
+                        print('Date is not available');
+                      }
 
-                        return Container(
-                          padding: EdgeInsets.all(4.w),
-                          margin: EdgeInsets.only(bottom: 5.w),
-                          decoration: BoxDecoration(
-                              border: Border.all(
-                                  color: ColorsConstant.divider),
-                              borderRadius: BorderRadius.circular(5.sp)),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
+                      return Container(
+                        padding: EdgeInsets.all(4.w),
+                        margin: EdgeInsets.only(bottom: 5.w),
+                        decoration: BoxDecoration(
+                            border: Border.all(color: ColorsConstant.divider),
+                            borderRadius: BorderRadius.circular(5.sp)),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Store : $storeName",
+                              style: TextStyle(
+                                  fontFamily: "Poppins",
+                                  color: const Color(0xFF8C9AAC),
+                                  fontSize: 10.sp,
+                                  fontWeight: FontWeight.w500),
+                            ),
+                            if(artistName.isNotEmpty && artistName !=null)
                               Text(
-                                "For : $storeName",
+                                "For : $artistName",
                                 style: TextStyle(
                                     fontFamily: "Poppins",
                                     color: const Color(0xFF8C9AAC),
                                     fontSize: 10.sp,
                                     fontWeight: FontWeight.w500),
                               ),
-                              SizedBox(
-                                height: 1.h,
+                            SizedBox(height: 1.h,),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                CircleAvatar(
+                                    backgroundImage: AssetImage('assets/images/salon_dummy_image.png'),
+                                    radius: 6.w),
+                                SizedBox(width: 1.5.h),
+                                Column(
+                                  mainAxisAlignment: MainAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      title,
+                                      style: TextStyle(
+                                          fontFamily: "Poppins",
+                                          color: const Color(0xFF373737),
+                                          fontSize: 12.sp,
+                                          fontWeight: FontWeight.w600),
+                                    ),
+                                    Text(
+                                      date,
+                                      style: TextStyle(
+                                          fontFamily: "Poppins",
+                                          color: const Color(0xFF8C9AAC),
+                                          fontSize: 10.sp,
+                                          fontWeight: FontWeight.w500),
+                                    ),
+                                  ],
+                                )
+                              ],
+                            ),
+                            SizedBox(height: 2.h),
+                            Padding(
+                              padding: EdgeInsets.only(
+                                top: 1.h,
+                                bottom: 1.h,
                               ),
-                              Row(
-                                mainAxisAlignment:
-                                MainAxisAlignment.start,
-                                crossAxisAlignment:
-                                CrossAxisAlignment.start,
-                                children: [
-                                  CircleAvatar(
-                                      backgroundColor: Colors.grey,
-                                      radius: 6.w),
-                                  SizedBox(width: 1.5.h),
-                                  Column(
-                                    mainAxisAlignment:
-                                    MainAxisAlignment.start,
-                                    crossAxisAlignment:
-                                    CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        title,
-                                        style: TextStyle(
-                                            fontFamily: "Poppins",
-                                            color:
-                                            const Color(0xFF373737),
-                                            fontSize: 12.sp,
-                                            fontWeight: FontWeight.w600),
-                                      ),
-                                      Text(
-                                        date,
-                                        style: TextStyle(
-                                            fontFamily: "Poppins",
-                                            color:
-                                            const Color(0xFF8C9AAC),
-                                            fontSize: 10.sp,
-                                            fontWeight: FontWeight.w400),
-                                      ),
-                                    ],
-                                  )
+                              child: Row(
+                                children: <Widget>[
+                                  ...List.generate(
+                                    5,
+                                        (i) => SvgPicture.asset(
+                                      ImagePathConstant
+                                          .starIcon,
+                                      color: i <
+                                          (int.parse(rating.toString()))
+                                          ? ColorsConstant
+                                          .appColor
+                                          : ColorsConstant
+                                          .greyStar,
+                                    ),
+                                  ),
                                 ],
                               ),
-                              SizedBox(height: 2.h),
-                              SizedBox(
-                                //height: 10.h,
-                                child: Text(
-                                  discription,
-                                  softWrap: true,
-                                  overflow: TextOverflow.ellipsis,
-                                  maxLines: 2,
-                                  style: TextStyle(
-                                      fontFamily: "Poppins",
-                                      color: const Color(0xFF8C9AAC),
-                                      fontSize: 10.sp,
-                                      fontWeight: FontWeight.w400),
-                                ),
-                              ),
-                              SizedBox(
-                                height: 2.h,
-                              ),
-                              Material(
-                                child: InkWell(
-                                  onTap: () {},
-                                  child: Text(
-                                    "View More",
+                            ),
+                            SizedBox(height: 2.h),
+                            SizedBox(
+                              //height: 10.h,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    discription,
+                                    softWrap: true,
+                                    overflow: isExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
+                                    maxLines: isExpanded ? null : 1,
                                     style: TextStyle(
                                         fontFamily: "Poppins",
-                                        color: ColorsConstant.appColor,
+                                        color: const Color(0xFF8C9AAC),
                                         fontSize: 10.sp,
-                                        fontWeight: FontWeight.w500),
+                                        fontWeight: FontWeight.w400),
                                   ),
-                                ),
-                              )
-                            ],
-                          ),
-                        );
-                      }),
+                                  if (isExpanded)
+                                    Material(
+                                      child: InkWell(
+                                        onTap: () {
+                                          setState(() {
+                                            ref.salonReviews[index].isExpanded = false;
+                                          });
+                                        },
+                                        child: Text(
+                                          "View Less",
+                                          style: TextStyle(
+                                              fontFamily: "Poppins",
+                                              color: ColorsConstant.appColor,
+                                              fontSize: 10.sp,
+                                              fontWeight: FontWeight.w500),
+                                        ),
+                                      ),
+                                    ),
+                                  if (!isExpanded)
+                                    if (discription.length >= 35)
+                                      Material(
+                                        child: InkWell(
+                                          onTap: () {
+                                            setState(() {
+                                              ref.salonReviews[index].isExpanded = true;
+                                            });
+                                          },
+                                          child: Text(
+                                            "View More",
+                                            style: TextStyle(
+                                                fontFamily: "Poppins",
+                                                color: ColorsConstant.appColor,
+                                                fontSize: 10.sp,
+                                                fontWeight: FontWeight.w500),
+                                          ),
+                                        ),
+                                      ),
+                                ],
+                              ),
+                            ),
+                            SizedBox(height: 2.h,),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
                 )
                     : const SizedBox(),
               ],

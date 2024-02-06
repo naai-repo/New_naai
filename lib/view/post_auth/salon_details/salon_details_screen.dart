@@ -53,8 +53,7 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
       },
       child: Consumer<SalonDetailsProvider>(
           builder: (context, provider, child) {
-            context.read<ReviewsProvider>().getReviewsApisSalon(provider.salonDetails!.data.data.id);
-       //     ApiResponse? salonDetails = provider.salonDetails; // Use the instance obtained from the context
+            context.read<ReviewsProvider>().fetchSalonReviews(provider.salonDetails!.data.data.id);
             if (provider.salonDetails!.data.data.discount == 0 ||
                 provider.salonDetails!.data.data.discount == null){
               myShowPrice = provider.totalPrice;
@@ -130,6 +129,7 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
                                 height: 0,
                                 color: ColorsConstant.graphicFillDark,
                               ),
+                              servicesAndReviewTabBar(),
                               selectedTab == 0
                                   ? servicesTab()
                                   : SalonReviewContainer(),
@@ -143,80 +143,75 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
               ),
             ],
           ),
-          bottomNavigationBar: Stack(
-            alignment: Alignment.center,
-            children: <Widget>[
-              servicesAndReviewTabBar(),
-                if (servicesSelected)
-                   Container(
-                      margin: EdgeInsets.only(
-                        bottom: 2.h,
-                        right: 5.w,
-                        left: 5.w,
-                      ),
-                      padding: EdgeInsets.symmetric(
-                        vertical: 1.h,
-                        horizontal: 3.w,
-                      ),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(1.h),
-                        boxShadow: <BoxShadow>[
-                          BoxShadow(
-                            offset: Offset(0, 2.0),
-                            color: Colors.grey,
-                            spreadRadius: 0.2,
-                            blurRadius: 15,
+          bottomNavigationBar:Visibility(
+            visible:  (servicesSelected),
+             child: Container(
+                margin: EdgeInsets.only(
+                  bottom: 2.h,
+                  right: 5.w,
+                  left: 5.w,
+                ),
+                padding: EdgeInsets.symmetric(
+                  vertical: 1.h,
+                  horizontal: 3.w,
+                ),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(1.h),
+                  boxShadow: <BoxShadow>[
+                    BoxShadow(
+                      offset: Offset(0, 2.0),
+                      color: Colors.grey,
+                      spreadRadius: 0.2,
+                      blurRadius: 15,
+                    ),
+                  ],
+                  color: Colors.white,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: <Widget>[
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(
+                          StringConstant.total,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w500,
+                            fontSize: 10.sp,
+                            color: ColorsConstant.textDark,
                           ),
-                        ],
-                        color: Colors.white,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: <Widget>[
-                          Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: <Widget>[
-                              Text(
-                                StringConstant.total,
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w500,
-                                  fontSize: 10.sp,
-                                  color: ColorsConstant.textDark,
-                                ),
-                              ),
-                              Text('Rs.${myShowPrice}',
-                                  style: StyleConstant.textDark15sp600Style),
-                            ],
-                          ),
-                          provider.salonDetails!.data.data.discount==0||provider.salonDetails!.data.data.discount==null?SizedBox():Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: <Widget>[
-                              SizedBox(
-                                height: 2.5.h,
-                              ),
-                              Text('${provider.totalPrice}',
-                                  style: StyleConstant
-                                      .textDark12sp500StyleLineThrough),
-                            ],
-                          ),
-                          VariableWidthCta(
-                            onTap: () async {
-                              String salonId = provider.salonDetails!.data.data.id;
-                              List<String> selectedServiceIds = provider.getSelectedServices()
-                                  .map((service) => service.id)
-                                  .toList();
-                              await provider.fetchArtistListAndNavigate(context,salonId, selectedServiceIds);
-                            },
-                            isActive: true,
-                            buttonText: StringConstant.confirmBooking,
-                          )
-                        ],
-                      ),
+                        ),
+                        Text('Rs.${myShowPrice}',
+                            style: StyleConstant.textDark15sp600Style),
+                      ],
+                    ),
+                    provider.salonDetails!.data.data.discount==0||provider.salonDetails!.data.data.discount==null?SizedBox():Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        SizedBox(
+                          height: 2.5.h,
+                        ),
+                        Text('${provider.totalPrice}',
+                            style: StyleConstant
+                                .textDark12sp500StyleLineThrough),
+                      ],
+                    ),
+                    VariableWidthCta(
+                      onTap: () async {
+                        String salonId = provider.salonDetails!.data.data.id;
+                        List<String> selectedServiceIds = provider.getSelectedServices()
+                            .map((service) => service.id)
+                            .toList();
+                        await provider.fetchArtistListAndNavigate(context,salonId, selectedServiceIds);
+                      },
+                      isActive: true,
+                      buttonText: StringConstant.confirmBooking,
                     )
-                 // : SizedBox()
-            ],
+                  ],
+                ),
+              ),
           ),
         );
       }),
@@ -408,6 +403,7 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
             ),
           )
               : ListView.builder(
+
             padding: EdgeInsets.zero,
             shrinkWrap: true,
             physics: NeverScrollableScrollPhysics(),
@@ -415,81 +411,113 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
             itemBuilder: (context, index) {
               ServicesWithoutSubCategory? serviceDetail =
               provider.salonDetails!.data.services.servicesWithoutSubCategory[index];
-              return GestureDetector(
-                onTap: () {
-                 //logic for to tap and checked the checkbox
-                  provider.toggleSelectedService(serviceDetail!);
-                },
-                child: Container(
-                  margin: EdgeInsets.symmetric(
-                    vertical: 1.h,
-                    horizontal: 3.w,
-                  ),
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 3.w,
-                    vertical: 1.h,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(1.h),
-                    border: Border.all(color: ColorsConstant.divider),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      SizedBox(
-                        width: 50.w,
-                        child: Row(
-                          children: <Widget>[
-                            SvgPicture.asset(
-                              serviceDetail.targetGender == 'male'
-                                  ? ImagePathConstant.manIcon
-                                  : ImagePathConstant.womanIcon,
-                              height: 4.h,
+              bool isAdded = provider.getSelectedServices().contains(serviceDetail);
+              int ? discount = provider.salonDetails?.data.data.discount ?? 0;
+              double? discountPrice = serviceDetail.basePrice - (serviceDetail.basePrice * discount/100);
+              return Container(
+                padding: EdgeInsets.all(3.w),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(
+                          serviceDetail.serviceTitle,
+                          style: TextStyle(
+                            color: const Color(0xFF2B2F34),
+                            fontSize: 12.sp,
+                            fontFamily: 'Poppins',
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        SvgPicture.asset(
+                          serviceDetail.targetGender == "male"
+                              ? ImagePathConstant.manIcon
+                              : ImagePathConstant.womanIcon,
+                          height: 3.h,
+                        )
+                      ],
+                    ),
+                    (serviceDetail.description.isNotEmpty) ? SizedBox(height: 1.h) : const SizedBox(),
+                    (serviceDetail.description.isNotEmpty) ? Text(
+                        serviceDetail.description,
+                        style: TextStyle(
+                          color: const Color(0xFF8B9AAC),
+                          fontSize: 10.sp,
+                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.w500,
+                        )) : const SizedBox(),
+                    SizedBox(height: 1.h,),
+                    RichText(text: TextSpan(
+                        children: [
+                          TextSpan(
+                              text: "Rs. ${discountPrice}",
+                              style: TextStyle(
+                                color: const Color(0xFF373737),
+                                fontSize: 13.sp,
+                                fontFamily: 'Helvetica Neue',
+                                fontWeight: FontWeight.w800,
+                              )
+                          ),
+
+                          WidgetSpan(child: SizedBox(width: 2.w,)),
+                          TextSpan(
+                              text: "Rs. ${serviceDetail.basePrice}",
+                              style: TextStyle(
+                                color: const Color(0xFF8B9AAC),
+                                fontSize: 12.sp,
+                                fontFamily: 'Helvetica Neue',
+                                fontWeight: FontWeight.w400,
+                                decoration: TextDecoration.lineThrough,
+                              )
+                          ),
+                        ]
+                    )),
+                    SizedBox(height: 2.h,),
+                    TextButton(
+                        onPressed: () async {
+                          provider.toggleSelectedService(serviceDetail);
+                        },
+                        style: TextButton.styleFrom(
+                            padding: EdgeInsets.symmetric(horizontal: 6.w,vertical: 2.w),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10.sp),
+                                side: BorderSide(color: const Color(0xFFAA2F4C),width: 0.2.w)
                             ),
-                            SizedBox(width: 2.w),
-                            Expanded(
-                              child: Text(
-                                serviceDetail.serviceTitle ?? "",
-                                style: TextStyle(
-                                  color: ColorsConstant.textDark,
-                                  fontSize: 10.sp,
-                                  fontWeight: FontWeight.w500,
+                          backgroundColor: (!isAdded) ? null : Color(0xFFAA2F4C), // Change background color to red when in remove state
+
+                        ),
+                        child: RichText(text: TextSpan(
+                            style: TextStyle(
+                              color: const Color(0xFFAA2F4C),
+                              fontSize: 12.sp,
+                              fontFamily: 'Poppins',
+                              fontWeight: FontWeight.w600,
+                            ),
+                            children: [
+                              WidgetSpan(
+                                alignment: PlaceholderAlignment.middle,
+                                child: Icon(
+                                  (!isAdded) ? Icons.add : Icons.remove,
+                                  size: 14.sp,
+                                  color: (!isAdded) ? const Color(0xFFAA2F4C) : Colors.white,
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: <Widget>[
-                          Text(
-                            "Rs. ${serviceDetail.basePrice}",
-                            style: TextStyle(
-                              fontSize: 10.sp,
-                              fontWeight: FontWeight.w600,
-                              color: ColorsConstant.textDark,
-                            ),
-                          ),
-                          Checkbox(
-                            value: selectedServices.contains(serviceDetail),
-                            activeColor: ColorsConstant.appColor,
-                            side: BorderSide(
-                              color: Color.fromARGB(255, 193, 193, 193),
-                              width: 2,
-                            ),
-                            onChanged: (value) {
-
-                              provider.toggleSelectedService(serviceDetail!);
-                            },
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+                              WidgetSpan(child: SizedBox(width: 2.w)),
+                              TextSpan(
+                                text: (!isAdded) ? "Add" : "Remove",
+                                style: TextStyle(
+                                  color: (!isAdded) ? const Color(0xFFAA2F4C) : Colors.white,
+                                  backgroundColor: (!isAdded) ? Colors.white : const Color(0xFFAA2F4C),
+                                ),
+                              ),
+                            ]
+                        ))
+                    ),
+                  ],
                 ),
               );
             },
@@ -679,10 +707,11 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
                         borderRadius: BorderRadius.circular(1.5.h),
                         child: GestureDetector(
                           onTap: () async {
+                            provider.resetCurrentBooking2();
                             SalonDetailsProvider salonDetailsProvider = context.read<SalonDetailsProvider>();
                             String artistId = artist.id;
                             String salonId = artist.salonId;
-                           List<dynamic> services = artist.services;
+                           List<Service> services = artist.services;
                             BarberProvider barberDetailsProvider = context.read<BarberProvider>();
 
                             try {
@@ -729,11 +758,9 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
                                     barberDetailsProvider.setSalonDetails(salonDetails);
                                   } else if (response.requestOptions.uri.pathSegments.contains('service')) {
                                     ServiceResponse serviceResponse = ServiceResponse.fromJson(response.data);
-                                    ServiceResponse serviceresponse = ServiceResponse(
-                                        status: serviceResponse.status,
-                                        message: serviceResponse.message,
-                                        data:    serviceResponse.data);
-                                    salonDetailsProvider.setServiceDetails(serviceresponse);
+                                    barberDetailsProvider.serviceDetailsMap[serviceResponse.data.id] = serviceResponse; // Store service details in the map
+                                    print('service name is :- ${serviceResponse.data.serviceTitle}');
+                                    salonDetailsProvider.setServiceDetails(serviceResponse);
                                     if (serviceResponse != null && serviceResponse.data != null) {
                                       // Handle service response
                                     } else {
@@ -1192,7 +1219,7 @@ class _SalonDetailsScreen2State extends State<SalonDetailsScreen2> {
       },
       child: Consumer<SalonDetailsProvider>(
           builder: (context, provider, child) {
-            //     ApiResponse? salonDetails = provider.salonDetails; // Use the instance obtained from the context
+            context.read<ReviewsProvider>().fetchSalonReviews(provider.salonDetails!.data.data.id);
             if (provider.salonDetails!.data.data.discount == 0 ||
                 provider.salonDetails!.data.data.discount == null){
               myShowPrice = provider.totalPrice;
@@ -1268,6 +1295,7 @@ class _SalonDetailsScreen2State extends State<SalonDetailsScreen2> {
                                     height: 0,
                                     color: ColorsConstant.graphicFillDark,
                                   ),
+                                  servicesAndReviewTabBar(),
                                   selectedTab == 0
                                       ? servicesTab()
                                       : SalonReviewContainer2(),
@@ -1281,81 +1309,76 @@ class _SalonDetailsScreen2State extends State<SalonDetailsScreen2> {
                   ),
                 ],
               ),
-              bottomNavigationBar: Stack(
-                alignment: Alignment.center,
-                children: <Widget>[
-                  servicesAndReviewTabBar(),
-                  if (servicesSelected)
-                    Container(
-                      margin: EdgeInsets.only(
-                        bottom: 2.h,
-                        right: 5.w,
-                        left: 5.w,
+              bottomNavigationBar:Visibility(
+                visible:  (servicesSelected),
+               child: Container(
+                  margin: EdgeInsets.only(
+                    bottom: 2.h,
+                    right: 5.w,
+                    left: 5.w,
+                  ),
+                  padding: EdgeInsets.symmetric(
+                    vertical: 1.h,
+                    horizontal: 3.w,
+                  ),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(1.h),
+                    boxShadow: <BoxShadow>[
+                      BoxShadow(
+                        offset: Offset(0, 2.0),
+                        color: Colors.grey,
+                        spreadRadius: 0.2,
+                        blurRadius: 15,
                       ),
-                      padding: EdgeInsets.symmetric(
-                        vertical: 1.h,
-                        horizontal: 3.w,
-                      ),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(1.h),
-                        boxShadow: <BoxShadow>[
-                          BoxShadow(
-                            offset: Offset(0, 2.0),
-                            color: Colors.grey,
-                            spreadRadius: 0.2,
-                            blurRadius: 15,
-                          ),
-                        ],
-                        color: Colors.white,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    ],
+                    color: Colors.white,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: <Widget>[
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: <Widget>[
-                          Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: <Widget>[
-                              Text(
-                                StringConstant.total,
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w500,
-                                  fontSize: 10.sp,
-                                  color: ColorsConstant.textDark,
-                                ),
-                              ),
-                              Text('Rs.${myShowPrice}',
-                                  style: StyleConstant.textDark15sp600Style),
-                            ],
+                          Text(
+                            StringConstant.total,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w500,
+                              fontSize: 10.sp,
+                              color: ColorsConstant.textDark,
+                            ),
                           ),
-                          provider.salonDetails!.data.data.discount==0||provider.salonDetails!.data.data.discount==null?SizedBox():Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: <Widget>[
-                              SizedBox(
-                                height: 2.5.h,
-                              ),
-                              Text('${provider.totalPrice}',
-                                  style: StyleConstant
-                                      .textDark12sp500StyleLineThrough),
-                            ],
-                          ),
-                          VariableWidthCta(
-                            onTap: () async {
-                              String salonId = provider.salonDetails!.data.data.id;
-                              List<String> selectedServiceIds = provider.getSelectedServices()
-                                  .map((service) => service.id)
-                                  .toList();
-                           //   await provider.fetchArtistListAndNavigate(context,salonId, selectedServiceIds);
-                              showSignInDialog(context);
-                            },
-                            isActive: true,
-                            buttonText: StringConstant.confirmBooking,
-                          )
+                          Text('Rs.${myShowPrice}',
+                              style: StyleConstant.textDark15sp600Style),
                         ],
                       ),
-                    )
-                  // : SizedBox()
-                ],
+                      provider.salonDetails!.data.data.discount==0||provider.salonDetails!.data.data.discount==null?SizedBox():Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          SizedBox(
+                            height: 2.5.h,
+                          ),
+                          Text('${provider.totalPrice}',
+                              style: StyleConstant
+                                  .textDark12sp500StyleLineThrough),
+                        ],
+                      ),
+                      VariableWidthCta(
+                        onTap: () async {
+                          String salonId = provider.salonDetails!.data.data.id;
+                          List<String> selectedServiceIds = provider.getSelectedServices()
+                              .map((service) => service.id)
+                              .toList();
+                       //   await provider.fetchArtistListAndNavigate(context,salonId, selectedServiceIds);
+                          showSignInDialog(context);
+                        },
+                        isActive: true,
+                        buttonText: StringConstant.confirmBooking,
+                      )
+                    ],
+                  ),
+                ),
               ),
             );
           }),
@@ -1553,81 +1576,101 @@ class _SalonDetailsScreen2State extends State<SalonDetailsScreen2> {
             itemBuilder: (context, index) {
               ServicesWithoutSubCategory? serviceDetail =
               provider.salonDetails!.data.services.servicesWithoutSubCategory[index];
-              return GestureDetector(
-                onTap: () {
-                  //logic for to tap and checked the checkbox
-                  provider.toggleSelectedService(serviceDetail!);
-                },
-                child: Container(
-                  margin: EdgeInsets.symmetric(
-                    vertical: 1.h,
-                    horizontal: 3.w,
-                  ),
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 3.w,
-                    vertical: 1.h,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(1.h),
-                    border: Border.all(color: ColorsConstant.divider),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      SizedBox(
-                        width: 50.w,
-                        child: Row(
-                          children: <Widget>[
-                            SvgPicture.asset(
-                              serviceDetail.targetGender == "male"
-                                  ? ImagePathConstant.manIcon
-                                  : ImagePathConstant.womanIcon,
-                              height: 4.h,
-                            ),
-                            SizedBox(width: 2.w),
-                            Expanded(
-                              child: Text(
-                                serviceDetail.serviceTitle ?? "",
-                                style: TextStyle(
-                                  color: ColorsConstant.textDark,
-                                  fontSize: 10.sp,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                          ],
+              bool isAdded = provider.getSelectedServices().contains(serviceDetail);
+              return Container(
+                padding: EdgeInsets.all(3.w),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(
+                          serviceDetail.serviceTitle,
+                          style: TextStyle(
+                            color: const Color(0xFF2B2F34),
+                            fontSize: 12.sp,
+                            fontFamily: 'Poppins',
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: <Widget>[
-                          Text(
-                            "Rs. ${serviceDetail.basePrice}",
-                            style: TextStyle(
-                              fontSize: 10.sp,
-                              fontWeight: FontWeight.w600,
-                              color: ColorsConstant.textDark,
-                            ),
+                        SvgPicture.asset(
+                          serviceDetail.targetGender == "male"
+                              ? ImagePathConstant.manIcon
+                              : ImagePathConstant.womanIcon,
+                          height: 3.h,
+                        )
+                      ],
+                    ),
+                    (serviceDetail.description.isNotEmpty) ? SizedBox(height: 1.h) : const SizedBox(),
+                    (serviceDetail.description.isNotEmpty) ? Text(
+                        serviceDetail.description,
+                        style: TextStyle(
+                          color: const Color(0xFF8B9AAC),
+                          fontSize: 10.sp,
+                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.w500,
+                        )) : const SizedBox(),
+                    SizedBox(height: 1.h,),
+                    RichText(text: TextSpan(
+                        children: [
+                          TextSpan(
+                              text: "Rs. ${serviceDetail.basePrice}",
+                              style: TextStyle(
+                                color: const Color(0xFF373737),
+                                fontSize: 13.sp,
+                                fontFamily: 'Helvetica Neue',
+                                fontWeight: FontWeight.w800,
+                              )
                           ),
-                          Checkbox(
-                            value: selectedServices.contains(serviceDetail),
-                            activeColor: ColorsConstant.appColor,
-                            side: BorderSide(
-                              color: Color.fromARGB(255, 193, 193, 193),
-                              width: 2,
-                            ),
-                            onChanged: (value) {
 
-                              provider.toggleSelectedService(serviceDetail!);
-                            },
+                          WidgetSpan(child: SizedBox(width: 2.w,)),
+                          TextSpan(
+                              text: "Rs. ${provider.salonDetails?.data.data.discount ?? 0}",
+                              style: TextStyle(
+                                color: const Color(0xFF8B9AAC),
+                                fontSize: 12.sp,
+                                fontFamily: 'Helvetica Neue',
+                                fontWeight: FontWeight.w400,
+                                decoration: TextDecoration.lineThrough,
+                              )
                           ),
-                        ],
-                      ),
-                    ],
-                  ),
+                        ]
+                    )),
+                    SizedBox(height: 2.h,),
+                    TextButton(
+                        onPressed: () async {
+                          provider.toggleSelectedService(serviceDetail);
+                        },
+                        style: TextButton.styleFrom(
+                            padding: EdgeInsets.symmetric(horizontal: 6.w,vertical: 2.w),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10.sp),
+                                side: BorderSide(color: const Color(0xFFAA2F4C),width: 0.2.w)
+                            )
+                        ),
+                        child: RichText(text: TextSpan(
+                            style: TextStyle(
+                              color: const Color(0xFFAA2F4C),
+                              fontSize: 12.sp,
+                              fontFamily: 'Poppins',
+                              fontWeight: FontWeight.w600,
+                            ),
+                            children: [
+                              WidgetSpan(
+                                  alignment: PlaceholderAlignment.middle,
+                                  child: Icon((!isAdded) ? Icons.add : Icons.remove,
+                                    size: 14.sp,color: const Color(0xFFAA2F4C),)),
+                              WidgetSpan(child: SizedBox(width: 2.w,)),
+                              TextSpan(
+                                  text: (!isAdded) ? "Add" : "Remove"
+                              )
+                            ]
+                        ))
+                    ),
+                  ],
                 ),
               );
             },
@@ -1820,7 +1863,7 @@ class _SalonDetailsScreen2State extends State<SalonDetailsScreen2> {
                             SalonDetailsProvider salonDetailsProvider = context.read<SalonDetailsProvider>();
                             String artistId = artist.id;
                             String salonId = artist.salonId;
-                            List<dynamic> services = artist.services;
+                            List<Service> services = artist.services;
                             BarberProvider barberDetailsProvider = context.read<BarberProvider>();
 
                             try {
@@ -1867,11 +1910,9 @@ class _SalonDetailsScreen2State extends State<SalonDetailsScreen2> {
                                     barberDetailsProvider.setSalonDetails(salonDetails);
                                   } else if (response.requestOptions.uri.pathSegments.contains('service')) {
                                     ServiceResponse serviceResponse = ServiceResponse.fromJson(response.data);
-                                    ServiceResponse serviceresponse = ServiceResponse(
-                                        status: serviceResponse.status,
-                                        message: serviceResponse.message,
-                                        data:    serviceResponse.data);
-                                    salonDetailsProvider.setServiceDetails(serviceresponse);
+                                    barberDetailsProvider.serviceDetailsMap[serviceResponse.data.id] = serviceResponse; // Store service details in the map
+                                    print('service name is :- ${serviceResponse.data.serviceTitle}');
+                                    salonDetailsProvider.setServiceDetails(serviceResponse);
                                     if (serviceResponse != null && serviceResponse.data != null) {
                                       // Handle service response
                                     } else {

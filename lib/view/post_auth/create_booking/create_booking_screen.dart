@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:collection/collection.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -95,7 +97,7 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
                           GestureDetector(
                             behavior: HitTestBehavior.opaque,
                             onTap: () {
-                              provider.setSchedulingStatus(onSelectStaff: true);
+                            // provider.setSchedulingStatus(onSelectStaff: true);
                               provider.resetCurrentBooking2();
                               Navigator.pop(context);
                             },
@@ -260,156 +262,6 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
                                     provider.getSelectedServices().every((service) => provider.artistServiceList!.selectedArtistMap[service.id]?.artist != null)) {
                                   provider.setSchedulingStatus(selectStaffFinished: true);
                                 }
-                                if(provider.selectedTime != null) {
-                                  try {
-                                    String? selectedTime = provider
-                                        .selectedTime;
-
-                                    // Convert the selected time to minutes since midnight
-                                    int selectedTimeValue =
-                                        TimeOfDay
-                                            .fromDateTime(
-                                            DateFormat.Hm().parse(
-                                                selectedTime!))
-                                            .hour * 60 +
-                                            TimeOfDay
-                                                .fromDateTime(
-                                                DateFormat.Hm().parse(
-                                                    selectedTime))
-                                                .minute;
-
-                                    // Find the time slot that contains the selected time
-                                    TimeSlotResponseTimeSlot? selectedTimeSlot;
-                                    for (var timeSlot in provider.timeslot!
-                                        .timeSlots) {
-                                      for (var slot in timeSlot.timeSlot) {
-                                        int startSlotValue =
-                                            TimeOfDay
-                                                .fromDateTime(
-                                                DateFormat.Hm().parse(
-                                                    slot.slot[0]))
-                                                .hour * 60 +
-                                                TimeOfDay
-                                                    .fromDateTime(
-                                                    DateFormat.Hm().parse(
-                                                        slot.slot[0]))
-                                                    .minute;
-                                        int endSlotValue =
-                                            TimeOfDay
-                                                .fromDateTime(
-                                                DateFormat.Hm().parse(
-                                                    slot.slot[1]))
-                                                .hour * 60 +
-                                                TimeOfDay
-                                                    .fromDateTime(
-                                                    DateFormat.Hm().parse(
-                                                        slot.slot[1]))
-                                                    .minute;
-
-                                        if (selectedTimeValue >=
-                                            startSlotValue &&
-                                            selectedTimeValue < endSlotValue) {
-                                          selectedTimeSlot = timeSlot;
-                                          break;
-                                        }
-                                      }
-                                      if (selectedTimeSlot != null) {
-                                        break;
-                                      }
-                                    }
-
-                                    // Check if a valid time slot was found
-                                    if (selectedTimeSlot != null) {
-                                      // Find the selected slot using the selected time
-                                      var selectedSlot = selectedTimeSlot.timeSlot.firstWhereOrNull((slot) =>
-                                      TimeOfDay.fromDateTime(DateFormat.Hm().parse(slot.slot[0])).hour * 60 +
-                                          TimeOfDay.fromDateTime(DateFormat.Hm().parse(slot.slot[0])).minute == selectedTimeValue);
-
-                                      if (selectedSlot != null) {
-                                        // Use the selected slot to get the corresponding time slot
-                                        List<String> timeSlot = selectedSlot.slot;
-
-                                        Map<String,
-                                            dynamic> bookingRequestBody = {
-                                          "key": 1,
-                                          "timeSlot": timeSlot,
-                                          "bookingDate": DateFormat(
-                                              'MM-dd-yyyy')
-                                              .format(provider.selectedDate!),
-                                          "salonId": provider.timeslot!.salonId,
-                                          "timeSlots": provider.timeslot!
-                                              .timeSlots
-                                              .map((ts) => ts.toJson())
-                                              .toList(),
-                                        };
-                                        Loader.showLoader(context);
-                                        Dio dio = Dio();
-                                        dio.interceptors.add(LogInterceptor(
-                                            requestBody: true,
-                                            responseBody: true,
-                                            logPrint: print));
-                                        String? authToken = await AccessTokenManager
-                                            .getAccessToken();
-
-                                        if (authToken != null) {
-                                          dio.options.headers['Authorization'] =
-                                          'Bearer $authToken';
-                                        } else {
-                                          Loader.hideLoader(context);
-                                        }
-                                        Response bookingResponse = await dio
-                                            .post(
-                                          'http://13.235.49.214:8800/appointments/book',
-                                          data: bookingRequestBody,
-                                        );
-                                        print("data is :$bookingRequestBody");
-                                        Loader.hideLoader(context);
-
-                                        if (bookingResponse.statusCode == 200) {
-                                          Map<String,
-                                              dynamic> responseData = bookingResponse
-                                              .data;
-                                          if (responseData['status'] ==
-                                              'failed') {
-                                            // Show the error message and stop further processing
-                                            ReusableWidgets.showFlutterToast(
-                                                context,
-                                                responseData['message']);
-                                            provider.setSchedulingStatus(
-                                                selectSlotFinished: false);
-                                            provider.setSchedulingStatus(
-                                                selectStaffFinished: false);
-                                            provider.setSchedulingStatus(
-                                                onSelectStaff: false);
-                                            return;
-                                          }
-                                          print(
-                                              "Appointment booked successfully!");
-                                        } else {
-                                          Loader.hideLoader(context);
-                                          print("Failed to book appointment");
-                                          print(bookingResponse.data);
-                                          provider.setSchedulingStatus(
-                                              selectSlotFinished: false);
-                                          provider.setSchedulingStatus(
-                                              selectStaffFinished: false);
-                                          provider.setSchedulingStatus(
-                                              onSelectStaff: false);
-                                        }
-                                      }
-                                    }
-                                  }catch (error) {
-                                    Loader.hideLoader(context);
-                                    // Handle booking errors
-                                    print('Error during appointment booking: $error');
-                                    provider.setSchedulingStatus(
-                                        selectSlotFinished: false);
-                                    provider.setSchedulingStatus(
-                                        selectStaffFinished: false);
-                                    provider.setSchedulingStatus(
-                                        onSelectStaff: false);
-                                  }
-                                }
                                 if (provider.isOnSelectSlot) {
                                   provider.setSchedulingStatus(
                                       selectSlotFinished: true);
@@ -437,7 +289,157 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
                       left: 2.h,
                       child: ReusableWidgets.redFullWidthButton(
                         buttonText: StringConstant.payNow,
-                        onTap: () {
+                        onTap: () async{
+                          if(provider.selectedTime != null) {
+                            try {
+                              String? selectedTime = provider
+                                  .selectedTime;
+
+                              // Convert the selected time to minutes since midnight
+                              int selectedTimeValue =
+                                  TimeOfDay
+                                      .fromDateTime(
+                                      DateFormat.Hm().parse(
+                                          selectedTime!))
+                                      .hour * 60 +
+                                      TimeOfDay
+                                          .fromDateTime(
+                                          DateFormat.Hm().parse(
+                                              selectedTime))
+                                          .minute;
+
+                              // Find the time slot that contains the selected time
+                              TimeSlotResponseTimeSlot? selectedTimeSlot;
+                              for (var timeSlot in provider.timeslot!
+                                  .timeSlots) {
+                                for (var slot in timeSlot.timeSlot) {
+                                  int startSlotValue =
+                                      TimeOfDay
+                                          .fromDateTime(
+                                          DateFormat.Hm().parse(
+                                              slot.slot[0]))
+                                          .hour * 60 +
+                                          TimeOfDay
+                                              .fromDateTime(
+                                              DateFormat.Hm().parse(
+                                                  slot.slot[0]))
+                                              .minute;
+                                  int endSlotValue =
+                                      TimeOfDay
+                                          .fromDateTime(
+                                          DateFormat.Hm().parse(
+                                              slot.slot[1]))
+                                          .hour * 60 +
+                                          TimeOfDay
+                                              .fromDateTime(
+                                              DateFormat.Hm().parse(
+                                                  slot.slot[1]))
+                                              .minute;
+
+                                  if (selectedTimeValue >=
+                                      startSlotValue &&
+                                      selectedTimeValue < endSlotValue) {
+                                    selectedTimeSlot = timeSlot;
+                                    break;
+                                  }
+                                }
+                                if (selectedTimeSlot != null) {
+                                  break;
+                                }
+                              }
+
+                              // Check if a valid time slot was found
+                              if (selectedTimeSlot != null) {
+                                // Find the selected slot using the selected time
+                                var selectedSlot = selectedTimeSlot.timeSlot.firstWhereOrNull((slot) =>
+                                TimeOfDay.fromDateTime(DateFormat.Hm().parse(slot.slot[0])).hour * 60 +
+                                    TimeOfDay.fromDateTime(DateFormat.Hm().parse(slot.slot[0])).minute == selectedTimeValue);
+
+                                if (selectedSlot != null) {
+                                  // Use the selected slot to get the corresponding time slot
+                                  List<String> timeSlot = selectedSlot.slot;
+
+                                  Map<String,
+                                      dynamic> bookingRequestBody = {
+                                    "key": 1,
+                                    "timeSlot": timeSlot,
+                                    "bookingDate": DateFormat(
+                                        'MM-dd-yyyy')
+                                        .format(provider.selectedDate!),
+                                    "salonId": provider.timeslot!.salonId,
+                                    "timeSlots": provider.timeslot!
+                                        .timeSlots
+                                        .map((ts) => ts.toJson())
+                                        .toList(),
+                                  };
+                                  Loader.showLoader(context);
+                                  Dio dio = Dio();
+                                  dio.interceptors.add(LogInterceptor(
+                                      requestBody: true,
+                                      responseBody: true,
+                                      logPrint: print));
+                                  String? authToken = await AccessTokenManager
+                                      .getAccessToken();
+
+                                  if (authToken != null) {
+                                    dio.options.headers['Authorization'] =
+                                    'Bearer $authToken';
+                                  } else {
+                                    Loader.hideLoader(context);
+                                  }
+                                  Response bookingResponse = await dio
+                                      .post(
+                                    'http://13.235.49.214:8800/appointments/book',
+                                    data: bookingRequestBody,
+                                  );
+                                  print("data is :$bookingRequestBody");
+                                  Loader.hideLoader(context);
+
+                                  if (bookingResponse.statusCode == 200) {
+                                    Map<String,
+                                        dynamic> responseData = bookingResponse
+                                        .data;
+                                    if (responseData['status'] ==
+                                        'failed') {
+                                      // Show the error message and stop further processing
+                                      ReusableWidgets.showFlutterToast(
+                                          context,
+                                          responseData['message']);
+                                      provider.setSchedulingStatus(
+                                          selectSlotFinished: false);
+                                      provider.setSchedulingStatus(
+                                          selectStaffFinished: false);
+                                      provider.setSchedulingStatus(
+                                          onSelectStaff: false);
+                                      return;
+                                    }
+                                    print(
+                                        "Appointment booked successfully!");
+                                  } else {
+                                    Loader.hideLoader(context);
+                                    print("Failed to book appointment");
+                                    print(bookingResponse.data);
+                                    provider.setSchedulingStatus(
+                                        selectSlotFinished: false);
+                                    provider.setSchedulingStatus(
+                                        selectStaffFinished: false);
+                                    provider.setSchedulingStatus(
+                                        onSelectStaff: false);
+                                  }
+                                }
+                              }
+                            }catch (error) {
+                              Loader.hideLoader(context);
+                              // Handle booking errors
+                              print('Error during appointment booking: $error');
+                              provider.setSchedulingStatus(
+                                  selectSlotFinished: false);
+                              provider.setSchedulingStatus(
+                                  selectStaffFinished: false);
+                              provider.setSchedulingStatus(
+                                  onSelectStaff: false);
+                            }
+                          }
                           Navigator.pushNamed(
                             context,
                             NamedRoutes.bookingConfirmedRoute,
@@ -564,7 +566,7 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
                                     Row(
                                       children: <Widget>[
                                         SvgPicture.asset(
-                                          element.targetGender == Gender.MEN
+                                          element.targetGender == 'male'
                                               ? ImagePathConstant.manIcon
                                               : ImagePathConstant.womanIcon,
                                           height: 3.h,
@@ -608,11 +610,6 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
                                     ),
                                     SizedBox(width: 2.w),
                                     provider.salonDetails!.data.data.discount==0||provider.salonDetails!.data.data.discount==null?GestureDetector(
-                                      onTap: (){},
-                                      child: SvgPicture.asset(
-                                        ImagePathConstant.deleteIcon,
-                                        height: 2.5.h,
-                                      ),
                                     ):const SizedBox(),
                                   ],
                                 ),
@@ -928,6 +925,7 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
   bool isTimeSlotAvailable(String element, SalonDetailsProvider provider) {
     return provider.timeslot?.timeSlots.any((timeSlot) =>
         timeSlot.timeSlot.any((slot) => slot.slot[0] == element)) ?? false;
+
   }
 
   TimeSlotResponseTimeSlot? getAvailableTimeSlot(String element, SalonDetailsProvider provider) {
@@ -1061,12 +1059,6 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
                                         };
                                       }).toList();
 
-                                      Map<String, dynamic> requestBodyB = {
-                                        "salonId": provider.salonDetails!.data
-                                            .data.id ?? "",
-                                        "requests": requestsB,
-                                        "date": formattedDate,
-                                      };
 
                                       try {
                                         Loader.showLoader(context);
@@ -1101,51 +1093,19 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
                                           'http://13.235.49.214:8800/appointments/schedule',
                                           data: requestBodyB,
                                         );
+
                                         Loader.hideLoader(context);
                                         print(
                                             'Response Data: ${response.data}');
 
                                         if (response.statusCode == 200) {
-                                          try {
-                                            dynamic responseData = response.data;
-
-                                            if (responseData is String) {
-                                              // Handle the case where the response is a string (possible error message)
-                                              if (responseData == "0000000000000000") {
-                                                // Handle the case where artist ID is '0000000000000000'
-                                                print("Artist ID is '0000000000000000'");
-                                                // TODO: Handle this scenario appropriately
-                                              } else {
-                                                print("Error message: $responseData");
-                                                // TODO: Handle other string response scenarios appropriately
-                                              }
-                                            } else if (responseData is Map<String, dynamic>) {
-                                              // Parse the response as TimeSlotResponse
-                                              TimeSlotResponse timeSlotResponse = TimeSlotResponse.fromJson(responseData);
-                                              provider.setTimeSlot(timeSlotResponse);
-                                            } else if (responseData is List) {
-                                              // Handle the case where responseData is a List (array of time slots)
-                                              // You may need to iterate through the list and extract necessary information
-                                              for (var timeSlotData in responseData) {
-                                                // Assuming TimeSlotResponseTimeSlot.fromJson is the appropriate method to parse a single time slot
-                                                TimeSlotResponseTimeSlot timeSlot = TimeSlotResponseTimeSlot.fromJson(timeSlotData);
-                                                // Process time slot data as needed
-                                              }
-                                            } else {
-                                              // Handle unexpected response format
-                                              print("Unexpected response format: $responseData");
-                                              // TODO: Handle this scenario appropriately
-                                            }
-                                          } catch (error) {
-                                            print('Error parsing response: $error');
-                                            // TODO: Handle errors appropriately
-                                          }
+                                          TimeSlotResponse timeSlotResponse = TimeSlotResponse.fromJson(response.data);
+                                          provider.setTimeSlot(timeSlotResponse);
                                         } else {
                                           print("Failed to fetch time slots");
                                           print(response.data);
                                           // TODO: Handle errors appropriately
                                         }
-
                                       }catch (error) {
                                         print(
                                             'Error parsing response: $error');
@@ -1468,14 +1428,17 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
             children: <Widget>[
               ClipRRect(
                 borderRadius: BorderRadius.circular(1.h),
-                child: provider.salonDetails?.data.data.images.isNotEmpty ?? false
+                child: provider.salonDetails!.data.data.images.isNotEmpty && provider.salonDetails?.data.data.images !=null
                     ? Image.network(
                   provider.salonDetails!.data.data.images[0].url,
                   height: 15.h,
                   width: 28.w,
                   fit: BoxFit.fill,
                 )
-                    : Placeholder(),
+                    : Image.asset(
+                  'assets/images/salon_dummy_image.png',
+                  fit: BoxFit.cover,
+                ),
               ),
               SizedBox(width: 2.w),
               Expanded(
@@ -1514,6 +1477,51 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
       },
     );
   }
+
+  Future<List<ArtistService>> fetchArtists(String? salonId, String serviceId) async {
+    final Dio _dio = Dio();
+    try {
+      String url = 'http://13.235.49.214:8800/appointments/singleArtist/list';
+      Map<String, dynamic> requestBody = {
+        "salonId": salonId,
+        "services": [serviceId]
+      };
+print('request body :- $requestBody');
+      Options options = Options(
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      );
+
+      Response response = await _dio.post(
+        url,
+        data: jsonEncode(requestBody),
+        options: options,
+      );
+
+      print('Response status code: ${response.statusCode}');
+      print('Response data: ${response.data}');
+
+      if (response.statusCode == 200) {
+        // Parse response data
+        dynamic responseData = response.data;
+        List<dynamic>? artistsData = responseData['artistsProvidingServices'] as List<dynamic>?;
+
+        if (artistsData != null) {
+          // Map artists data to ArtistService objects
+          List<ArtistService> artists = artistsData.map((artistData) => ArtistService.fromJson(artistData)).toList();
+          return artists;
+        } else {
+          // Return an empty list if no artists are available
+          return [];
+        }
+      } else {
+        throw Exception('Failed to fetch artists: ${response.statusCode}');
+      }
+    } catch (error) {
+      throw Exception('Failed to fetch artists: $error');
+    }
+  }
   Widget selectMingleStaffCard() {
     return Consumer<SalonDetailsProvider>(
       builder: (context, provider, child) {
@@ -1521,8 +1529,7 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
           children: <Widget>[
             CurvedBorderedCard(
               onTap: () => setState(() {
-             //   multipleStaffListExpanded = !multipleStaffListExpanded;
-
+                // multipleStaffListExpanded = !multipleStaffListExpanded;
               }),
               child: Container(
                 padding: EdgeInsets.all(1.5.h),
@@ -1610,10 +1617,10 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
                                       CurvedBorderedCard(
                                         onTap: () {
                                           setState(() {
-                                          expandedServiceIndex =
-                                        expandedServiceIndex == index ? null : index;
-                                            });
-                                               },
+                                            expandedServiceIndex =
+                                            expandedServiceIndex == index ? null : index;
+                                          });
+                                        },
                                         child: Container(
                                           padding: EdgeInsets.all(1.5.h),
                                           decoration: BoxDecoration(
@@ -1626,7 +1633,8 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
                                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                                 children: <Widget>[
                                                   Text(
-                                                    provider.artistServiceList!.selectedArtistMap[element.id]?.artist ?? StringConstant.chooseAStaff,
+                                                    provider.artistServiceList!.selectedArtistMap[element.id]?.artist ??
+                                                        StringConstant.chooseAStaff,
                                                     style: TextStyle(
                                                       fontWeight: FontWeight.w500,
                                                       fontSize: 12.sp,
@@ -1640,74 +1648,86 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
                                                   ),
                                                 ],
                                               ),
-                                                if (expandedServiceIndex == index)
-                                                   Container(
-                                                constraints: BoxConstraints(maxHeight: 20.h),
-                                                child: Scrollbar(
-                                                  interactive: true,
-                                                  thumbVisibility: true,
-                                                  showTrackOnHover: true,
-                                                  child: ListView.separated(
-                                                    shrinkWrap: true,
-                                                    itemCount: provider.artistServiceList!.artistsProvidingServices.length,
-                                                    itemBuilder: (context, index) {
-                                                      ArtistService artist = provider.artistServiceList!.artistsProvidingServices[index];
-                                                      return GestureDetector(
-                                                        behavior: HitTestBehavior.opaque,
-                                                        onTap: () {
-                                                          setState(() {
-                                                            provider.artistServiceList!.selectedArtistMap[element.id] = artist;
-                                                          });
-                                                        },
-                                                        child: Padding(
-                                                          padding: EdgeInsets.symmetric(
-                                                            horizontal: 2.w,
-                                                          ),
-                                                          child: Row(
-                                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                                            children: <Widget>[
-                                                              Text.rich(
-                                                                TextSpan(
-                                                                  children: <InlineSpan>[
-                                                                    WidgetSpan(
-                                                                      child: Padding(
-                                                                        padding: EdgeInsets.only(right: 2.w),
-                                                                        child: SvgPicture.asset(
-                                                                          provider.artistServiceList!.selectedArtistMap[element.id] == artist
-                                                                              ? ImagePathConstant.selectedOption
-                                                                              : ImagePathConstant.unselectedOption,
-                                                                          width: 5.w,
-                                                                          fit: BoxFit.fitWidth,
+                                              if (expandedServiceIndex == index)
+                                                Container(
+                                                  constraints: BoxConstraints(maxHeight: 20.h),
+                                                  child: FutureBuilder<List<ArtistService>>(
+                                                    future: fetchArtists( provider.salonDetails?.data.data.id , element.id),
+                                                    builder: (context, snapshot) {
+                                                      if (snapshot.connectionState == ConnectionState.waiting) {
+                                                        return Center(child: CircularProgressIndicator());
+                                                      } else if (snapshot.hasError) {
+                                                        return Center(child: Text('Error: ${snapshot.error}'));
+                                                      } else if (snapshot.hasData) {
+                                                        List<ArtistService> artists = snapshot.data!;
+                                                        return Scrollbar(
+                                                          interactive: true,
+                                                          thumbVisibility: true,
+                                                          showTrackOnHover: true,
+                                                          child: ListView.separated(
+                                                            shrinkWrap: true,
+                                                            itemCount: artists.length,
+                                                            itemBuilder: (context, index) {
+                                                              ArtistService artist = artists[index];
+                                                              return GestureDetector(
+                                                                behavior: HitTestBehavior.opaque,
+                                                                onTap: () {
+                                                                  setState(() {
+                                                                    provider.artistServiceList!.selectedArtistMap[element.id] = artist;
+                                                                  });
+                                                                },
+                                                                child: Padding(
+                                                                  padding: EdgeInsets.symmetric(horizontal: 2.w),
+                                                                  child: Row(
+                                                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                                    children: <Widget>[
+                                                                      Text.rich(
+                                                                        TextSpan(
+                                                                          children: <InlineSpan>[
+                                                                            WidgetSpan(
+                                                                              child: Padding(
+                                                                                padding: EdgeInsets.only(right: 2.w),
+                                                                                child: SvgPicture.asset(
+                                                                                  provider.artistServiceList!.selectedArtistMap[element.id] == artist
+                                                                                      ? ImagePathConstant.selectedOption
+                                                                                      : ImagePathConstant.unselectedOption,
+                                                                                  width: 5.w,
+                                                                                  fit: BoxFit.fitWidth,
+                                                                                ),
+                                                                              ),
+                                                                            ),
+                                                                            TextSpan(
+                                                                              text: artist.artist ?? '',
+                                                                              style: TextStyle(
+                                                                                fontWeight: FontWeight.w500,
+                                                                                fontSize: 10.sp,
+                                                                                color: const Color(0xFF727272),
+                                                                              ),
+                                                                            ),
+                                                                          ],
                                                                         ),
                                                                       ),
-                                                                    ),
-                                                                    TextSpan(
-                                                                      text: artist.artist ?? '',
-                                                                      style: TextStyle(
-                                                                        fontWeight: FontWeight.w500,
+                                                                      RatingBox(
+                                                                        rating: artist.rating ?? 0.0,
                                                                         fontSize: 10.sp,
-                                                                        color: const Color(0xFF727272),
+                                                                        fontWeight: FontWeight.w500,
                                                                       ),
-                                                                    ),
-                                                                  ],
+                                                                    ],
+                                                                  ),
                                                                 ),
-                                                              ),
-                                                              RatingBox(
-                                                                rating: artist.rating ?? 0.0,
-                                                                fontSize: 10.sp,
-                                                                fontWeight: FontWeight.w500,
-                                                              ),
-                                                            ],
+                                                              );
+                                                            },
+                                                            separatorBuilder: (context, index) => const Divider(),
                                                           ),
-                                                        ),
-                                                      );
+                                                        );
+                                                      } else {
+                                                        return const SizedBox();
+                                                      }
                                                     },
-                                                    separatorBuilder: (context, index) => const Divider(),
                                                   ),
-                                                ),
-                                              )
-                                                  else
-                                                    const SizedBox()
+                                                )
+                                              else
+                                                const SizedBox()
                                             ],
                                           ),
                                         ),
@@ -1724,13 +1744,11 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
                 ),
               ),
             ),
-
           ],
         );
       },
     );
   }
-
   Future<ArtistRequest> callApiA(List<String> selectedServiceIds, ArtistService selectedArtist) async {
     try {
       // Create Dio instance
@@ -2272,6 +2290,7 @@ class _CreateBookingScreen2State extends State<CreateBookingScreen2> {
                             provider.setSchedulingStatus(
                                 selectStaffFinished: true);
                           }
+                          /*
                           if(provider.selectedTime != null) {
                             try {
                               String? selectedTime = provider
@@ -2422,6 +2441,7 @@ class _CreateBookingScreen2State extends State<CreateBookingScreen2> {
                                   onSelectStaff: false);
                             }
                           }
+                          */
                           if (provider.isOnSelectSlot) {
                             provider.setSchedulingStatus(
                                 selectSlotFinished: true);
@@ -2443,8 +2463,158 @@ class _CreateBookingScreen2State extends State<CreateBookingScreen2> {
                 left: 2.h,
                 child: ReusableWidgets.redFullWidthButton(
                   buttonText: StringConstant.payNow,
-                  onTap: () {
-                    Navigator.pushNamed(
+                  onTap: () async{
+                    if(provider.selectedTime != null) {
+                      try {
+                        String? selectedTime = provider
+                            .selectedTime;
+
+                        // Convert the selected time to minutes since midnight
+                        int selectedTimeValue =
+                            TimeOfDay
+                                .fromDateTime(
+                                DateFormat.Hm().parse(
+                                    selectedTime!))
+                                .hour * 60 +
+                                TimeOfDay
+                                    .fromDateTime(
+                                    DateFormat.Hm().parse(
+                                        selectedTime))
+                                    .minute;
+
+                        // Find the time slot that contains the selected time
+                        TimeSlotResponseTimeSlot? selectedTimeSlot;
+                        for (var timeSlot in provider.timeslot!
+                            .timeSlots) {
+                          for (var slot in timeSlot.timeSlot) {
+                            int startSlotValue =
+                                TimeOfDay
+                                    .fromDateTime(
+                                    DateFormat.Hm().parse(
+                                        slot.slot[0]))
+                                    .hour * 60 +
+                                    TimeOfDay
+                                        .fromDateTime(
+                                        DateFormat.Hm().parse(
+                                            slot.slot[0]))
+                                        .minute;
+                            int endSlotValue =
+                                TimeOfDay
+                                    .fromDateTime(
+                                    DateFormat.Hm().parse(
+                                        slot.slot[1]))
+                                    .hour * 60 +
+                                    TimeOfDay
+                                        .fromDateTime(
+                                        DateFormat.Hm().parse(
+                                            slot.slot[1]))
+                                        .minute;
+
+                            if (selectedTimeValue >=
+                                startSlotValue &&
+                                selectedTimeValue < endSlotValue) {
+                              selectedTimeSlot = timeSlot;
+                              break;
+                            }
+                          }
+                          if (selectedTimeSlot != null) {
+                            break;
+                          }
+                        }
+
+                        // Check if a valid time slot was found
+                        if (selectedTimeSlot != null) {
+                          // Find the selected slot using the selected time
+                          var selectedSlot = selectedTimeSlot.timeSlot.firstWhereOrNull((slot) =>
+                          TimeOfDay.fromDateTime(DateFormat.Hm().parse(slot.slot[0])).hour * 60 +
+                              TimeOfDay.fromDateTime(DateFormat.Hm().parse(slot.slot[0])).minute == selectedTimeValue);
+
+                          if (selectedSlot != null) {
+                            // Use the selected slot to get the corresponding time slot
+                            List<String> timeSlot = selectedSlot.slot;
+
+                            Map<String,
+                                dynamic> bookingRequestBody = {
+                              "key": 1,
+                              "timeSlot": timeSlot,
+                              "bookingDate": DateFormat(
+                                  'MM-dd-yyyy')
+                                  .format(provider.selectedDate!),
+                              "salonId": provider.timeslot!.salonId,
+                              "timeSlots": provider.timeslot!
+                                  .timeSlots
+                                  .map((ts) => ts.toJson())
+                                  .toList(),
+                            };
+                            Loader.showLoader(context);
+                            Dio dio = Dio();
+                            dio.interceptors.add(LogInterceptor(
+                                requestBody: true,
+                                responseBody: true,
+                                logPrint: print));
+                            String? authToken = await AccessTokenManager
+                                .getAccessToken();
+
+                            if (authToken != null) {
+                              dio.options.headers['Authorization'] =
+                              'Bearer $authToken';
+                            } else {
+                              Loader.hideLoader(context);
+                            }
+                            Response bookingResponse = await dio
+                                .post(
+                              'http://13.235.49.214:8800/appointments/book',
+                              data: bookingRequestBody,
+                            );
+                            print("data is :$bookingRequestBody");
+                            Loader.hideLoader(context);
+
+                            if (bookingResponse.statusCode == 200) {
+                              Map<String,
+                                  dynamic> responseData = bookingResponse
+                                  .data;
+                              if (responseData['status'] ==
+                                  'failed') {
+                                // Show the error message and stop further processing
+                                ReusableWidgets.showFlutterToast(
+                                    context,
+                                    responseData['message']);
+                                provider.setSchedulingStatus(
+                                    selectSlotFinished: false);
+                                provider.setSchedulingStatus(
+                                    selectStaffFinished: false);
+                                provider.setSchedulingStatus(
+                                    onSelectStaff: false);
+                                return;
+                              }
+                              print(
+                                  "Appointment booked successfully!");
+                            } else {
+                              Loader.hideLoader(context);
+                              print("Failed to book appointment");
+                              print(bookingResponse.data);
+                              provider.setSchedulingStatus(
+                                  selectSlotFinished: false);
+                              provider.setSchedulingStatus(
+                                  selectStaffFinished: false);
+                              provider.setSchedulingStatus(
+                                  onSelectStaff: false);
+                            }
+                          }
+                        }
+                      }catch (error) {
+                        Loader.hideLoader(context);
+                        // Handle booking errors
+                        print('Error during appointment booking: $error');
+                        provider.setSchedulingStatus(
+                            selectSlotFinished: false);
+                        provider.setSchedulingStatus(
+                            selectStaffFinished: false);
+                        provider.setSchedulingStatus(
+                            onSelectStaff: false);
+                      }
+                    }
+                     Navigator.pushNamed(
                       context,
                       NamedRoutes.bookingConfirmedRoute,
                     );
@@ -2542,7 +2712,7 @@ class _CreateBookingScreen2State extends State<CreateBookingScreen2> {
                                     Row(
                                       children: <Widget>[
                                         SvgPicture.asset(
-                                          element.targetGender == Gender.MEN
+                                          element.targetGender == 'male'
                                               ? ImagePathConstant.manIcon
                                               : ImagePathConstant.womanIcon,
                                           height: 3.h,
@@ -2586,11 +2756,6 @@ class _CreateBookingScreen2State extends State<CreateBookingScreen2> {
                                     ),
                                     SizedBox(width: 2.w),
                                     provider.salonDetails!.data.data.discount==0||provider.salonDetails!.data.data.discount==null?GestureDetector(
-                                      onTap: (){},
-                                      child: SvgPicture.asset(
-                                        ImagePathConstant.deleteIcon,
-                                        height: 2.5.h,
-                                      ),
                                     ):const SizedBox(),
                                   ],
                                 ),
@@ -3422,14 +3587,17 @@ class _CreateBookingScreen2State extends State<CreateBookingScreen2> {
             children: <Widget>[
               ClipRRect(
                 borderRadius: BorderRadius.circular(1.h),
-                child: provider.salonDetails?.data.data.images.isNotEmpty ?? false
+                child: provider.salonDetails!.data.data.images.isNotEmpty && provider.salonDetails?.data.data.images !=null
                     ? Image.network(
                   provider.salonDetails!.data.data.images[0].url,
                   height: 15.h,
                   width: 28.w,
                   fit: BoxFit.fill,
                 )
-                    : Placeholder(),
+                    : Image.asset(
+                  'assets/images/salon_dummy_image.png',
+                  fit: BoxFit.cover,
+                ),
               ),
               SizedBox(width: 2.w),
               Expanded(
@@ -3794,6 +3962,7 @@ class _CreateBookingScreen3State extends State<CreateBookingScreen3> {
                             provider.setSchedulingStatus(
                                 selectStaffFinished: true);
                           }
+                          /*
                           if(provider.selectedTime != null) {
                             try {
                               String? selectedTime = provider
@@ -3944,6 +4113,7 @@ class _CreateBookingScreen3State extends State<CreateBookingScreen3> {
                                   onSelectStaff: false);
                             }
                           }
+                          */
                           if (provider.isOnSelectSlot) {
                             provider.setSchedulingStatus(
                                 selectSlotFinished: true);
@@ -3965,7 +4135,157 @@ class _CreateBookingScreen3State extends State<CreateBookingScreen3> {
                 left: 2.h,
                 child: ReusableWidgets.redFullWidthButton(
                   buttonText: StringConstant.payNow,
-                  onTap: () {
+                  onTap: () async {
+                    if(provider.selectedTime != null) {
+                      try {
+                        String? selectedTime = provider
+                            .selectedTime;
+
+                        // Convert the selected time to minutes since midnight
+                        int selectedTimeValue =
+                            TimeOfDay
+                                .fromDateTime(
+                                DateFormat.Hm().parse(
+                                    selectedTime!))
+                                .hour * 60 +
+                                TimeOfDay
+                                    .fromDateTime(
+                                    DateFormat.Hm().parse(
+                                        selectedTime))
+                                    .minute;
+
+                        // Find the time slot that contains the selected time
+                        TimeSlotResponseTimeSlot? selectedTimeSlot;
+                        for (var timeSlot in provider.timeslot!
+                            .timeSlots) {
+                          for (var slot in timeSlot.timeSlot) {
+                            int startSlotValue =
+                                TimeOfDay
+                                    .fromDateTime(
+                                    DateFormat.Hm().parse(
+                                        slot.slot[0]))
+                                    .hour * 60 +
+                                    TimeOfDay
+                                        .fromDateTime(
+                                        DateFormat.Hm().parse(
+                                            slot.slot[0]))
+                                        .minute;
+                            int endSlotValue =
+                                TimeOfDay
+                                    .fromDateTime(
+                                    DateFormat.Hm().parse(
+                                        slot.slot[1]))
+                                    .hour * 60 +
+                                    TimeOfDay
+                                        .fromDateTime(
+                                        DateFormat.Hm().parse(
+                                            slot.slot[1]))
+                                        .minute;
+
+                            if (selectedTimeValue >=
+                                startSlotValue &&
+                                selectedTimeValue < endSlotValue) {
+                              selectedTimeSlot = timeSlot;
+                              break;
+                            }
+                          }
+                          if (selectedTimeSlot != null) {
+                            break;
+                          }
+                        }
+
+                        // Check if a valid time slot was found
+                        if (selectedTimeSlot != null) {
+                          // Find the selected slot using the selected time
+                          var selectedSlot = selectedTimeSlot.timeSlot.firstWhereOrNull((slot) =>
+                          TimeOfDay.fromDateTime(DateFormat.Hm().parse(slot.slot[0])).hour * 60 +
+                              TimeOfDay.fromDateTime(DateFormat.Hm().parse(slot.slot[0])).minute == selectedTimeValue);
+
+                          if (selectedSlot != null) {
+                            // Use the selected slot to get the corresponding time slot
+                            List<String> timeSlot = selectedSlot.slot;
+
+                            Map<String,
+                                dynamic> bookingRequestBody = {
+                              "key": 1,
+                              "timeSlot": timeSlot,
+                              "bookingDate": DateFormat(
+                                  'MM-dd-yyyy')
+                                  .format(provider.selectedDate!),
+                              "salonId": provider.timeslot!.salonId,
+                              "timeSlots": provider.timeslot!
+                                  .timeSlots
+                                  .map((ts) => ts.toJson())
+                                  .toList(),
+                            };
+                            Loader.showLoader(context);
+                            Dio dio = Dio();
+                            dio.interceptors.add(LogInterceptor(
+                                requestBody: true,
+                                responseBody: true,
+                                logPrint: print));
+                            String? authToken = await AccessTokenManager
+                                .getAccessToken();
+
+                            if (authToken != null) {
+                              dio.options.headers['Authorization'] =
+                              'Bearer $authToken';
+                            } else {
+                              Loader.hideLoader(context);
+                            }
+                            Response bookingResponse = await dio
+                                .post(
+                              'http://13.235.49.214:8800/appointments/book',
+                              data: bookingRequestBody,
+                            );
+                            print("data is :$bookingRequestBody");
+                            Loader.hideLoader(context);
+
+                            if (bookingResponse.statusCode == 200) {
+                              Map<String,
+                                  dynamic> responseData = bookingResponse
+                                  .data;
+                              if (responseData['status'] ==
+                                  'failed') {
+                                // Show the error message and stop further processing
+                                ReusableWidgets.showFlutterToast(
+                                    context,
+                                    responseData['message']);
+                                provider.setSchedulingStatus(
+                                    selectSlotFinished: false);
+                                provider.setSchedulingStatus(
+                                    selectStaffFinished: false);
+                                provider.setSchedulingStatus(
+                                    onSelectStaff: false);
+                                return;
+                              }
+                              print(
+                                  "Appointment booked successfully!");
+                            } else {
+                              Loader.hideLoader(context);
+                              print("Failed to book appointment");
+                              print(bookingResponse.data);
+                              provider.setSchedulingStatus(
+                                  selectSlotFinished: false);
+                              provider.setSchedulingStatus(
+                                  selectStaffFinished: false);
+                              provider.setSchedulingStatus(
+                                  onSelectStaff: false);
+                            }
+                          }
+                        }
+                      }catch (error) {
+                        Loader.hideLoader(context);
+                        // Handle booking errors
+                        print('Error during appointment booking: $error');
+                        provider.setSchedulingStatus(
+                            selectSlotFinished: false);
+                        provider.setSchedulingStatus(
+                            selectStaffFinished: false);
+                        provider.setSchedulingStatus(
+                            onSelectStaff: false);
+                      }
+                    }
                    Navigator.pushNamed(
                      context,
                      NamedRoutes.bookingConfirmedRoute,
@@ -4092,7 +4412,7 @@ class _CreateBookingScreen3State extends State<CreateBookingScreen3> {
                                     Row(
                                       children: <Widget>[
                                         SvgPicture.asset(
-                                          element.targetGender == Gender.MEN
+                                          element.targetGender == 'male'
                                               ? ImagePathConstant.manIcon
                                               : ImagePathConstant.womanIcon,
                                           height: 3.h,
@@ -4137,10 +4457,6 @@ class _CreateBookingScreen3State extends State<CreateBookingScreen3> {
                                     SizedBox(width: 2.w),
                                     provider.salonDetails!.data.data.discount==0||provider.salonDetails!.data.data.discount==null?GestureDetector(
                                       onTap: (){},
-                                      child: SvgPicture.asset(
-                                        ImagePathConstant.deleteIcon,
-                                        height: 2.5.h,
-                                      ),
                                     ):const SizedBox(),
                                   ],
                                 ),
@@ -4994,14 +5310,17 @@ class _CreateBookingScreen3State extends State<CreateBookingScreen3> {
             children: <Widget>[
               ClipRRect(
                 borderRadius: BorderRadius.circular(1.h),
-                child: provider.salonDetails?.data.data.images.isNotEmpty ?? false
+                child: provider.salonDetails!.data.data.images.isNotEmpty && provider.salonDetails?.data.data.images !=null
                     ? Image.network(
                   provider.salonDetails!.data.data.images[0].url,
                   height: 15.h,
                   width: 28.w,
                   fit: BoxFit.fill,
                 )
-                    : Placeholder(),
+                    : Image.asset(
+                  'assets/images/salon_dummy_image.png',
+                  fit: BoxFit.cover,
+                ),
               ),
               SizedBox(width: 2.w),
               Expanded(

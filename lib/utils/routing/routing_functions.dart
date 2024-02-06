@@ -107,9 +107,6 @@ class RoutingFunctions {
       case NamedRoutes.createBookingRoute3:
         target = CreateBookingScreen3();
         break;
-      case NamedRoutes.createBookingRoute2:
-        target = CreateBookingScreen2();
-        break;
       case NamedRoutes.reviewsRoute:
         target = ReviewsScreen();
         break;
