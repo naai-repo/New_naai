@@ -811,6 +811,7 @@ String ?  _addressText;
                               var permissionResult = await Geolocator.requestPermission();
                               var isLocationServiceEnabled = await Geolocator.isLocationServiceEnabled();
 
+
                               if (permissionResult != LocationPermission.always || !isLocationServiceEnabled) {
                                 Navigator.pushReplacementNamed(context, NamedRoutes.setHomeLocationRoute);
                               } else {
