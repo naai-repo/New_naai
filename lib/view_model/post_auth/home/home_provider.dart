@@ -811,9 +811,8 @@ String ?  _addressText;
                               var permissionResult = await Geolocator.requestPermission();
                               var isLocationServiceEnabled = await Geolocator.isLocationServiceEnabled();
 
-                              if (permissionResult != LocationPermission.always ||
-                                  !isLocationServiceEnabled) {
-                                await showLocationPermissionDialog(context);
+                              if (permissionResult != LocationPermission.always || !isLocationServiceEnabled) {
+                                Navigator.pushReplacementNamed(context, NamedRoutes.setHomeLocationRoute);
                               } else {
                                 Navigator.pop(context);
                               }
@@ -923,9 +922,9 @@ String ?  _addressText;
                               onPressed: () async {
                                 var permissionResult = await Geolocator.requestPermission();
                                 var isLocationServiceEnabled = await Geolocator.isLocationServiceEnabled();
-                                if (permissionResult != LocationPermission.always ||
-                                    !isLocationServiceEnabled) {
-                                  await showLocationPermissionDialog(context);
+
+                                if (permissionResult != LocationPermission.always || !isLocationServiceEnabled) {
+                                  Navigator.pushReplacementNamed(context, NamedRoutes.setHomeLocationRoute2);
                                 } else {
                                   Navigator.pop(context);
                                 }
