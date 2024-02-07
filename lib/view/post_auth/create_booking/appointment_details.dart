@@ -764,6 +764,7 @@ class AppointmentDetails2 extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+
     return Consumer2<HomeProvider,SalonDetailsProvider>(builder: (context, provider,salonprovider ,child) {
       return Scaffold(
         backgroundColor: Colors.white,
@@ -881,13 +882,13 @@ class AppointmentDetails2 extends StatelessWidget {
                         style: TextStyle(fontSize: 16.0),
                       ),
                     ),
-                    for (var artistService in booking.artistServiceMap)
+                 //   for ( var booking in booking.artistServiceMap)
                       Align(
                         alignment: Alignment.topLeft,
                         child: Row(
                           children: [
                             Text(
-                              '${artistService.artistName}',
+                              '${booking.artistServiceMap.first.artistName}',
                               style: StyleConstant.textDark12sp600Style,
                             ),
                             Spacer(),
@@ -1433,9 +1434,9 @@ class AppointmentDetails2 extends StatelessWidget {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  for (var artistService in booking.artistServiceMap)
+                  //for (var artistService in booking.artistServiceMap)
                     Text(
-                      '${artistService.artistName} ',
+                      '${booking.artistServiceMap.first.artistName} ',
                       style: StyleConstant.textDark12sp600Style,
                     ),
                 ],
@@ -1477,7 +1478,7 @@ class AppointmentDetails2 extends StatelessWidget {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  for (var artistService in booking.artistServiceMap)
+                //  for (var artistService in booking.artistServiceMap)
                     ConstrainedBox(
                       constraints: BoxConstraints(maxHeight: 5.h),
                       child: ListView.separated(
@@ -1486,7 +1487,7 @@ class AppointmentDetails2 extends StatelessWidget {
                         physics: NeverScrollableScrollPhysics(),
                         scrollDirection: Axis.horizontal,
                         itemBuilder: (context, index2) =>
-                            Text('${artistService.serviceName![index2]}',
+                            Text('${booking.artistServiceMap.first.serviceName![index2]}',
                           style: TextStyle(
                             fontWeight: FontWeight.w500,
                             fontSize: 11.sp,
@@ -1494,7 +1495,7 @@ class AppointmentDetails2 extends StatelessWidget {
                           ),
                         ),
                         separatorBuilder: (context, index) => Text(''),
-                        itemCount: artistService.serviceName?.length ?? 0,
+                        itemCount: booking.artistServiceMap.first.serviceName?.length ?? 0,
                       ),
                     ),
                 ],

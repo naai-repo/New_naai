@@ -251,10 +251,12 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
                             ),
                             VariableWidthCta(
                               onTap: () async {
+                                provider.artistServiceList!.selectedArtistMap.values.forEach((artist) {
+                                  print('Selected artist ID: ${artist?.artistId}');
+                                });
                                 if (provider.artistServiceList!.selectedArtist != null) {
                                   provider.setSchedulingStatus(selectStaffFinished: true);
                                 }
-
                                 List<String> selectedServiceIds = provider.getSelectedServices()
                                     .map((service) => service.id)
                                     .toList();
@@ -1674,6 +1676,7 @@ print('request body :- $requestBody');
                                                                 onTap: () {
                                                                   setState(() {
                                                                     provider.artistServiceList!.selectedArtistMap[element.id] = artist;
+                                                                    print('Selected artist ID: ${artist.artistId}');
                                                                   });
                                                                 },
                                                                 child: Padding(
