@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
@@ -2398,4 +2398,10 @@ class _SalonDetailsScreen2State extends State<SalonDetailsScreen2> {
       },
     );
   }
+}
+class GeoPoint {
+  final double latitude;
+  final double longitude;
+
+  GeoPoint(this.latitude, this.longitude);
 }
