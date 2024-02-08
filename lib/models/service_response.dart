@@ -1,3 +1,5 @@
+import '../utils/enums.dart';
+
 class ServiceResponse {
   final String status;
   final String message;
@@ -28,6 +30,7 @@ class ServiceData {
   final int avgTime;
   final int basePrice;
   final DateTime createdAt;
+final int cutPrice;
   final DateTime updatedAt;
   final int v;
 
@@ -43,6 +46,7 @@ class ServiceData {
     required this.createdAt,
     required this.updatedAt,
     required this.v,
+    required this.cutPrice
   });
 
   factory ServiceData.fromJson(Map<String, dynamic> json) {
@@ -55,6 +59,7 @@ class ServiceData {
       salonId: json['salonId'] ?? [],
       avgTime: json['avgTime'] ?? 0,
       basePrice: json['basePrice'] ?? 0,
+      cutPrice: json['cutPrice']?? 0,
       createdAt: DateTime.parse(json['createdAt'] ?? ''),
       updatedAt: DateTime.parse(json['updatedAt'] ?? ''),
       v: json['__v'] ?? 0,

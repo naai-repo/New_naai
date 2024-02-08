@@ -82,13 +82,6 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
                       child: FutureBuilder<List<Review>>(
                         future: provider.getUserReviews(),
                         builder: (context, snapshot) {
-                          if (snapshot.hasError) {
-                            return Center(
-                              child: Text(
-                                snapshot.error.toString(),
-                              ),
-                            );
-                          }
                           if (snapshot.hasData) {
                             return snapshot.requireData.isEmpty
                                 ? Center(

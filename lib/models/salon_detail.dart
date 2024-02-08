@@ -431,6 +431,7 @@ class ServicesWithoutSubCategory {
   String targetGender;
   int avgTime;
   int basePrice;
+  int cutPrice;
   DateTime createdAt;
   DateTime updatedAt;
   int v;
@@ -447,6 +448,7 @@ class ServicesWithoutSubCategory {
     required this.basePrice,
     required this.createdAt,
     required this.updatedAt,
+    required this.cutPrice,
     required this.v,
   });
 
@@ -460,6 +462,7 @@ class ServicesWithoutSubCategory {
     targetGender: json["targetGender"],
     avgTime: json["avgTime"],
     basePrice: json["basePrice"],
+    cutPrice: json['cutPrice'],
     createdAt: DateTime.parse(json["createdAt"]),
     updatedAt: DateTime.parse(json["updatedAt"]),
     v: json["__v"],
@@ -475,6 +478,7 @@ class ServicesWithoutSubCategory {
     "targetGender": targetGender,
     "avgTime": avgTime,
     "basePrice": basePrice,
+    "cutPrice": cutPrice,
     "createdAt": createdAt.toIso8601String(),
     "updatedAt": updatedAt.toIso8601String(),
     "__v": v,

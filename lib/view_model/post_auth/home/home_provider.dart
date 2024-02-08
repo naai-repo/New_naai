@@ -492,6 +492,8 @@ String ?  _addressText;
           userId: userId,
           coords: [currentLocation.longitude, currentLocation.latitude],
         );
+        await box.put('savedLatitude', currentLocation.latitude);
+        await box.put('savedLongitude', currentLocation.longitude);
       } else {
         // Use saved coordinates if current location is not available
         await loadSavedCoordinates(context); // Load and use saved coordinates
@@ -746,7 +748,8 @@ String ?  _addressText;
   }
 
   Future locationPopUp(BuildContext context) async {
-      await showModalBottomSheet(enableDrag: false,
+   await showModalBottomSheet(
+        enableDrag: false,
         isScrollControlled: true,
         isDismissible: false,
         backgroundColor: Colors.white,
@@ -758,150 +761,40 @@ String ?  _addressText;
         ),
         context: context,
         builder: (BuildContext context) {
-          return Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Container(
-              color: Colors.white,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Center(
-                    child: Image.asset(
-                      "assets/images/app_logo.png",
-                      height: 80,
-                      width: 80,
-                    ),
-                  ),
-                  const SizedBox(height: 8.0),
-                  const Align(
-                    alignment: Alignment.center,
-                    child: Center(
-                      child: Text(
-                        "Set your location to Start \n exploring\n salons near you",
-                        style: TextStyle(fontSize: 16.0),
-                        textAlign: TextAlign.center,
+          return WillPopScope(
+            onWillPop: () async{
+              return false;
+            },
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Container(
+                color: Colors.white,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Center(
+                      child: Image.asset(
+                        "assets/images/app_logo.png",
+                        height: 80,
+                        width: 80,
                       ),
                     ),
-                  ),
-                  Image.asset('assets/images/loc_image.png'),
-                  const SizedBox(height: 20),
-                  Column(
-                    children:[
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        Expanded(
-                          child: ElevatedButton(
-                            child: const Text(
-                              "Enable Device Location",
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: ColorsConstant.appColor,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              side:BorderSide(color: ColorsConstant.appColor),
-                            ),
-                            onPressed: () async {
-                              var permissionResult = await Geolocator.requestPermission();
-                              var isLocationServiceEnabled = await Geolocator.isLocationServiceEnabled();
-
-
-                              if (permissionResult != LocationPermission.always || !isLocationServiceEnabled) {
-                                Navigator.pushReplacementNamed(context, NamedRoutes.setHomeLocationRoute);
-                              } else {
-                                Navigator.pop(context);
-                              }
-                            },
-                          ),
+                    const SizedBox(height: 8.0),
+                    const Align(
+                      alignment: Alignment.center,
+                      child: Center(
+                        child: Text(
+                          "Set your location to Start \n exploring\n salons near you",
+                          style: TextStyle(fontSize: 16.0),
+                          textAlign: TextAlign.center,
                         ),
-                      ],
-                    ),
-                      const SizedBox(height: 20),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          Expanded(
-                            child: ElevatedButton(
-                              child: const Text(
-                                "Enter your Location Manually",
-                                style: TextStyle(
-                                  color: ColorsConstant.appColor,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                              ),
-                              onPressed: () async {
-                                 Navigator.pop(context);
-                                 Navigator.pushNamed(context, NamedRoutes.setHomeLocationRoute);
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                  ],
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      );
-  }
-
-  Future locationPopUp2(BuildContext context) async {
-      await showModalBottomSheet(enableDrag: false,
-        isScrollControlled: true,
-        isDismissible: false,
-        backgroundColor: Colors.white,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(35),
-            topRight: Radius.circular(35),
-          ),
-        ),
-        context: context,
-        builder: (BuildContext context) {
-          return Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Container(
-              color: Colors.white,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Center(
-                    child: Image.asset(
-                      "assets/images/app_logo.png",
-                      height: 80,
-                      width: 80,
-                    ),
-                  ),
-                  const SizedBox(height: 8.0),
-                  const Align(
-                    alignment: Alignment.center,
-                    child: Center(
-                      child: Text(
-                        "Set your location to Start \n exploring\n salons near you",
-                        style: TextStyle(fontSize: 16.0),
-                        textAlign: TextAlign.center,
                       ),
                     ),
-                  ),
-                  Image.asset('assets/images/loc_image.png'),
-                  const SizedBox(height: 20),
-                  Column(
-                    children:[
+                    Image.asset('assets/images/loc_image.png'),
+                    const SizedBox(height: 20),
+                    Column(
+                      children:[
                       Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
@@ -919,13 +812,12 @@ String ?  _addressText;
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(10),
                                 ),
+                                side:BorderSide(color: ColorsConstant.appColor),
                               ),
                               onPressed: () async {
-                                var permissionResult = await Geolocator.requestPermission();
-                                var isLocationServiceEnabled = await Geolocator.isLocationServiceEnabled();
-
-                                if (permissionResult != LocationPermission.always || !isLocationServiceEnabled) {
-                                  Navigator.pushReplacementNamed(context, NamedRoutes.setHomeLocationRoute2);
+                                var permission = await _mapLocation.requestPermission();
+                                if (permission != location.PermissionStatus.granted) {
+                                  Navigator.pushReplacementNamed(context, NamedRoutes.setHomeLocationRoute);
                                 } else {
                                   Navigator.pop(context);
                                 }
@@ -934,36 +826,37 @@ String ?  _addressText;
                           ),
                         ],
                       ),
-                      const SizedBox(height: 20),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          Expanded(
-                            child: ElevatedButton(
-                              child: const Text(
-                                "Enter your Location Manually",
-                                style: TextStyle(
-                                  color: ColorsConstant.appColor,
-                                  fontWeight: FontWeight.bold,
+                        const SizedBox(height: 20),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Expanded(
+                              child: ElevatedButton(
+                                child: const Text(
+                                  "Enter your Location Manually",
+                                  style: TextStyle(
+                                    color: ColorsConstant.appColor,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
-                              ),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
                                 ),
+                                onPressed: () async {
+                                   Navigator.pop(context);
+                                   Navigator.pushNamed(context, NamedRoutes.setHomeLocationRoute);
+                                },
                               ),
-                              onPressed: () async {
-                                Navigator.pop(context);
-                                Navigator.pushNamed(context, NamedRoutes.setHomeLocationRoute2);
-                              },
                             ),
-                          ),
-                        ],
-                      ),
+                          ],
+                        ),
                     ],
-                  ),
-                ],
+                    ),
+                  ],
+                ),
               ),
             ),
           );
@@ -971,6 +864,121 @@ String ?  _addressText;
       );
   }
 
+  Future locationPopUp2(BuildContext context) async {
+  await showModalBottomSheet(
+        enableDrag: false,
+        isScrollControlled: true,
+        isDismissible: false,
+        backgroundColor: Colors.white,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(35),
+            topRight: Radius.circular(35),
+          ),
+        ),
+        context: context,
+        builder: (BuildContext context) {
+          return WillPopScope(
+            onWillPop: ()async {
+              return false;
+            },
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Container(
+                color: Colors.white,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Center(
+                      child: Image.asset(
+                        "assets/images/app_logo.png",
+                        height: 80,
+                        width: 80,
+                      ),
+                    ),
+                    const SizedBox(height: 8.0),
+                    const Align(
+                      alignment: Alignment.center,
+                      child: Center(
+                        child: Text(
+                          "Set your location to Start \n exploring\n salons near you",
+                          style: TextStyle(fontSize: 16.0),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                    Image.asset('assets/images/loc_image.png'),
+                    const SizedBox(height: 20),
+                    Column(
+                      children:[
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Expanded(
+                              child: ElevatedButton(
+                                child: const Text(
+                                  "Enable Device Location",
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: ColorsConstant.appColor,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                ),
+                                onPressed: () async {
+                                  var permission = await _mapLocation.requestPermission();
+                                  if (permission != location.PermissionStatus.granted) {
+                                    Navigator.pushReplacementNamed(context, NamedRoutes.setHomeLocationRoute2);
+                                  } else {
+                                    Navigator.pop(context);
+                                  }
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Expanded(
+                              child: ElevatedButton(
+                                child: const Text(
+                                  "Enter your Location Manually",
+                                  style: TextStyle(
+                                    color: ColorsConstant.appColor,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                ),
+                                onPressed: () async {
+                                  Navigator.pop(context);
+                                  Navigator.pushNamed(context, NamedRoutes.setHomeLocationRoute2);
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      );
+  }
 
   Future<void> getAppointments() async {
     final String apiUrl = 'http://13.235.49.214:8800/appointments/user/bookings';
@@ -993,9 +1001,9 @@ String ?  _addressText;
         _upcomingBooking.clear();
         _previousBooking.clear();
         // Populate previous and upcoming bookings lists
-        _upcomingBooking.addAll(userBookings.comingBookings);
         _previousBooking.addAll(userBookings.prevBooking);
         _upcomingBooking.addAll(userBookings.currentBookings);
+        _upcomingBooking.addAll(userBookings.comingBookings);
         notifyListeners();
         // Update current bookings
         for (var booking in userBookings.comingBookings) {
@@ -1198,7 +1206,11 @@ String ?  _addressText;
         // Use current location if available
         print('Current Location: ${currentLocation.longitude}, ${currentLocation.latitude}');
         userAddress = await getAddress(currentLocation.latitude, currentLocation.longitude);
-      } else {
+        await box.put('savedLatitude', currentLocation.latitude);
+        await box.put('savedLongitude', currentLocation.longitude);
+      }
+
+      else {
         // Use saved coordinates if current location is not available
         await loadSavedCoordinates(context); // Load and use saved coordinates
       }

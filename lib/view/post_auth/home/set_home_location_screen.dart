@@ -34,17 +34,7 @@ class _SetHomeLocationScreenState extends State<SetHomeLocationScreen> {
     return Consumer<HomeProvider>(builder: (context, provider, child) {
       return WillPopScope(
         onWillPop: () async {
-          if (provider.userData.homeLocation?.geoLocation == null) {
-            ReusableWidgets.showFlutterToast(
-              context,
-              'Please set your home location before moving forward! to find nearby salons😊',
-            );
-            return false;
-        }else {
-            provider.clearMapSearchText();
-            // Allow popping the screen
-            return Future.value(true);
-          }
+         return false;
         },
         child: Scaffold(
           resizeToAvoidBottomInset: false,
@@ -58,19 +48,7 @@ class _SetHomeLocationScreenState extends State<SetHomeLocationScreen> {
             title: Row(
               mainAxisAlignment: MainAxisAlignment.start,
               children: <Widget>[
-                IconButton(
-                  onPressed: () {
 
-                      provider.clearMapSearchText();
-                      Navigator.pop(context);
-
-                  },
-                  splashRadius: 0.1,
-                  splashColor: Colors.transparent,
-                  icon: SvgPicture.asset(
-                    ImagePathConstant.backArrowIos,
-                  ),
-                ),
                 Text(
                   StringConstant.setLocation,
                   style: StyleConstant.headingTextStyle,
@@ -273,17 +251,9 @@ class _SetHomeLocationScreen2State extends State<SetHomeLocationScreen2> {
     return Consumer<HomeProvider>(builder: (context, provider, child) {
       return WillPopScope(
         onWillPop: () async {
-          if (provider.userData.homeLocation?.geoLocation == null) {
-            ReusableWidgets.showFlutterToast(
-              context,
-              'Please set your home location before moving forward! to find nearby salons😊',
-            );
+
             return false;
-          }else {
-            provider.clearMapSearchText();
-            // Allow popping the screen
-            return Future.value(true);
-          }
+
         },
         child: Scaffold(
           resizeToAvoidBottomInset: false,
@@ -297,19 +267,6 @@ class _SetHomeLocationScreen2State extends State<SetHomeLocationScreen2> {
             title: Row(
               mainAxisAlignment: MainAxisAlignment.start,
               children: <Widget>[
-                IconButton(
-                  onPressed: () {
-
-                      provider.clearMapSearchText();
-                      Navigator.pop(context);
-
-                  },
-                  splashRadius: 0.1,
-                  splashColor: Colors.transparent,
-                  icon: SvgPicture.asset(
-                    ImagePathConstant.backArrowIos,
-                  ),
-                ),
                 Text(
                   StringConstant.setLocation,
                   style: StyleConstant.headingTextStyle,

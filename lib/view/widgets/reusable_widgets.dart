@@ -560,7 +560,7 @@ class ReusableWidgets {
     return Consumer<SalonDetailsProvider>(builder: (context, provider, child) {
       return GestureDetector(
         onTap: () => provider.setSelectedGendersFilter(
-            selectedGender: isMen ? Gender.MEN : Gender.WOMEN),
+            selectedGender: isMen ? 'male': 'female'),
         child: Container(
           margin: EdgeInsets.only(right: 2.w),
           padding: EdgeInsets.all(1.5.w),
@@ -568,10 +568,10 @@ class ReusableWidgets {
             color: provider.selectedGendersFilter.isEmpty
                 ? Colors.white
                 : isMen
-                    ? provider.selectedGendersFilter.contains(Gender.MEN)
+                    ? provider.selectedGendersFilter.contains('male')
                         ? ColorsConstant.selectedGenderFilterBoxColor
                         : Colors.white
-                    : provider.selectedGendersFilter.contains(Gender.WOMEN)
+                    : provider.selectedGendersFilter.contains('female')
                         ? ColorsConstant.selectedGenderFilterBoxColor
                         : Colors.white,
             borderRadius: BorderRadius.circular(1.5.w),
@@ -579,17 +579,17 @@ class ReusableWidgets {
               color: provider.selectedGendersFilter.isEmpty
                   ? ColorsConstant.divider
                   : isMen
-                      ? provider.selectedGendersFilter.contains(Gender.MEN)
+                      ? provider.selectedGendersFilter.contains('male')
                           ? ColorsConstant.appColor
                           : ColorsConstant.divider
-                      : provider.selectedGendersFilter.contains(Gender.WOMEN)
+                      : provider.selectedGendersFilter.contains('female')
                           ? ColorsConstant.appColor
                           : ColorsConstant.divider,
             ),
             boxShadow: provider.selectedGendersFilter.isEmpty
                 ? null
                 : isMen
-                    ? provider.selectedGendersFilter.contains(Gender.MEN)
+                    ? provider.selectedGendersFilter.contains('male')
                         ? [
                             BoxShadow(
                               color: Color(0xFF000000).withOpacity(0.14),
@@ -598,7 +598,7 @@ class ReusableWidgets {
                             )
                           ]
                         : null
-                    : provider.selectedGendersFilter.contains(Gender.WOMEN)
+                    : provider.selectedGendersFilter.contains('female')
                         ? [
                             BoxShadow(
                               color: ColorsConstant.dropShadowColor,
@@ -680,11 +680,13 @@ class ReusableWidgets {
           scrollDirection: Axis.horizontal,
           itemCount: Services.values.length,
           itemBuilder: (context, index) => GestureDetector(
+            /*
             onTap: () {
               provider.setSelectedServiceCategories(
                 selectedServiceCategory: Services.values[index],
               );
             },
+            */
             child: Container(
               margin: EdgeInsets.only(right: 2.w),
               height: 4.2.h,

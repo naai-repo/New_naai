@@ -30,9 +30,33 @@ import '../../../models/service_response.dart';
 import '../../../utils/access_token.dart';
 
 class SalonDetailsProvider with ChangeNotifier {
+  Set<String> _selectedServiceCategories2 = {};
+  List<ServicesWithoutSubCategory> _filteredServices = [];
+
+  // Getter for selected service categories
+  Set<String> get selectedServiceCategories2 => _selectedServiceCategories2;
+
+  // Getter for filtered services
+  List<ServicesWithoutSubCategory> get filteredServices => _filteredServices;
+
+  // Method to update selected service categories
+  void setSelectedServiceCategories({required String selectedServiceCategory}) {
+    if (_selectedServiceCategories2.contains(selectedServiceCategory)) {
+      _selectedServiceCategories2.remove(selectedServiceCategory);
+    } else {
+      _selectedServiceCategories2.add(selectedServiceCategory);
+    }
+    notifyListeners();
+  }
+
+  // Method to set filtered services
+  void setFilteredServices(List<ServicesWithoutSubCategory> services) {
+    _filteredServices = services;
+    notifyListeners();
+  }
   List<String> _imageList = [];
   final Dio dio = Dio();
-  List<Gender> _selectedGendersFilter = [];
+  List<String> _selectedGendersFilter = []; // Change the type to List<String>
   List<Services> _selectedServiceCategories = [];
   List<ServiceDetail> _serviceList = [];
   DataService? serviceDetail;
@@ -114,7 +138,8 @@ class SalonDetailsProvider with ChangeNotifier {
   //============= GETTERS =============//
   List<Artist> get artistList => _artistList;
 
-  List<Gender> get selectedGendersFilter => _selectedGendersFilter;
+  List<String> get selectedGendersFilter => _selectedGendersFilter;
+
 
   List<Services> get selectedServiceCategories => _selectedServiceCategories;
 
@@ -354,8 +379,7 @@ class SalonDetailsProvider with ChangeNotifier {
         print("Error: $error");
       }
     }
-
-
+  // Method to update filtered services
   void setApiResponse(ApiResponse apiResponse) {
     ApiResponse salonDetails = ApiResponse(
       status: apiResponse.status,
@@ -978,27 +1002,26 @@ class SalonDetailsProvider with ChangeNotifier {
 
   /// Set the value of [_selectedGendersFilter] according to the gender filter selected
   /// by user
-  void setSelectedGendersFilter({required Gender selectedGender}) {
-    _selectedGendersFilter.contains(selectedGender)
-        ? _selectedGendersFilter
-            .removeWhere((gender) => gender == selectedGender)
-        : _selectedGendersFilter.add(selectedGender);
+  void setSelectedGendersFilter({required String selectedGender}) {
+    if (selectedGender == 'both') {
+      _selectedGendersFilter.clear(); // Clear the filter if 'both' is selected
+    } else {
+      if (_selectedGendersFilter.contains('both')) {
+        _selectedGendersFilter.remove('both');
+      }
+      if (_selectedGendersFilter.contains(selectedGender)) {
+        _selectedGendersFilter.remove(selectedGender);
+      } else {
+        _selectedGendersFilter.add(selectedGender);
+      }
+    }
 
     filterSalonServices(genderFiltersApplied: true);
     notifyListeners();
   }
-
   /// Set the value of [_selectedServiceCategories] according to the service categories selected
   /// by the user
-  void setSelectedServiceCategories(
-      {required Services selectedServiceCategory}) {
-    _selectedServiceCategories.contains(selectedServiceCategory)
-        ? _selectedServiceCategories.removeWhere(
-            (serviceCategory) => serviceCategory == selectedServiceCategory)
-        : _selectedServiceCategories.add(selectedServiceCategory);
-    filterSalonServices(serviceCategoryFiltersApplied: true);
-    notifyListeners();
-  }
+
 
   /// Filter the [_filteredServiceList] according to the entered
   /// search text by the user

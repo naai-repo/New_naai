@@ -223,8 +223,15 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
   }) {
     return Consumer<SalonDetailsProvider>(builder: (context, provider, child) {
       return GestureDetector(
-        onTap: () => provider.setSelectedGendersFilter(
-            selectedGender: isMen ? Gender.MEN : Gender.WOMEN),
+        onTap: () {
+          if (isMen && isWomen) {
+            provider.setSelectedGendersFilter(selectedGender: 'both');
+          } else if (isMen) {
+            provider.setSelectedGendersFilter(selectedGender: 'male');
+          } else if (isWomen) {
+            provider.setSelectedGendersFilter(selectedGender: 'unisex');
+          }
+        },
         child: Container(
           margin: EdgeInsets.only(right: 2.w),
           padding: EdgeInsets.all(1.5.w),
@@ -232,10 +239,10 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
             color: provider.selectedGendersFilter.isEmpty
                 ? Colors.white
                 : isMen
-                ? provider.selectedGendersFilter.contains(Gender.MEN)
+                ? provider.selectedGendersFilter.contains('male')
                 ? ColorsConstant.selectedGenderFilterBoxColor
                 : Colors.white
-                : provider.selectedGendersFilter.contains(Gender.WOMEN)
+                : provider.selectedGendersFilter.contains('unisex')
                 ? ColorsConstant.selectedGenderFilterBoxColor
                 : Colors.white,
             borderRadius: BorderRadius.circular(1.5.w),
@@ -243,17 +250,17 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
               color: provider.selectedGendersFilter.isEmpty
                   ? ColorsConstant.divider
                   : isMen
-                  ? provider.selectedGendersFilter.contains(Gender.MEN)
+                  ? provider.selectedGendersFilter.contains('male')
                   ? ColorsConstant.appColor
                   : ColorsConstant.divider
-                  : provider.selectedGendersFilter.contains(Gender.WOMEN)
+                  : provider.selectedGendersFilter.contains('unisex')
                   ? ColorsConstant.appColor
                   : ColorsConstant.divider,
             ),
             boxShadow: provider.selectedGendersFilter.isEmpty
                 ? null
                 : isMen
-                ? provider.selectedGendersFilter.contains(Gender.MEN)
+                ? provider.selectedGendersFilter.contains('male')
                 ? [
               BoxShadow(
                 color: Color(0xFF000000).withOpacity(0.14),
@@ -262,7 +269,7 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
               )
             ]
                 : null
-                : provider.selectedGendersFilter.contains(Gender.WOMEN)
+                : provider.selectedGendersFilter.contains('unisex')
                 ? [
               BoxShadow(
                 color: ColorsConstant.dropShadowColor,
@@ -357,16 +364,17 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
     });
   }
 
-   Widget servicesTab() {
+  Widget servicesTab() {
     return Consumer<SalonDetailsProvider>(builder: (context, provider, child) {
-    //  List<DataService> selectedServices = [];
       Set<ServicesWithoutSubCategory> selectedServices = provider.getSelectedServices();
-
+      List<ServicesWithoutSubCategory> filteredServices = provider.salonDetails!.data.services.servicesWithoutSubCategory.where((service) {
+        return (provider.selectedGendersFilter.isEmpty || provider.selectedGendersFilter.contains(service.targetGender)) &&
+            (provider.selectedServiceCategories2.isEmpty || provider.selectedServiceCategories2.contains(service.category));
+      }).toList();
       return Column(
         children: <Widget>[
           GestureDetector(
             onTap: () {
-              // provider.filteredServiceList.length == 0;
               FocusManager.instance.primaryFocus!.unfocus();
             },
             child: Container(
@@ -395,7 +403,7 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
             ),
           ),
           SizedBox(height: 1.h),
-          provider.salonDetails!.data.services.servicesWithoutSubCategory.length == 0
+          filteredServices.isEmpty
               ? Container(
             height: 10.h,
             child: Center(
@@ -403,17 +411,13 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
             ),
           )
               : ListView.builder(
-
             padding: EdgeInsets.zero,
             shrinkWrap: true,
             physics: NeverScrollableScrollPhysics(),
-            itemCount: provider.salonDetails!.data.services.servicesWithoutSubCategory.length,
+            itemCount: filteredServices.length,
             itemBuilder: (context, index) {
-              ServicesWithoutSubCategory? serviceDetail =
-              provider.salonDetails!.data.services.servicesWithoutSubCategory[index];
-              bool isAdded = provider.getSelectedServices().contains(serviceDetail);
-              int ? discount = provider.salonDetails?.data.data.discount ?? 0;
-              double? discountPrice = serviceDetail.basePrice - (serviceDetail.basePrice * discount/100);
+              ServicesWithoutSubCategory serviceDetail = filteredServices[index];
+              bool isAdded = selectedServices.contains(serviceDetail);
               return Container(
                 padding: EdgeInsets.all(3.w),
                 child: Column(
@@ -434,88 +438,91 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
                           ),
                         ),
                         SvgPicture.asset(
-                          serviceDetail.targetGender == "male"
+                          serviceDetail.targetGender == 'male'
                               ? ImagePathConstant.manIcon
                               : ImagePathConstant.womanIcon,
                           height: 3.h,
-                        )
+                        ),
                       ],
                     ),
-                    (serviceDetail.description.isNotEmpty) ? SizedBox(height: 1.h) : const SizedBox(),
-                    (serviceDetail.description.isNotEmpty) ? Text(
-                        serviceDetail.description,
-                        style: TextStyle(
-                          color: const Color(0xFF8B9AAC),
-                          fontSize: 10.sp,
-                          fontFamily: 'Poppins',
-                          fontWeight: FontWeight.w500,
-                        )) : const SizedBox(),
-                    SizedBox(height: 1.h,),
-                    RichText(text: TextSpan(
+                    if (serviceDetail.description.isNotEmpty) SizedBox(height: 1.h),
+                    if (serviceDetail.description.isNotEmpty) Text(
+                      serviceDetail.description,
+                      style: TextStyle(
+                        color: const Color(0xFF8B9AAC),
+                        fontSize: 10.sp,
+                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    SizedBox(height: 1.h),
+                    RichText(
+                      text: TextSpan(
                         children: [
                           TextSpan(
-                              text: "Rs. ${discountPrice}",
-                              style: TextStyle(
-                                color: const Color(0xFF373737),
-                                fontSize: 13.sp,
-                                fontFamily: 'Helvetica Neue',
-                                fontWeight: FontWeight.w800,
-                              )
-                          ),
-
-                          WidgetSpan(child: SizedBox(width: 2.w,)),
-                          TextSpan(
-                              text: "Rs. ${serviceDetail.basePrice}",
-                              style: TextStyle(
-                                color: const Color(0xFF8B9AAC),
-                                fontSize: 12.sp,
-                                fontFamily: 'Helvetica Neue',
-                                fontWeight: FontWeight.w400,
-                                decoration: TextDecoration.lineThrough,
-                              )
-                          ),
-                        ]
-                    )),
-                    SizedBox(height: 2.h,),
-                    TextButton(
-                        onPressed: () async {
-                          provider.toggleSelectedService(serviceDetail);
-                        },
-                        style: TextButton.styleFrom(
-                            padding: EdgeInsets.symmetric(horizontal: 6.w,vertical: 2.w),
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10.sp),
-                                side: BorderSide(color: const Color(0xFFAA2F4C),width: 0.2.w)
-                            ),
-                          backgroundColor: (!isAdded) ? null : Color(0xFFAA2F4C), // Change background color to red when in remove state
-
-                        ),
-                        child: RichText(text: TextSpan(
+                            text: "Rs. ${serviceDetail.basePrice}",
                             style: TextStyle(
-                              color: const Color(0xFFAA2F4C),
-                              fontSize: 12.sp,
-                              fontFamily: 'Poppins',
-                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF373737),
+                              fontSize: 13.sp,
+                              fontFamily: 'Helvetica Neue',
+                              fontWeight: FontWeight.w800,
                             ),
-                            children: [
-                              WidgetSpan(
-                                alignment: PlaceholderAlignment.middle,
-                                child: Icon(
-                                  (!isAdded) ? Icons.add : Icons.remove,
-                                  size: 14.sp,
-                                  color: (!isAdded) ? const Color(0xFFAA2F4C) : Colors.white,
-                                ),
+                          ),
+                          WidgetSpan(child: SizedBox(width: 2.w)),
+                          TextSpan(
+                            text: "Rs. ${serviceDetail.cutPrice}",
+                            style: TextStyle(
+                              color: const Color(0xFF8B9AAC),
+                              fontSize: 12.sp,
+                              fontFamily: 'Helvetica Neue',
+                              fontWeight: FontWeight.w400,
+                              decoration: TextDecoration.lineThrough,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(height: 2.h),
+                    TextButton(
+                      onPressed: () {
+                        provider.toggleSelectedService(serviceDetail);
+                      },
+                      style: TextButton.styleFrom(
+                        padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.w),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10.sp),
+                          side: BorderSide(color: const Color(0xFFAA2F4C), width: 0.2.w),
+                        ),
+                        backgroundColor: !isAdded ? null : const Color(0xFFAA2F4C),
+                      ),
+                      child: RichText(
+                        text: TextSpan(
+                          style: TextStyle(
+                            color: const Color(0xFFAA2F4C),
+                            fontSize: 12.sp,
+                            fontFamily: 'Poppins',
+                            fontWeight: FontWeight.w600,
+                          ),
+                          children: [
+                            WidgetSpan(
+                              alignment: PlaceholderAlignment.middle,
+                              child: Icon(
+                                !isAdded ? Icons.add : Icons.remove,
+                                size: 14.sp,
+                                color: !isAdded ? const Color(0xFFAA2F4C) : Colors.white,
                               ),
-                              WidgetSpan(child: SizedBox(width: 2.w)),
-                              TextSpan(
-                                text: (!isAdded) ? "Add" : "Remove",
-                                style: TextStyle(
-                                  color: (!isAdded) ? const Color(0xFFAA2F4C) : Colors.white,
-                                  backgroundColor: (!isAdded) ? Colors.white : const Color(0xFFAA2F4C),
-                                ),
+                            ),
+                            WidgetSpan(child: SizedBox(width: 2.w)),
+                            TextSpan(
+                              text: !isAdded ? "Add" : "Remove",
+                              style: TextStyle(
+                                color: !isAdded ? const Color(0xFFAA2F4C) : Colors.white,
+                                backgroundColor: !isAdded ? Colors.white : const Color(0xFFAA2F4C),
                               ),
-                            ]
-                        ))
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -527,51 +534,72 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
       );
     });
   }
-   Widget serviceCategoryFilterWidget() {
-    return Consumer<SalonDetailsProvider>(builder: (context, provider, child) {
-      return Container(
-        height: 4.2.h,
-        child: ListView.builder(
-          physics: BouncingScrollPhysics(),
-          shrinkWrap: true,
-          scrollDirection: Axis.horizontal,
-          itemCount: Services.values.length,
-          itemBuilder: (context, index) => GestureDetector(
-            onTap: () {
-              provider.setSelectedServiceCategories(
-                selectedServiceCategory: Services.values[index],
-              );
-            },
-            child: Container(
-              margin: EdgeInsets.only(right: 2.w),
-              height: 4.2.h,
-              padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 0.7.h),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(3.h),
-                color: provider.selectedServiceCategories
-                    .contains(Services.values[index])
-                    ? ColorsConstant.appColor
-                    : Colors.white,
-              ),
-              child: Center(
-                child: Text(
-                  "${Services.values[index].name}",
-                  style: TextStyle(
-                    fontSize: 10.sp,
-                    fontWeight: FontWeight.w600,
-                    color: provider.selectedServiceCategories
-                        .contains(Services.values[index])
-                        ? Colors.white
-                        : ColorsConstant.textDark,
+
+  Widget serviceCategoryFilterWidget() {
+    return Consumer<SalonDetailsProvider>(
+      builder: (context, provider, child) {
+        // Get unique categories from selected services
+        Set<String> uniqueCategories = provider.salonDetails!.data.services.servicesWithoutSubCategory
+            .map((service) => service.category)
+            .toSet();
+
+        return Container(
+          height: 4.2.h,
+          child: ListView.builder(
+            physics: BouncingScrollPhysics(),
+            shrinkWrap: true,
+            scrollDirection: Axis.horizontal,
+            itemCount: uniqueCategories.length,
+            itemBuilder: (context, index) {
+              // Convert set to list to access categories by index
+              List<String> categoriesList = uniqueCategories.toList();
+              String category = categoriesList[index];
+
+              return GestureDetector(
+                onTap: () {
+                  // Filter services based on the selected category
+                  List<ServicesWithoutSubCategory> filteredServices = provider.salonDetails!.data.services.servicesWithoutSubCategory
+                      .where((service) => service.category == category)
+                      .toList();
+
+                  // Update the list of filtered services in the provider
+                  provider.setFilteredServices(filteredServices);
+
+                  // Update selected service categories
+                  provider.setSelectedServiceCategories(selectedServiceCategory: category);
+                },
+
+                child: Container(
+                  margin: EdgeInsets.only(right: 2.w),
+                  height: 4.2.h,
+                  padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 0.7.h),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(3.h),
+                    color: provider.selectedServiceCategories2.contains(category)
+                        ? ColorsConstant.appColor // Change to appColor if selected
+                        : Colors.white,
+                  ),
+                  child: Center(
+                    child: Text(
+                      category,
+                      style: TextStyle(
+                        fontSize: 10.sp,
+                        fontWeight: FontWeight.w600,
+                        color: provider.selectedServiceCategories2.contains(category)
+                            ? Colors.white // Change to white if selected
+                            : ColorsConstant.textDark,
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ),
+              );
+            },
           ),
-        ),
-      );
-    });
+        );
+      },
+    );
   }
+
   Widget imageCarousel() {
     return Consumer<SalonDetailsProvider>(builder: (context, provider, child) {
       return Stack(
@@ -1390,8 +1418,15 @@ class _SalonDetailsScreen2State extends State<SalonDetailsScreen2> {
   }) {
     return Consumer<SalonDetailsProvider>(builder: (context, provider, child) {
       return GestureDetector(
-        onTap: () => provider.setSelectedGendersFilter(
-            selectedGender: isMen ? Gender.MEN : Gender.WOMEN),
+        onTap: () {
+          if (isMen && isWomen) {
+            provider.setSelectedGendersFilter(selectedGender: 'both');
+          } else if (isMen) {
+            provider.setSelectedGendersFilter(selectedGender: 'male');
+          } else if (isWomen) {
+            provider.setSelectedGendersFilter(selectedGender: 'unisex');
+          }
+        },
         child: Container(
           margin: EdgeInsets.only(right: 2.w),
           padding: EdgeInsets.all(1.5.w),
@@ -1399,10 +1434,10 @@ class _SalonDetailsScreen2State extends State<SalonDetailsScreen2> {
             color: provider.selectedGendersFilter.isEmpty
                 ? Colors.white
                 : isMen
-                ? provider.selectedGendersFilter.contains(Gender.MEN)
+                ? provider.selectedGendersFilter.contains('male')
                 ? ColorsConstant.selectedGenderFilterBoxColor
                 : Colors.white
-                : provider.selectedGendersFilter.contains(Gender.WOMEN)
+                : provider.selectedGendersFilter.contains('unisex')
                 ? ColorsConstant.selectedGenderFilterBoxColor
                 : Colors.white,
             borderRadius: BorderRadius.circular(1.5.w),
@@ -1410,17 +1445,17 @@ class _SalonDetailsScreen2State extends State<SalonDetailsScreen2> {
               color: provider.selectedGendersFilter.isEmpty
                   ? ColorsConstant.divider
                   : isMen
-                  ? provider.selectedGendersFilter.contains(Gender.MEN)
+                  ? provider.selectedGendersFilter.contains('male')
                   ? ColorsConstant.appColor
                   : ColorsConstant.divider
-                  : provider.selectedGendersFilter.contains(Gender.WOMEN)
+                  : provider.selectedGendersFilter.contains('unisex')
                   ? ColorsConstant.appColor
                   : ColorsConstant.divider,
             ),
             boxShadow: provider.selectedGendersFilter.isEmpty
                 ? null
                 : isMen
-                ? provider.selectedGendersFilter.contains(Gender.MEN)
+                ? provider.selectedGendersFilter.contains('male')
                 ? [
               BoxShadow(
                 color: Color(0xFF000000).withOpacity(0.14),
@@ -1429,7 +1464,7 @@ class _SalonDetailsScreen2State extends State<SalonDetailsScreen2> {
               )
             ]
                 : null
-                : provider.selectedGendersFilter.contains(Gender.WOMEN)
+                : provider.selectedGendersFilter.contains('unisex')
                 ? [
               BoxShadow(
                 color: ColorsConstant.dropShadowColor,
@@ -1525,14 +1560,15 @@ class _SalonDetailsScreen2State extends State<SalonDetailsScreen2> {
   }
   Widget servicesTab() {
     return Consumer<SalonDetailsProvider>(builder: (context, provider, child) {
-      //  List<DataService> selectedServices = [];
       Set<ServicesWithoutSubCategory> selectedServices = provider.getSelectedServices();
-
+      List<ServicesWithoutSubCategory> filteredServices = provider.salonDetails!.data.services.servicesWithoutSubCategory.where((service) {
+        return (provider.selectedGendersFilter.isEmpty || provider.selectedGendersFilter.contains(service.targetGender)) &&
+            (provider.selectedServiceCategories2.isEmpty || provider.selectedServiceCategories2.contains(service.category));
+      }).toList();
       return Column(
         children: <Widget>[
           GestureDetector(
             onTap: () {
-              // provider.filteredServiceList.length == 0;
               FocusManager.instance.primaryFocus!.unfocus();
             },
             child: Container(
@@ -1561,7 +1597,7 @@ class _SalonDetailsScreen2State extends State<SalonDetailsScreen2> {
             ),
           ),
           SizedBox(height: 1.h),
-          provider.salonDetails!.data.services.servicesWithoutSubCategory.length == 0
+          filteredServices.isEmpty
               ? Container(
             height: 10.h,
             child: Center(
@@ -1572,11 +1608,10 @@ class _SalonDetailsScreen2State extends State<SalonDetailsScreen2> {
             padding: EdgeInsets.zero,
             shrinkWrap: true,
             physics: NeverScrollableScrollPhysics(),
-            itemCount: provider.salonDetails!.data.services.servicesWithoutSubCategory.length,
+            itemCount: filteredServices.length,
             itemBuilder: (context, index) {
-              ServicesWithoutSubCategory? serviceDetail =
-              provider.salonDetails!.data.services.servicesWithoutSubCategory[index];
-              bool isAdded = provider.getSelectedServices().contains(serviceDetail);
+              ServicesWithoutSubCategory serviceDetail = filteredServices[index];
+              bool isAdded = selectedServices.contains(serviceDetail);
               return Container(
                 padding: EdgeInsets.all(3.w),
                 child: Column(
@@ -1597,78 +1632,91 @@ class _SalonDetailsScreen2State extends State<SalonDetailsScreen2> {
                           ),
                         ),
                         SvgPicture.asset(
-                          serviceDetail.targetGender == "male"
+                          serviceDetail.targetGender == 'male'
                               ? ImagePathConstant.manIcon
                               : ImagePathConstant.womanIcon,
                           height: 3.h,
-                        )
+                        ),
                       ],
                     ),
-                    (serviceDetail.description.isNotEmpty) ? SizedBox(height: 1.h) : const SizedBox(),
-                    (serviceDetail.description.isNotEmpty) ? Text(
-                        serviceDetail.description,
-                        style: TextStyle(
-                          color: const Color(0xFF8B9AAC),
-                          fontSize: 10.sp,
-                          fontFamily: 'Poppins',
-                          fontWeight: FontWeight.w500,
-                        )) : const SizedBox(),
-                    SizedBox(height: 1.h,),
-                    RichText(text: TextSpan(
+                    if (serviceDetail.description.isNotEmpty) SizedBox(height: 1.h),
+                    if (serviceDetail.description.isNotEmpty) Text(
+                      serviceDetail.description,
+                      style: TextStyle(
+                        color: const Color(0xFF8B9AAC),
+                        fontSize: 10.sp,
+                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    SizedBox(height: 1.h),
+                    RichText(
+                      text: TextSpan(
                         children: [
                           TextSpan(
-                              text: "Rs. ${serviceDetail.basePrice}",
-                              style: TextStyle(
-                                color: const Color(0xFF373737),
-                                fontSize: 13.sp,
-                                fontFamily: 'Helvetica Neue',
-                                fontWeight: FontWeight.w800,
-                              )
-                          ),
-
-                          WidgetSpan(child: SizedBox(width: 2.w,)),
-                          TextSpan(
-                              text: "Rs. ${provider.salonDetails?.data.data.discount ?? 0}",
-                              style: TextStyle(
-                                color: const Color(0xFF8B9AAC),
-                                fontSize: 12.sp,
-                                fontFamily: 'Helvetica Neue',
-                                fontWeight: FontWeight.w400,
-                                decoration: TextDecoration.lineThrough,
-                              )
-                          ),
-                        ]
-                    )),
-                    SizedBox(height: 2.h,),
-                    TextButton(
-                        onPressed: () async {
-                          provider.toggleSelectedService(serviceDetail);
-                        },
-                        style: TextButton.styleFrom(
-                            padding: EdgeInsets.symmetric(horizontal: 6.w,vertical: 2.w),
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10.sp),
-                                side: BorderSide(color: const Color(0xFFAA2F4C),width: 0.2.w)
-                            )
-                        ),
-                        child: RichText(text: TextSpan(
+                            text: "Rs. ${serviceDetail.basePrice}",
                             style: TextStyle(
-                              color: const Color(0xFFAA2F4C),
-                              fontSize: 12.sp,
-                              fontFamily: 'Poppins',
-                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF373737),
+                              fontSize: 13.sp,
+                              fontFamily: 'Helvetica Neue',
+                              fontWeight: FontWeight.w800,
                             ),
-                            children: [
-                              WidgetSpan(
-                                  alignment: PlaceholderAlignment.middle,
-                                  child: Icon((!isAdded) ? Icons.add : Icons.remove,
-                                    size: 14.sp,color: const Color(0xFFAA2F4C),)),
-                              WidgetSpan(child: SizedBox(width: 2.w,)),
-                              TextSpan(
-                                  text: (!isAdded) ? "Add" : "Remove"
-                              )
-                            ]
-                        ))
+                          ),
+                          WidgetSpan(child: SizedBox(width: 2.w)),
+                          TextSpan(
+                            text: "Rs. ${serviceDetail.cutPrice}",
+                            style: TextStyle(
+                              color: const Color(0xFF8B9AAC),
+                              fontSize: 12.sp,
+                              fontFamily: 'Helvetica Neue',
+                              fontWeight: FontWeight.w400,
+                              decoration: TextDecoration.lineThrough,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(height: 2.h),
+                    TextButton(
+                      onPressed: () {
+                        provider.toggleSelectedService(serviceDetail);
+                      },
+                      style: TextButton.styleFrom(
+                        padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.w),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10.sp),
+                          side: BorderSide(color: const Color(0xFFAA2F4C), width: 0.2.w),
+                        ),
+                        backgroundColor: !isAdded ? null : const Color(0xFFAA2F4C),
+                      ),
+                      child: RichText(
+                        text: TextSpan(
+                          style: TextStyle(
+                            color: const Color(0xFFAA2F4C),
+                            fontSize: 12.sp,
+                            fontFamily: 'Poppins',
+                            fontWeight: FontWeight.w600,
+                          ),
+                          children: [
+                            WidgetSpan(
+                              alignment: PlaceholderAlignment.middle,
+                              child: Icon(
+                                !isAdded ? Icons.add : Icons.remove,
+                                size: 14.sp,
+                                color: !isAdded ? const Color(0xFFAA2F4C) : Colors.white,
+                              ),
+                            ),
+                            WidgetSpan(child: SizedBox(width: 2.w)),
+                            TextSpan(
+                              text: !isAdded ? "Add" : "Remove",
+                              style: TextStyle(
+                                color: !isAdded ? const Color(0xFFAA2F4C) : Colors.white,
+                                backgroundColor: !isAdded ? Colors.white : const Color(0xFFAA2F4C),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -1680,51 +1728,74 @@ class _SalonDetailsScreen2State extends State<SalonDetailsScreen2> {
       );
     });
   }
+
   Widget serviceCategoryFilterWidget() {
-    return Consumer<SalonDetailsProvider>(builder: (context, provider, child) {
-      return Container(
-        height: 4.2.h,
-        child: ListView.builder(
-          physics: BouncingScrollPhysics(),
-          shrinkWrap: true,
-          scrollDirection: Axis.horizontal,
-          itemCount: Services.values.length,
-          itemBuilder: (context, index) => GestureDetector(
-            onTap: () {
-              provider.setSelectedServiceCategories(
-                selectedServiceCategory: Services.values[index],
-              );
-            },
-            child: Container(
-              margin: EdgeInsets.only(right: 2.w),
-              height: 4.2.h,
-              padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 0.7.h),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(3.h),
-                color: provider.selectedServiceCategories
-                    .contains(Services.values[index])
-                    ? ColorsConstant.appColor
-                    : Colors.white,
-              ),
-              child: Center(
-                child: Text(
-                  "${Services.values[index].name}",
-                  style: TextStyle(
-                    fontSize: 10.sp,
-                    fontWeight: FontWeight.w600,
-                    color: provider.selectedServiceCategories
-                        .contains(Services.values[index])
-                        ? Colors.white
-                        : ColorsConstant.textDark,
+    return Consumer<SalonDetailsProvider>(
+      builder: (context, provider, child) {
+        // Get unique categories from selected services
+        Set<String> uniqueCategories = provider.salonDetails!.data.services.servicesWithoutSubCategory
+            .map((service) => service.category)
+            .toSet();
+
+        return Container(
+          height: 4.2.h,
+          child: ListView.builder(
+            physics: BouncingScrollPhysics(),
+            shrinkWrap: true,
+            scrollDirection: Axis.horizontal,
+            itemCount: uniqueCategories.length,
+            itemBuilder: (context, index) {
+              // Convert set to list to access categories by index
+              List<String> categoriesList = uniqueCategories.toList();
+              String category = categoriesList[index];
+
+              return GestureDetector(
+                onTap: () {
+                  // Filter services based on the selected category
+                  List<ServicesWithoutSubCategory> filteredServices = provider.salonDetails!.data.services.servicesWithoutSubCategory
+                      .where((service) => service.category == category)
+                      .toList();
+
+                  // Update the list of filtered services in the provider
+                  provider.setFilteredServices(filteredServices);
+
+                  // Update selected service categories
+                  provider.setSelectedServiceCategories(selectedServiceCategory: category);
+                },
+
+                child: Container(
+                  margin: EdgeInsets.only(right: 2.w),
+                  height: 4.2.h,
+                  padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 0.7.h),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(3.h),
+                    color: provider.selectedServiceCategories2.contains(category)
+                        ? ColorsConstant.appColor // Change to appColor if selected
+                        : Colors.white,
+                  ),
+                  child: Center(
+                    child: Text(
+                      category,
+                      style: TextStyle(
+                        fontSize: 10.sp,
+                        fontWeight: FontWeight.w600,
+                        color: provider.selectedServiceCategories2.contains(category)
+                            ? Colors.white // Change to white if selected
+                            : ColorsConstant.textDark,
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ),
+              );
+            },
           ),
-        ),
-      );
-    });
+        );
+      },
+    );
   }
+
+
+
   Widget imageCarousel() {
     return Consumer<SalonDetailsProvider>(builder: (context, provider, child) {
       return Stack(

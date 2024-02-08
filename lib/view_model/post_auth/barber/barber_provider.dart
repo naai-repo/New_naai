@@ -28,11 +28,65 @@ class BarberProvider with ChangeNotifier {
   int _selectedArtistIndex = 0;
 
   List<Gender> _selectedGendersFilter = [];
-  List<Services> _selectedServiceCategories = [];
+  List<Services> _selectedServiceCategories= [];
   List<ServiceDetail> _serviceList = [];
   List<ServiceDetail> _filteredServiceList = [];
   // List<Review> _artistReviewList = [];
+  List<Service2> _selectedServices = [];
+  List<Service2> get SelectedServices => _selectedServices;
 
+  List<Service2> _filteredServices = [];
+  List<Service2> get FilteredServices  => _filteredServices;
+  Set<String> _selectedServiceCategories2 = {};
+  Set<String> get selectedServiceCategories2  => _selectedServiceCategories2;
+
+  List<String> _selectedGendersFilter2 = [];
+  List<String> get selectedGendersFilter2 => _selectedGendersFilter2;
+
+  // Other properties and methods as needed
+
+  // Method to toggle selected service
+  void toggleSelectedService(Service2 service) {
+    if (_selectedServices.contains(service)) {
+      _selectedServices.remove(service);
+    } else {
+      _selectedServices.add(service);
+    }
+    notifyListeners();
+  }
+
+  // Method to set filtered services
+  void setFilteredServices(List<Service2> services) {
+    _filteredServices = services;
+    notifyListeners();
+  }
+
+  // Method to set selected service categories
+  void setSelectedServiceCategories({required String selectedServiceCategory}) {
+    if (_selectedServiceCategories2.contains(selectedServiceCategory)) {
+      _selectedServiceCategories2.remove(selectedServiceCategory);
+    } else {
+      _selectedServiceCategories2.add(selectedServiceCategory);
+    }
+    notifyListeners();
+  }
+  void setSelectedGendersFilter2({required String selectedGender}) {
+    if (selectedGender == 'both') {
+      _selectedGendersFilter2.clear(); // Clear the filter if 'both' is selected
+    } else {
+      if (_selectedGendersFilter2.contains('both')) {
+        _selectedGendersFilter2.remove('both');
+      }
+      if (_selectedGendersFilter2.contains(selectedGender)) {
+        _selectedGendersFilter2.remove(selectedGender);
+      } else {
+        _selectedGendersFilter2.add(selectedGender);
+      }
+    }
+
+    filterSalonServices(genderFiltersApplied: true);
+    notifyListeners();
+  }
   Artist _artist = Artist();
   SalonData _selectedSalonData = SalonData();
   bool _shouldSetArtistData = true;
@@ -67,6 +121,17 @@ class BarberProvider with ChangeNotifier {
     _salonDetails = salonDetails;
     notifyListeners();
   }
+  Gender? selectedGender; // Variable to store selected gender
+  List<Service2> filteredServices = []; // List to store filtered services
+
+  // Function to set selected gender
+  void setSelectedGender(Gender gender) {
+    selectedGender = gender;
+    notifyListeners();
+  }
+
+
+
 
   void setArtistDetails(Data artistDetails) {
     _artistDetails = artistDetails;
@@ -196,15 +261,6 @@ class BarberProvider with ChangeNotifier {
 
   /// Set the value of [_selectedServiceCategories] according to the service categories selected
   /// by the user
-  void setSelectedServiceCategories(
-      {required Services selectedServiceCategory}) {
-    _selectedServiceCategories.contains(selectedServiceCategory)
-        ? _selectedServiceCategories.removeWhere(
-            (serviceCategory) => serviceCategory == selectedServiceCategory)
-        : _selectedServiceCategories.add(selectedServiceCategory);
-    filterSalonServices(serviceCategoryFiltersApplied: true);
-    notifyListeners();
-  }
 
   /// Filter the [_filteredServiceList] according to the entered
   /// search text by the user

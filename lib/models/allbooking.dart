@@ -41,6 +41,7 @@ class CurrentBooking {
   String id;
   String userId;
   String salonId;
+  int paymentAmount;
   String paymentId;
   String paymentStatus;
   DateTime bookingDate;
@@ -55,6 +56,7 @@ class CurrentBooking {
     required this.id,
     required this.userId,
     required this.salonId,
+    required this.paymentAmount,
     required this.paymentId,
     required this.paymentStatus,
     required this.bookingDate,
@@ -71,6 +73,7 @@ class CurrentBooking {
     id: json["_id"],
     userId: json["userId"],
     salonId: json["salonId"],
+    paymentAmount: json["paymentAmount"],
     paymentId: json["paymentId"],
     paymentStatus: json["paymentStatus"],
     bookingDate: DateTime.parse(json["bookingDate"]),
@@ -88,6 +91,7 @@ class CurrentBooking {
     "userId": userId,
     "salonId": salonId,
     "paymentId": paymentId,
+    "paymentAmount": paymentAmount,
     "paymentStatus": paymentStatus,
     "bookingDate": bookingDate.toIso8601String(),
     "artistServiceMap": List<dynamic>.from(artistServiceMap.map((x) => x.toJson())),
@@ -182,6 +186,7 @@ class PrevBooking {
   String id;
   String userId;
   String salonId;
+  int paymentAmount;
   String paymentId;
   String paymentStatus;
   DateTime bookingDate;
@@ -196,6 +201,7 @@ class PrevBooking {
     required this.id,
     required this.userId,
     required this.salonId,
+    required this.paymentAmount,
     required this.paymentId,
     required this.paymentStatus,
     required this.bookingDate,
@@ -211,6 +217,7 @@ class PrevBooking {
     id: json["_id"],
     userId: json["userId"],
     salonId: json["salonId"],
+    paymentAmount: json["paymentAmount"],
     paymentId: json["paymentId"],
     paymentStatus: json["paymentStatus"],
     bookingDate: DateTime.parse(json["bookingDate"]),
@@ -226,6 +233,7 @@ class PrevBooking {
     "_id": id,
     "userId": userId,
     "salonId": salonId,
+    "paymentAmount": paymentAmount,
     "paymentId": paymentId,
     "paymentStatus": paymentStatus,
     "bookingDate": bookingDate.toIso8601String(),

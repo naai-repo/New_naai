@@ -29,9 +29,9 @@ class ServiceDetail {
       serviceTitle: data['serviceTitle'],
       price: data['price'].toDouble(),
       targetGender: data['targetGender'] == 'Men'
-          ? Gender.MEN
+          ? Gender.MALE
           : data['targetGender'] == 'Women'
-              ? Gender.WOMEN
+              ? Gender.FEMALE
               : null,
     );
   }

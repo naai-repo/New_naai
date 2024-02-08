@@ -1,9 +1,22 @@
 enum Gender {
-  MEN,
-  WOMEN,
+  MALE,
+  FEMALE,
   OTHERS,
 }
-
+extension GenderExtension on Gender {
+  String getString() {
+    switch (this) {
+      case Gender.MALE:
+        return 'MALE';
+      case Gender.FEMALE:
+        return 'UNISEX';
+      case Gender.OTHERS:
+        return 'OTHERS';
+      default:
+        return '';
+    }
+  }
+}
 enum Services {
   HAIR,
   SPA,

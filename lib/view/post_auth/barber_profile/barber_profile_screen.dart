@@ -253,6 +253,13 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
       BarberProvider barberProvider = context.read<BarberProvider>(); // Use the same instance
       HomeProvider homeProvider = context.read<HomeProvider>();
       Set<Service2> selectedServices = provider.barbergetSelectedServices();
+
+      List<Service2> filteredServices = context.read<BarberProvider>().artistDetails!.services.where((service) {
+        String? gender = barberProvider.serviceDetailsMap[service.serviceId]?.data.targetGender;
+        String ? category = barberProvider.serviceDetailsMap[service.serviceId]?.data.category;
+        return (provider.selectedGendersFilter.isEmpty || provider.selectedGendersFilter.contains(gender)) &&
+            (barberProvider.selectedServiceCategories2.isEmpty || barberProvider.selectedServiceCategories2.contains(category));
+      }).toList();
       return Column(
         children: <Widget>[
           GestureDetector(
@@ -283,180 +290,207 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
             ),
           ),
           SizedBox(height: 1.h),
-          context.read<BarberProvider>().artistDetails!.services.length == 0
+          filteredServices.isEmpty
               ? Container(
-                  height: 10.h,
-                  child: Center(
-                    child: Text('Nothing here :('),
-                  ),
-                )
+            height: 10.h,
+            child: Center(
+              child: Text('Nothing here :('),
+            ),
+          )
               : ListView.builder(
-                  padding: EdgeInsets.zero,
-                  shrinkWrap: true,
-                  physics: NeverScrollableScrollPhysics(),
-                  itemCount:
-                      context.read<BarberProvider>().artistDetails!.services.length,
-                  itemBuilder: (context, index) {
-                    Data? serviceDetail3 =  context.read<BarberProvider>().artistDetails;
-                    Service2? serviceDetail  = context.read<BarberProvider>().artistDetails!.services[index];
-                    bool isAdded = provider.barbergetSelectedServices().contains(serviceDetail);
-                    String? title = barberProvider.serviceDetailsMap[serviceDetail.serviceId]?.data.serviceTitle ?? '';
-                    String? discription = barberProvider.serviceDetailsMap[serviceDetail.serviceId]?.data.description ?? '';
-                    int? totalPrice = barberProvider.serviceDetailsMap[serviceDetail.serviceId]?.data.basePrice ?? 0  ;
-                    int? discount = barberProvider.salonDetails?.data.data.discount ?? 0;
-                    String? gender = barberProvider.serviceDetailsMap[serviceDetail.serviceId]?.data.targetGender ?? '';
-                    double? discountPrice = totalPrice - (totalPrice * discount/100);
-                    // serviceDetail3.salonId;
+            padding: EdgeInsets.zero,
+            shrinkWrap: true,
+            physics: NeverScrollableScrollPhysics(),
+            itemCount: filteredServices.length,
+            itemBuilder: (context, index) {
+              Service2? serviceDetail = filteredServices[index];
+              bool isAdded = provider.barbergetSelectedServices().contains(serviceDetail);
+              String? title = barberProvider.serviceDetailsMap[serviceDetail.serviceId]?.data.serviceTitle ?? '';
+              String? description = barberProvider.serviceDetailsMap[serviceDetail.serviceId]?.data.description ?? '';
+              int? totalPrice = barberProvider.serviceDetailsMap[serviceDetail.serviceId]?.data.basePrice ?? 0;
+              int? discount = barberProvider.salonDetails?.data.data.discount ?? 0;
+              String? gender = barberProvider.serviceDetailsMap[serviceDetail.serviceId]?.data.targetGender ?? '';
+              int? cutPrice = barberProvider.serviceDetailsMap[serviceDetail.serviceId]?.data.cutPrice ?? 0;
 
-
-                    return Container(
-                      padding: EdgeInsets.all(3.w),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Text(
-                                title,
-                                style: TextStyle(
-                                  color: const Color(0xFF2B2F34),
-                                  fontSize: 12.sp,
-                                  fontFamily: 'Poppins',
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              SvgPicture.asset(
-                                gender == "male"
-                                    ? ImagePathConstant.manIcon
-                                    : ImagePathConstant.womanIcon,
-                                height: 3.h,
-                              )
-                            ],
+              return Container(
+                padding: EdgeInsets.all(3.w),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(
+                          title,
+                          style: TextStyle(
+                            color: const Color(0xFF2B2F34),
+                            fontSize: 12.sp,
+                            fontFamily: 'Poppins',
+                            fontWeight: FontWeight.w700,
                           ),
-                          (discription.isNotEmpty) ? SizedBox(height: 1.h) : const SizedBox(),
-                          (discription.isNotEmpty) ? Text(
-                              discription,
-                              style: TextStyle(
-                                color: const Color(0xFF8B9AAC),
-                                fontSize: 10.sp,
-                                fontFamily: 'Poppins',
-                                fontWeight: FontWeight.w500,
-                              )) : const SizedBox(),
-                          SizedBox(height: 1.h,),
-                          RichText(text: TextSpan(
-                              children: [
-                                TextSpan(
-                                    text: "Rs. $discountPrice",
-                                    style: TextStyle(
-                                      color: const Color(0xFF373737),
-                                      fontSize: 13.sp,
-                                      fontFamily: 'Helvetica Neue',
-                                      fontWeight: FontWeight.w800,
-                                    )
-                                ),
-
-                                WidgetSpan(child: SizedBox(width: 2.w,)),
-                                TextSpan(
-                                    text: "Rs. $totalPrice",
-                                    style: TextStyle(
-                                      color: const Color(0xFF8B9AAC),
-                                      fontSize: 12.sp,
-                                      fontFamily: 'Helvetica Neue',
-                                      fontWeight: FontWeight.w400,
-                                      decoration: TextDecoration.lineThrough,
-                                    )
-                                ),
-                              ]
-                          )),
-                          SizedBox(height: 2.h,),
-                          TextButton(
-                              onPressed: () async {
-                                provider.toggleSelectedServicebarber(serviceDetail);
-                              },
-                              style: TextButton.styleFrom(
-                                  padding: EdgeInsets.symmetric(horizontal: 6.w,vertical: 2.w),
-                                  shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(10.sp),
-                                      side: BorderSide(color: const Color(0xFFAA2F4C),width: 0.2.w)
-                                  )
-                              ),
-                              child: RichText(text: TextSpan(
-                                  style: TextStyle(
-                                    color: const Color(0xFFAA2F4C),
-                                    fontSize: 12.sp,
-                                    fontFamily: 'Poppins',
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                  children: [
-                                    WidgetSpan(
-                                        alignment: PlaceholderAlignment.middle,
-                                        child: Icon((!isAdded) ? Icons.add : Icons.remove,
-                                          size: 14.sp,color: const Color(0xFFAA2F4C),)),
-                                    WidgetSpan(child: SizedBox(width: 2.w,)),
-                                    TextSpan(
-                                        text: (!isAdded) ? "Add" : "Remove"
-                                    )
-                                  ]
-                              ))
+                        ),
+                        SvgPicture.asset(
+                          gender == 'male' ? ImagePathConstant.manIcon : ImagePathConstant.womanIcon,
+                          height: 3.h,
+                        ),
+                      ],
+                    ),
+                    if (description.isNotEmpty) SizedBox(height: 1.h),
+                    if (description.isNotEmpty) Text(
+                      description,
+                      style: TextStyle(
+                        color: const Color(0xFF8B9AAC),
+                        fontSize: 10.sp,
+                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    SizedBox(height: 1.h),
+                    RichText(
+                      text: TextSpan(
+                        children: [
+                          TextSpan(
+                            text: "Rs. $totalPrice",
+                            style: TextStyle(
+                              color: const Color(0xFF373737),
+                              fontSize: 13.sp,
+                              fontFamily: 'Helvetica Neue',
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          WidgetSpan(child: SizedBox(width: 2.w)),
+                          TextSpan(
+                            text: "Rs. $cutPrice",
+                            style: TextStyle(
+                              color: const Color(0xFF8B9AAC),
+                              fontSize: 12.sp,
+                              fontFamily: 'Helvetica Neue',
+                              fontWeight: FontWeight.w400,
+                              decoration: TextDecoration.lineThrough,
+                            ),
                           ),
                         ],
                       ),
-                    );
-                  },
+                    ),
+                    SizedBox(height: 2.h),
+                    TextButton(
+                      onPressed: () async {
+                        provider.toggleSelectedServicebarber(serviceDetail);
+                      },
+                      style: TextButton.styleFrom(
+                        padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.w),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10.sp),
+                          side: BorderSide(color: const Color(0xFFAA2F4C), width: 0.2.w),
+                        ),
+                        backgroundColor: (!isAdded) ? null : Color(0xFFAA2F4C),
+                      ),
+                      child: RichText(
+                        text: TextSpan(
+                          style: TextStyle(
+                            color: const Color(0xFFAA2F4C),
+                            fontSize: 12.sp,
+                            fontFamily: 'Poppins',
+                            fontWeight: FontWeight.w600,
+                          ),
+                          children: [
+                            WidgetSpan(
+                              alignment: PlaceholderAlignment.middle,
+                              child: Icon(
+                                (!isAdded) ? Icons.add : Icons.remove,
+                                size: 14.sp,
+                                color: (!isAdded) ? const Color(0xFFAA2F4C) : Colors.white,
+                              ),
+                            ),
+                            WidgetSpan(child: SizedBox(width: 2.w)),
+                            TextSpan(
+                              text: (!isAdded) ? "Add" : "Remove",
+                              style: TextStyle(
+                                color: (!isAdded) ? const Color(0xFFAA2F4C) : Colors.white,
+                                backgroundColor: (!isAdded) ? Colors.white : const Color(0xFFAA2F4C),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
           ),
           SizedBox(height: 3.h),
         ],
       );
     });
   }
+
   Widget serviceCategoryFilterWidget() {
-    return Consumer<BarberProvider>(builder: (context, provider, child) {
-      return Container(
-        height: 4.2.h,
-        child: ListView.builder(
-          physics: BouncingScrollPhysics(),
-          shrinkWrap: true,
-          scrollDirection: Axis.horizontal,
-          itemCount: Services.values.length,
-          itemBuilder: (context, index) => GestureDetector(
-            onTap: () {
-              provider.setSelectedServiceCategories(
-                selectedServiceCategory: Services.values[index],
-              );
-            },
-            child: Container(
-              margin: EdgeInsets.only(right: 2.w),
-              height: 4.2.h,
-              padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 0.7.h),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(3.h),
-                color: provider.selectedServiceCategories
-                        .contains(Services.values[index])
-                    ? ColorsConstant.appColor
-                    : Colors.white,
-              ),
-              child: Center(
-                child: Text(
-                  "${Services.values[index].name}",
-                  style: TextStyle(
-                    fontSize: 10.sp,
-                    fontWeight: FontWeight.w600,
-                    color: provider.selectedServiceCategories
-                            .contains(Services.values[index])
-                        ? Colors.white
-                        : ColorsConstant.textDark,
+    return Consumer<BarberProvider>(
+      builder: (context, provider, child) {
+        // Get unique categories from provided services
+        Set<String?> uniqueCategories = provider.artistDetails!.services
+            .map((service) => provider.serviceDetailsMap[service.serviceId]?.data.category)
+            .where((category) => category != null) // Remove null values
+            .toSet();
+
+        return Container(
+          height: 4.2.h,
+          child: ListView.builder(
+            physics: BouncingScrollPhysics(),
+            shrinkWrap: true,
+            scrollDirection: Axis.horizontal,
+            itemCount: uniqueCategories.length,
+            itemBuilder: (context, index) {
+              List<String?> categoriesList = uniqueCategories.toList();
+              String? category = categoriesList[index];
+
+              return GestureDetector(
+                onTap: () {
+                  // Filter services based on the selected category
+                  List<Service2> filteredServices = provider.artistDetails!.services
+                      .where((service) => provider.serviceDetailsMap[service.serviceId]?.data.category == category)
+                      .toList();
+
+                  // Update the list of filtered services in the provider
+                  provider.setFilteredServices(filteredServices);
+
+                  // Update selected service categories
+                  provider.setSelectedServiceCategories(selectedServiceCategory: category ?? '');
+                },
+                child: Container(
+                  margin: EdgeInsets.only(right: 2.w),
+                  height: 4.2.h,
+                  padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 0.7.h),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(3.h),
+                    color: provider.selectedServiceCategories2.contains(category)
+                        ? ColorsConstant.appColor
+                        : Colors.white,
+                  ),
+                  child: Center(
+                    child: Text(
+                      category ?? '',
+                      style: TextStyle(
+                        fontSize: 10.sp,
+                        fontWeight: FontWeight.w600,
+                        color: provider.selectedServiceCategories2.contains(category)
+                            ? Colors.white
+                            : ColorsConstant.textDark,
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ),
+              );
+            },
           ),
-        ),
-      );
-    });
+        );
+      },
+    );
   }
+
 
   Widget genderAndSearchFilterWidget() {
     return Consumer<BarberProvider>(builder: (context, provider, child) {
@@ -517,14 +551,21 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
     });
   }
 
-  Widget genderFilterTabs({
+  static Widget genderFilterTabs({
     required bool isMen,
     required bool isWomen,
   }) {
-    return Consumer<BarberProvider>(builder: (context, provider, child) {
+    return Consumer<SalonDetailsProvider>(builder: (context, provider, child) {
       return GestureDetector(
-        onTap: () => provider.setSelectedGendersFilter(
-            selectedGender: isMen ? Gender.MEN : Gender.WOMEN),
+        onTap: () {
+          if (isMen && isWomen) {
+            provider.setSelectedGendersFilter(selectedGender: 'both');
+          } else if (isMen) {
+            provider.setSelectedGendersFilter(selectedGender: 'male');
+          } else if (isWomen) {
+            provider.setSelectedGendersFilter(selectedGender: 'unisex');
+          }
+        },
         child: Container(
           margin: EdgeInsets.only(right: 2.w),
           padding: EdgeInsets.all(1.5.w),
@@ -532,45 +573,45 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
             color: provider.selectedGendersFilter.isEmpty
                 ? Colors.white
                 : isMen
-                    ? provider.selectedGendersFilter.contains(Gender.MEN)
-                        ? ColorsConstant.selectedGenderFilterBoxColor
-                        : Colors.white
-                    : provider.selectedGendersFilter.contains(Gender.WOMEN)
-                        ? ColorsConstant.selectedGenderFilterBoxColor
-                        : Colors.white,
+                ? provider.selectedGendersFilter.contains('male')
+                ? ColorsConstant.selectedGenderFilterBoxColor
+                : Colors.white
+                : provider.selectedGendersFilter.contains('unisex')
+                ? ColorsConstant.selectedGenderFilterBoxColor
+                : Colors.white,
             borderRadius: BorderRadius.circular(1.5.w),
             border: Border.all(
               color: provider.selectedGendersFilter.isEmpty
                   ? ColorsConstant.divider
                   : isMen
-                      ? provider.selectedGendersFilter.contains(Gender.MEN)
-                          ? ColorsConstant.appColor
-                          : ColorsConstant.divider
-                      : provider.selectedGendersFilter.contains(Gender.WOMEN)
-                          ? ColorsConstant.appColor
-                          : ColorsConstant.divider,
+                  ? provider.selectedGendersFilter.contains('male')
+                  ? ColorsConstant.appColor
+                  : ColorsConstant.divider
+                  : provider.selectedGendersFilter.contains('unisex')
+                  ? ColorsConstant.appColor
+                  : ColorsConstant.divider,
             ),
             boxShadow: provider.selectedGendersFilter.isEmpty
                 ? null
                 : isMen
-                    ? provider.selectedGendersFilter.contains(Gender.MEN)
-                        ? [
-                            BoxShadow(
-                              color: Color(0xFF000000).withOpacity(0.14),
-                              blurRadius: 10,
-                              spreadRadius: 2,
-                            )
-                          ]
-                        : null
-                    : provider.selectedGendersFilter.contains(Gender.WOMEN)
-                        ? [
-                            BoxShadow(
-                              color: ColorsConstant.dropShadowColor,
-                              blurRadius: 10,
-                              spreadRadius: 2,
-                            )
-                          ]
-                        : null,
+                ? provider.selectedGendersFilter.contains('male')
+                ? [
+              BoxShadow(
+                color: Color(0xFF000000).withOpacity(0.14),
+                blurRadius: 10,
+                spreadRadius: 2,
+              )
+            ]
+                : null
+                : provider.selectedGendersFilter.contains('unisex')
+                ? [
+              BoxShadow(
+                color: ColorsConstant.dropShadowColor,
+                blurRadius: 10,
+                spreadRadius: 2,
+              )
+            ]
+                : null,
           ),
           child: Row(
             children: <Widget>[
@@ -598,6 +639,7 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
       );
     });
   }
+
 
   Widget reviewColumn() {
     return Consumer<BarberProvider>(
@@ -1300,6 +1342,13 @@ class _BarberProfileScreen2State extends State<BarberProfileScreen2> {
       BarberProvider barberProvider = context.read<BarberProvider>(); // Use the same instance
       HomeProvider homeProvider = context.read<HomeProvider>();
       Set<Service2> selectedServices = provider.barbergetSelectedServices();
+
+      List<Service2> filteredServices = context.read<BarberProvider>().artistDetails!.services.where((service) {
+        String? gender = barberProvider.serviceDetailsMap[service.serviceId]?.data.targetGender;
+        String ? category = barberProvider.serviceDetailsMap[service.serviceId]?.data.category;
+        return (provider.selectedGendersFilter.isEmpty || provider.selectedGendersFilter.contains(gender)) &&
+            (barberProvider.selectedServiceCategories2.isEmpty || barberProvider.selectedServiceCategories2.contains(category));
+      }).toList();
       return Column(
         children: <Widget>[
           GestureDetector(
@@ -1330,31 +1379,27 @@ class _BarberProfileScreen2State extends State<BarberProfileScreen2> {
             ),
           ),
           SizedBox(height: 1.h),
-          context.read<BarberProvider>().artistDetails!.services.length == 0
+          filteredServices.isEmpty
               ? Container(
             height: 10.h,
             child: Center(
               child: Text('Nothing here :('),
             ),
           )
-                : ListView.builder(
+              : ListView.builder(
             padding: EdgeInsets.zero,
             shrinkWrap: true,
             physics: NeverScrollableScrollPhysics(),
-            itemCount:
-            context.read<BarberProvider>().artistDetails!.services.length,
+            itemCount: filteredServices.length,
             itemBuilder: (context, index) {
-              Data? serviceDetail3 =  context.read<BarberProvider>().artistDetails;
-              Service2? serviceDetail  = context.read<BarberProvider>().artistDetails!.services[index];
+              Service2? serviceDetail = filteredServices[index];
               bool isAdded = provider.barbergetSelectedServices().contains(serviceDetail);
               String? title = barberProvider.serviceDetailsMap[serviceDetail.serviceId]?.data.serviceTitle ?? '';
-              String? discription = barberProvider.serviceDetailsMap[serviceDetail.serviceId]?.data.description ?? '';
-              int? totalPrice = barberProvider.serviceDetailsMap[serviceDetail.serviceId]?.data.basePrice ?? 0  ;
+              String? description = barberProvider.serviceDetailsMap[serviceDetail.serviceId]?.data.description ?? '';
+              int? totalPrice = barberProvider.serviceDetailsMap[serviceDetail.serviceId]?.data.basePrice ?? 0;
               int? discount = barberProvider.salonDetails?.data.data.discount ?? 0;
               String? gender = barberProvider.serviceDetailsMap[serviceDetail.serviceId]?.data.targetGender ?? '';
-              double? discountPrice = totalPrice - (totalPrice * discount/100);
-              // serviceDetail3.salonId;
-
+              int? cutPrice = barberProvider.serviceDetailsMap[serviceDetail.serviceId]?.data.cutPrice ?? 0;
 
               return Container(
                 padding: EdgeInsets.all(3.w),
@@ -1376,78 +1421,89 @@ class _BarberProfileScreen2State extends State<BarberProfileScreen2> {
                           ),
                         ),
                         SvgPicture.asset(
-                          gender == "male"
-                              ? ImagePathConstant.manIcon
-                              : ImagePathConstant.womanIcon,
+                          gender == 'male' ? ImagePathConstant.manIcon : ImagePathConstant.womanIcon,
                           height: 3.h,
-                        )
+                        ),
                       ],
                     ),
-                    (discription.isNotEmpty) ? SizedBox(height: 1.h) : const SizedBox(),
-                    (discription.isNotEmpty) ? Text(
-                        discription,
-                        style: TextStyle(
-                          color: const Color(0xFF8B9AAC),
-                          fontSize: 10.sp,
-                          fontFamily: 'Poppins',
-                          fontWeight: FontWeight.w500,
-                        )) : const SizedBox(),
-                    SizedBox(height: 1.h,),
-                    RichText(text: TextSpan(
+                    if (description.isNotEmpty) SizedBox(height: 1.h),
+                    if (description.isNotEmpty) Text(
+                      description,
+                      style: TextStyle(
+                        color: const Color(0xFF8B9AAC),
+                        fontSize: 10.sp,
+                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    SizedBox(height: 1.h),
+                    RichText(
+                      text: TextSpan(
                         children: [
                           TextSpan(
-                              text: "Rs. $discountPrice",
-                              style: TextStyle(
-                                color: const Color(0xFF373737),
-                                fontSize: 13.sp,
-                                fontFamily: 'Helvetica Neue',
-                                fontWeight: FontWeight.w800,
-                              )
-                          ),
-
-                          WidgetSpan(child: SizedBox(width: 2.w,)),
-                          TextSpan(
-                              text: "Rs. $totalPrice",
-                              style: TextStyle(
-                                color: const Color(0xFF8B9AAC),
-                                fontSize: 12.sp,
-                                fontFamily: 'Helvetica Neue',
-                                fontWeight: FontWeight.w400,
-                                decoration: TextDecoration.lineThrough,
-                              )
-                          ),
-                        ]
-                    )),
-                    SizedBox(height: 2.h,),
-                    TextButton(
-                        onPressed: () async {
-                          provider.toggleSelectedServicebarber(serviceDetail);
-                        },
-                        style: TextButton.styleFrom(
-                            padding: EdgeInsets.symmetric(horizontal: 6.w,vertical: 2.w),
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10.sp),
-                                side: BorderSide(color: const Color(0xFFAA2F4C),width: 0.2.w)
-                            )
-                        ),
-                        child: RichText(text: TextSpan(
+                            text: "Rs. $totalPrice",
                             style: TextStyle(
-                              color: const Color(0xFFAA2F4C),
-                              fontSize: 12.sp,
-                              fontFamily: 'Poppins',
-                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF373737),
+                              fontSize: 13.sp,
+                              fontFamily: 'Helvetica Neue',
+                              fontWeight: FontWeight.w800,
                             ),
-                            children: [
-                              WidgetSpan(
-                                  alignment: PlaceholderAlignment.middle,
-                                  child: Icon((!isAdded) ? Icons.add : Icons.remove,
-                                    size: 14.sp,color: const Color(0xFFAA2F4C),)),
-                              WidgetSpan(child: SizedBox(width: 2.w,)),
-                              TextSpan(
-                                  text: (!isAdded) ? "Add" : "Remove"
-                              )
-                            ]
-                        ))
+                          ),
+                          WidgetSpan(child: SizedBox(width: 2.w)),
+                          TextSpan(
+                            text: "Rs. $cutPrice",
+                            style: TextStyle(
+                              color: const Color(0xFF8B9AAC),
+                              fontSize: 12.sp,
+                              fontFamily: 'Helvetica Neue',
+                              fontWeight: FontWeight.w400,
+                              decoration: TextDecoration.lineThrough,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(height: 2.h),
+                    TextButton(
+                      onPressed: () async {
+                        provider.toggleSelectedServicebarber(serviceDetail);
+                      },
+                      style: TextButton.styleFrom(
+                        padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.w),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10.sp),
+                          side: BorderSide(color: const Color(0xFFAA2F4C), width: 0.2.w),
+                        ),
+                        backgroundColor: (!isAdded) ? null : Color(0xFFAA2F4C),
+                      ),
+                      child: RichText(
+                        text: TextSpan(
+                          style: TextStyle(
+                            color: const Color(0xFFAA2F4C),
+                            fontSize: 12.sp,
+                            fontFamily: 'Poppins',
+                            fontWeight: FontWeight.w600,
+                          ),
+                          children: [
+                            WidgetSpan(
+                              alignment: PlaceholderAlignment.middle,
+                              child: Icon(
+                                (!isAdded) ? Icons.add : Icons.remove,
+                                size: 14.sp,
+                                color: (!isAdded) ? const Color(0xFFAA2F4C) : Colors.white,
+                              ),
+                            ),
+                            WidgetSpan(child: SizedBox(width: 2.w)),
+                            TextSpan(
+                              text: (!isAdded) ? "Add" : "Remove",
+                              style: TextStyle(
+                                color: (!isAdded) ? const Color(0xFFAA2F4C) : Colors.white,
+                                backgroundColor: (!isAdded) ? Colors.white : const Color(0xFFAA2F4C),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -1459,51 +1515,71 @@ class _BarberProfileScreen2State extends State<BarberProfileScreen2> {
       );
     });
   }
+
   Widget serviceCategoryFilterWidget() {
-    return Consumer<BarberProvider>(builder: (context, provider, child) {
-      return Container(
-        height: 4.2.h,
-        child: ListView.builder(
-          physics: BouncingScrollPhysics(),
-          shrinkWrap: true,
-          scrollDirection: Axis.horizontal,
-          itemCount: Services.values.length,
-          itemBuilder: (context, index) => GestureDetector(
-            onTap: () {
-              provider.setSelectedServiceCategories(
-                selectedServiceCategory: Services.values[index],
-              );
-            },
-            child: Container(
-              margin: EdgeInsets.only(right: 2.w),
-              height: 4.2.h,
-              padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 0.7.h),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(3.h),
-                color: provider.selectedServiceCategories
-                    .contains(Services.values[index])
-                    ? ColorsConstant.appColor
-                    : Colors.white,
-              ),
-              child: Center(
-                child: Text(
-                  "${Services.values[index].name}",
-                  style: TextStyle(
-                    fontSize: 10.sp,
-                    fontWeight: FontWeight.w600,
-                    color: provider.selectedServiceCategories
-                        .contains(Services.values[index])
-                        ? Colors.white
-                        : ColorsConstant.textDark,
+    return Consumer<BarberProvider>(
+      builder: (context, provider, child) {
+        // Get unique categories from provided services
+        Set<String?> uniqueCategories = provider.artistDetails!.services
+            .map((service) => provider.serviceDetailsMap[service.serviceId]?.data.category)
+            .where((category) => category != null) // Remove null values
+            .toSet();
+
+        return Container(
+          height: 4.2.h,
+          child: ListView.builder(
+            physics: BouncingScrollPhysics(),
+            shrinkWrap: true,
+            scrollDirection: Axis.horizontal,
+            itemCount: uniqueCategories.length,
+            itemBuilder: (context, index) {
+              List<String?> categoriesList = uniqueCategories.toList();
+              String? category = categoriesList[index];
+
+              return GestureDetector(
+                onTap: () {
+                  // Filter services based on the selected category
+                  List<Service2> filteredServices = provider.artistDetails!.services
+                      .where((service) => provider.serviceDetailsMap[service.serviceId]?.data.category == category)
+                      .toList();
+
+                  // Update the list of filtered services in the provider
+                  provider.setFilteredServices(filteredServices);
+
+                  // Update selected service categories
+                  provider.setSelectedServiceCategories(selectedServiceCategory: category ?? '');
+                },
+                child: Container(
+                  margin: EdgeInsets.only(right: 2.w),
+                  height: 4.2.h,
+                  padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 0.7.h),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(3.h),
+                    color: provider.selectedServiceCategories2.contains(category)
+                        ? ColorsConstant.appColor
+                        : Colors.white,
+                  ),
+                  child: Center(
+                    child: Text(
+                      category ?? '',
+                      style: TextStyle(
+                        fontSize: 10.sp,
+                        fontWeight: FontWeight.w600,
+                        color: provider.selectedServiceCategories2.contains(category)
+                            ? Colors.white
+                            : ColorsConstant.textDark,
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ),
+              );
+            },
           ),
-        ),
-      );
-    });
+        );
+      },
+    );
   }
+
 
   Widget genderAndSearchFilterWidget() {
     return Consumer<BarberProvider>(builder: (context, provider, child) {
@@ -1564,14 +1640,21 @@ class _BarberProfileScreen2State extends State<BarberProfileScreen2> {
     });
   }
 
-  Widget genderFilterTabs({
+  static Widget genderFilterTabs({
     required bool isMen,
     required bool isWomen,
   }) {
-    return Consumer<BarberProvider>(builder: (context, provider, child) {
+    return Consumer<SalonDetailsProvider>(builder: (context, provider, child) {
       return GestureDetector(
-        onTap: () => provider.setSelectedGendersFilter(
-            selectedGender: isMen ? Gender.MEN : Gender.WOMEN),
+        onTap: () {
+          if (isMen && isWomen) {
+            provider.setSelectedGendersFilter(selectedGender: 'both');
+          } else if (isMen) {
+            provider.setSelectedGendersFilter(selectedGender: 'male');
+          } else if (isWomen) {
+            provider.setSelectedGendersFilter(selectedGender: 'unisex');
+          }
+        },
         child: Container(
           margin: EdgeInsets.only(right: 2.w),
           padding: EdgeInsets.all(1.5.w),
@@ -1579,10 +1662,10 @@ class _BarberProfileScreen2State extends State<BarberProfileScreen2> {
             color: provider.selectedGendersFilter.isEmpty
                 ? Colors.white
                 : isMen
-                ? provider.selectedGendersFilter.contains(Gender.MEN)
+                ? provider.selectedGendersFilter.contains('male')
                 ? ColorsConstant.selectedGenderFilterBoxColor
                 : Colors.white
-                : provider.selectedGendersFilter.contains(Gender.WOMEN)
+                : provider.selectedGendersFilter.contains('unisex')
                 ? ColorsConstant.selectedGenderFilterBoxColor
                 : Colors.white,
             borderRadius: BorderRadius.circular(1.5.w),
@@ -1590,17 +1673,17 @@ class _BarberProfileScreen2State extends State<BarberProfileScreen2> {
               color: provider.selectedGendersFilter.isEmpty
                   ? ColorsConstant.divider
                   : isMen
-                  ? provider.selectedGendersFilter.contains(Gender.MEN)
+                  ? provider.selectedGendersFilter.contains('male')
                   ? ColorsConstant.appColor
                   : ColorsConstant.divider
-                  : provider.selectedGendersFilter.contains(Gender.WOMEN)
+                  : provider.selectedGendersFilter.contains('unisex')
                   ? ColorsConstant.appColor
                   : ColorsConstant.divider,
             ),
             boxShadow: provider.selectedGendersFilter.isEmpty
                 ? null
                 : isMen
-                ? provider.selectedGendersFilter.contains(Gender.MEN)
+                ? provider.selectedGendersFilter.contains('male')
                 ? [
               BoxShadow(
                 color: Color(0xFF000000).withOpacity(0.14),
@@ -1609,7 +1692,7 @@ class _BarberProfileScreen2State extends State<BarberProfileScreen2> {
               )
             ]
                 : null
-                : provider.selectedGendersFilter.contains(Gender.WOMEN)
+                : provider.selectedGendersFilter.contains('unisex')
                 ? [
               BoxShadow(
                 color: ColorsConstant.dropShadowColor,

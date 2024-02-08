@@ -65,19 +65,19 @@ class ArtistData {
     return ArtistData(
       id: json['_id'] ?? '',
       name: json['name'] ?? '',
-      rating: (json['rating'] as num).toDouble(),
+      rating: (json['rating'] as num?)?.toDouble()?? 0.0,
       salonName: json['salonName'] ?? '',
       salonId: json['salonId'] ?? '',
       services: (json['services'] as List<dynamic>)
           .map((service) => Service.fromJson(service))
           .toList(),
       location: Location.fromJson(json['location'] ?? {}),
-      phoneNumber: json['phoneNumber'] ?? 0,
+      phoneNumber: (json['phoneNumber'] as num?)?.toInt() ?? 0, // Parse as int
       availability: json['availability'] ?? false,
       live: json['live'] ?? false,
       createdAt: json['createdAt'] ?? '',
       updatedAt: json['updatedAt'] ?? '',
-      bookings: json['bookings'] ?? 0,
+      bookings: (json['bookings'] as num?)?.toInt() ?? 0, // Parse as int if needed
       distance: (json['distance'] as num?)?.toDouble() ?? 0.0,
       score: (json['score'] as num?)?.toDouble() ?? 0.0,
       imageKey: json["imageKey"]?? '',

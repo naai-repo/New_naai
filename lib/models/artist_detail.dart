@@ -142,7 +142,7 @@ class Links {
 
 class Location {
   String type;
-  List<int> coordinates;
+  List<double> coordinates;
 
   Location({
     required this.type,
@@ -151,7 +151,7 @@ class Location {
 
   factory Location.fromJson(Map<String, dynamic> json) => Location(
     type: json["type"],
-    coordinates: List<int>.from(json["coordinates"].map((x) => x)),
+    coordinates: List<double>.from(json["coordinates"].map((x) => x)),
   );
 
   Map<String, dynamic> toJson() => {

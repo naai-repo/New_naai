@@ -221,7 +221,7 @@ class AppointmentDetails extends StatelessWidget {
                     textInRow(
                       textOne: StringConstant.subtotal,
                       textTwo:
-                          'Rs ${provider.previousBooking[index].paymentStatus}',
+                          'Rs ${provider.previousBooking[index].paymentAmount}',
                     ),
                   ],
                 ),
@@ -952,7 +952,7 @@ class AppointmentDetails2 extends StatelessWidget {
                     textInRow(
                       textOne: StringConstant.subtotal,
                       textTwo:
-                      'Rs ${booking.paymentStatus}',
+                      'Rs ${booking.paymentAmount}',
                     ),
                   ],
                 ),

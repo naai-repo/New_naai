@@ -1034,7 +1034,7 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
                                         .selectedDate!;
                                     String formattedDate = DateFormat(
                                         'MM-dd-yyyy').format(selectedDate);
-
+/*
                                     List<String> selectedServiceIds = provider
                                         .getSelectedServices()
                                         ?.map((service) => service.id)
@@ -1112,6 +1112,35 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
                                         print(
                                             'Error parsing response: $error');
                                         // TODO: Handle errors appropriately
+                                      }
+                                    }
+                                  }
+                                },
+                                */
+                                    List<String> selectedServiceIds = provider.getSelectedServices()
+                                        .map((service) => service.id)
+                                        .toList();
+
+                                    if (provider.artistServiceList!.selectedArtist != null) {
+                                      // Call API A and schedule appointment
+                                      await callApiAAndSchedule(provider, selectedServiceIds, formattedDate);
+                                    } else {
+                                      // For selectedArtistMap, collect service IDs and their corresponding artist IDs
+                                      List<Map<String, String>> requests = [];
+
+                                      for (String serviceId in selectedServiceIds) {
+                                        String? selectedArtistId = provider.artistServiceList!.selectedArtistMap[serviceId]?.artistId;
+                                        if (selectedArtistId != null) {
+                                          requests.add({
+                                            "service": serviceId,
+                                            "artist": selectedArtistId,
+                                          });
+                                        }
+                                      }
+
+                                      if (requests.isNotEmpty) {
+                                        // Schedule appointment with the collected service IDs and artist IDs
+                                        await scheduleWithArtistMap(provider, requests, formattedDate);
                                       }
                                     }
                                   }
@@ -1226,6 +1255,107 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
         );
       },
     );
+  }
+  Future<void> callApiAAndSchedule(SalonDetailsProvider  provider, List<String> selectedServiceIds, String formattedDate) async {
+    ArtistService selectedArtist = provider.artistServiceList!.selectedArtist!;
+    ArtistRequest apiAResponse = await callApiA(selectedServiceIds, selectedArtist);
+
+    List<Map<String, dynamic>> requestsB = apiAResponse.requests.map((request) {
+      return {
+        "service": request.service,
+        "artist": request.artist,
+      };
+    }).toList();
+
+    try {
+      Loader.showLoader(context);
+      Dio dio = Dio();
+      dio.interceptors.add(LogInterceptor(requestBody: true, responseBody: true, logPrint: print));
+
+      String? authToken = await AccessTokenManager.getAccessToken();
+
+      if (authToken != null) {
+        dio.options.headers['Authorization'] = 'Bearer $authToken';
+      } else {
+        Loader.hideLoader(context);
+        print('Error: Auth token is null');
+        return; // Handle the case where the user is not authenticated
+      }
+
+      Map<String, dynamic> requestBodyB = {
+        "salonId": provider.salonDetails!.data.data.id ?? "",
+        "requests": requestsB,
+        "date": formattedDate,
+      };
+
+      print('Request Body: $requestBodyB');
+
+      Response response = await dio.post(
+        'http://13.235.49.214:8800/appointments/schedule',
+        data: requestBodyB,
+      );
+
+      Loader.hideLoader(context);
+      print('Response Data: ${response.data}');
+
+      if (response.statusCode == 200) {
+        TimeSlotResponse timeSlotResponse = TimeSlotResponse.fromJson(response.data);
+        provider.setTimeSlot(timeSlotResponse);
+      } else {
+        print("Failed to fetch time slots");
+        print(response.data);
+        // TODO: Handle errors appropriately
+      }
+    } catch (error) {
+      print('Error parsing response: $error');
+      // TODO: Handle errors appropriately
+    }
+  }
+
+  Future<void> scheduleWithArtistMap(SalonDetailsProvider provider, List<Map<String, String>> requests, String formattedDate) async {
+    try {
+      Loader.showLoader(context);
+      Dio dio = Dio();
+      dio.interceptors.add(LogInterceptor(requestBody: true, responseBody: true, logPrint: print));
+
+      String? authToken = await AccessTokenManager.getAccessToken();
+
+      if (authToken != null) {
+        dio.options.headers['Authorization'] = 'Bearer $authToken';
+      } else {
+        Loader.hideLoader(context);
+        print('Error: Auth token is null');
+        return; // Handle the case where the user is not authenticated
+      }
+
+      Map<String, dynamic> requestBodyB = {
+        "salonId": provider.salonDetails!.data.data.id ?? "",
+        "requests": requests,
+        "date": formattedDate,
+      };
+
+      print('Request Body: $requestBodyB');
+
+      Response response = await dio.post(
+        'http://13.235.49.214:8800/appointments/schedule',
+        data: requestBodyB,
+      );
+
+      Loader.hideLoader(context);
+      print('Response Data: ${response.data}');
+
+      if (response.statusCode == 200) {
+        TimeSlotResponse timeSlotResponse = TimeSlotResponse.fromJson(response.data);
+        provider.setTimeSlot(timeSlotResponse);
+      } else {
+        print("Failed to fetch time slots");
+        print(response.data);
+        // TODO: Handle errors appropriately
+      }
+    } catch (error) {
+      print('Error parsing response: $error');
+      // TODO: Handle errors appropriately
+    }
   }
 
   Widget schedulingStatus() {
@@ -1524,6 +1654,7 @@ print('request body :- $requestBody');
       throw Exception('Failed to fetch artists: $error');
     }
   }
+
   Widget selectMingleStaffCard() {
     return Consumer<SalonDetailsProvider>(
       builder: (context, provider, child) {
@@ -1558,6 +1689,9 @@ print('request body :- $requestBody');
                               selectedRadio = value! as int;
                               singleStaffListExpanded = false;
                               multipleStaffListExpanded = true;
+                              if (!multipleStaffListExpanded) {
+                                provider.artistServiceList!.selectedArtistMap.clear();
+                              }
                             });
                           },
                         ),
@@ -1809,285 +1943,6 @@ print('request body :- $requestBody');
       throw error;
     }
   }
-
-
-  Widget selectInsideStaffCard() {
-    return Consumer<SalonDetailsProvider>(
-      builder: (context, provider, child) {
-        return Column(
-          children: <Widget>[
-            SizedBox(height: 1.5.h),
-            CurvedBorderedCard(
-              onTap: () => setState(() {
-              InsideMultipleStaffExpanded = !InsideMultipleStaffExpanded;
-              }),
-              child: Container(
-                padding: EdgeInsets.all(1.5.h),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(1.h),
-                  color: Colors.white,
-                ),
-                child: Column(
-                  children: <Widget>[
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: <Widget>[
-                        Text(
-                          provider.artistServiceList!.selectedArtist != null
-                              ?  provider.artistServiceList!.selectedArtist!.artist ?? ''
-                              : StringConstant.chooseAStaff,
-                          style: TextStyle(
-                            fontWeight: FontWeight.w500,
-                            fontSize: 12.sp,
-                          ),
-                        ),
-                        SvgPicture.asset(
-                          ImagePathConstant.downArrow,
-                          width: 3.w,
-                          color: Colors.black,
-                          fit: BoxFit.fitWidth,
-                        ),
-                      ],
-                    ),
-                  //  singleStaffListExpanded
-                   InsideMultipleStaffExpanded
-                        ? Container(
-                      constraints: BoxConstraints(maxHeight: 20.h),
-                      child: Scrollbar(
-                        interactive: true,
-                        thumbVisibility: true,
-                        showTrackOnHover: true,
-                        child: ListView.separated(
-                          shrinkWrap: true,
-                          itemCount: provider.artistServiceList!.artistsProvidingServices.length,
-                          itemBuilder: (context, index) {
-                            ArtistService artist =
-                            provider.artistServiceList!.artistsProvidingServices[index];
-                            return GestureDetector(
-                              behavior: HitTestBehavior.opaque,
-                              onTap: () {
-                                setState(() {
-                                  // Set the selected artist
-                                  provider.artistServiceList!.selectedArtist = artist;
-                                });
-                              },
-                              child: Padding(
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: 2.w,
-                                ),
-                                child: Row(
-                                  mainAxisAlignment:
-                                  MainAxisAlignment.spaceBetween,
-                                  children: <Widget>[
-                                    Text.rich(
-                                      TextSpan(
-                                        children: <InlineSpan>[
-                                          WidgetSpan(
-                                            child: Padding(
-                                              padding: EdgeInsets.only(
-                                                  right: 2.w),
-                                              child: SvgPicture.asset(
-                                                artist ==
-                                                    provider.artistServiceList!.selectedArtist
-                                                    ? ImagePathConstant
-                                                    .selectedOption
-                                                    : ImagePathConstant
-                                                    .unselectedOption,
-                                                width: 5.w,
-                                                fit: BoxFit.fitWidth,
-                                              ),
-                                            ),
-                                          ),
-                                          TextSpan(
-                                            text: artist.artist ?? '',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.w500,
-                                              fontSize: 10.sp,
-                                              color: const Color(0xFF727272),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    RatingBox(
-                                      rating: artist.rating ?? 0.0,
-                                      fontSize: 10.sp,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
-                          separatorBuilder: (context, index) => const Divider(),
-                        ),
-                      ),
-                    )
-                        : const SizedBox()
-                  ],
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget ForNowselectSingleStaffCard() {
-    return Consumer<SalonDetailsProvider>(
-      builder: (context, provider, child) {
-        return Column(
-          children: <Widget>[
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: 3.w),
-              child: IconTextSelectorComponent(
-                text: StringConstant.singleStaffText,
-                iconPath: ImagePathConstant.singleStaffIcon,
-                isSelected: false,
-              ),
-            ),
-            SizedBox(height: 1.5.h),
-            CurvedBorderedCard(
-              onTap: () => setState(() {
-                singleStaffListExpanded = !singleStaffListExpanded;
-              }),
-              child: Container(
-                padding: EdgeInsets.all(1.5.h),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(1.h),
-                  color: Colors.white,
-                ),
-                child: Column(
-                  children: <Widget>[
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: <Widget>[
-                        Text(
-                          provider.currentBooking.artistId != null
-                              ? provider.getSelectedArtistName(
-                              provider.currentBooking.artistId ?? '',
-                              context)
-                              : StringConstant.chooseAStaff,
-                          style: TextStyle(
-                            fontWeight: FontWeight.w500,
-                            fontSize: 12.sp,
-                          ),
-                        ),
-                        SvgPicture.asset(
-                          ImagePathConstant.downArrow,
-                          width: 3.w,
-                          color: Colors.black,
-                          fit: BoxFit.fitWidth,
-                        ),
-                      ],
-                    ),
-                    singleStaffListExpanded
-                        ? Container(
-                      constraints: BoxConstraints(maxHeight: 20.h),
-                      child: ListView.separated(
-                        shrinkWrap: true,
-                        /* itemCount: context
-                                  .read<HomeProvider>()
-                                  .artistList
-                                  .where((artist) => artist.salonId == provider.selectedSalonData.id)
-                                  .length,
-                              itemBuilder: (context, index) {
-                                Artist artist = context
-                                    .read<HomeProvider>()
-                                    .artistList
-                                    .where((artist) => artist.salonId == provider.selectedSalonData.id)
-                                  // .where((artist) => artist.category == provider.selectedServiceCategories) // Filter by selected category
-                                    .toList()[index];*/
-                        itemCount: provider.artistList.length,
-                        itemBuilder: (context, index) {
-                          Artist artist =
-                          provider.artistList[index];
-                          return GestureDetector(
-                            behavior: HitTestBehavior.opaque,
-                            onTap: () {
-                              if (provider.currentBooking.artistId ==
-                                  artist.id )
-                              {
-                                provider.setBookingData(
-                                  context,
-                                  setArtistId: true,
-                                  artistId: null,
-                                );
-                              } else {
-                                provider.setBookingData(
-                                  context,
-                                  setArtistId: true,
-                                  artistId: artist.id,
-                                );
-                              }
-                              provider.updateIsNextButtonActive();
-                              provider.resetSlotInfo();
-                            },
-                            child: Padding(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 2.w,
-                              ),
-                              child: Row(
-                                mainAxisAlignment:
-                                MainAxisAlignment.spaceBetween,
-                                children: <Widget>[
-                                  Text.rich(
-                                    TextSpan(
-                                      children: <InlineSpan>[
-                                        WidgetSpan(
-                                          child: Padding(
-                                            padding: EdgeInsets.only(
-                                                right: 2.w),
-                                            child: SvgPicture.asset(
-                                              artist.id ==
-                                                  provider
-                                                      .currentBooking
-                                                      .artistId
-                                                  ? ImagePathConstant
-                                                  .selectedOption
-                                                  : ImagePathConstant
-                                                  .unselectedOption,
-                                              width: 5.w,
-                                              fit: BoxFit.fitWidth,
-                                            ),
-                                          ),
-                                        ),
-                                        TextSpan(
-                                          text: artist.name ?? '',
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.w500,
-                                            fontSize: 10.sp,
-                                            color: Color(0xFF727272),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  RatingBox(
-                                    rating: artist.rating ?? 0.0,
-                                    fontSize: 10.sp,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                        separatorBuilder: (context, index) => Divider(),
-                      ),
-                    )
-                        : SizedBox()
-                  ],
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
 }
 
 class BookingOverviewPart extends StatelessWidget {
@@ -5426,7 +5281,7 @@ class _CreateBookingScreen3State extends State<CreateBookingScreen3> {
                                               serviceId: element,
                                               getGender: true,
                                             ) ==
-                                                Gender.MEN
+                                                Gender.MALE
                                                 ? ImagePathConstant.manIcon
                                                 : ImagePathConstant.womanIcon,
                                             height: 3.h,

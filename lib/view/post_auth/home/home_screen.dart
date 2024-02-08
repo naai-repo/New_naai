@@ -583,7 +583,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         return artistCard(
                           isThin: (index / 2).floor().isEven,
                           name: artist.name ?? '',
-                          rating: artist.rating ?? 0,
+                          rating: artist.rating ?? 0.0,
                           salonName: artist.salonName ?? '',
                           artistId: artist.id ?? '',
                           imagePath: artist.imageUrl ?? 'https://drive.google.com/uc?export=view&id=1zw2jQ0_wgXb0Dr5lAgXvCfu5Ic0ajFE0',

@@ -1047,93 +1047,16 @@ class _ExploreScreen2State extends State<ExploreScreen2>
                                       ),
                                     ),
                                     builder: (context) {
-                                      return Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: <Widget>[
-                                          Text(
-                                            StringConstant.filter,
-                                            style: TextStyle(
-                                              fontSize: 20.sp,
-                                              fontWeight: FontWeight.w600,
-                                              color:
-                                              ColorsConstant.appColor,
-                                            ),
-                                          ),
-                                          Divider(
-                                            thickness: 2,
-                                            color:
-                                            ColorsConstant.textLight,
-                                          ),
-                                          SizedBox(height: 2.h),
-                                          SizedBox(
-                                            width: 30.w,
-                                            child: RedButtonWithText(
-                                              buttonText:
-                                              StringConstant.rating,
-                                              icon: CircleAvatar(
-                                                radius: 1.5.h,
-                                                backgroundColor:
-                                                Colors.white,
-                                                child: Icon(
-                                                  Icons.close,
-                                                  color: ColorsConstant
-                                                      .appColor,
-                                                  size: 2.h,
-                                                ),
-                                              ),
-                                              textColor: provider
-                                                  .selectedFilterTypeList
-                                                  .contains(FilterType
-                                                  .Rating)
-                                                  ? Colors.white
-                                                  : ColorsConstant
-                                                  .appColor,
-                                              fontSize: 10.sp,
-                                              border: Border.all(
-                                                  color: ColorsConstant
-                                                      .appColor),
-                                              fillColor: provider
-                                                  .selectedFilterTypeList
-                                                  .contains(FilterType
-                                                  .Rating)
-                                                  ? ColorsConstant
-                                                  .appColor
-                                                  : ColorsConstant
-                                                  .lightAppColor,
-                                              borderRadius: 3.h,
-                                              onTap: () => showModalBottomSheet(
-                                                context: context,
-                                                isScrollControlled: true,
-                                                shape: RoundedRectangleBorder(
-                                                  borderRadius: BorderRadius.vertical(
-                                                    top: Radius.circular(2.h),
-                                                  ),
-                                                ),
-                                                builder: (context) {
-                                                  return Container(
-                                                    width: double.maxFinite,
-                                                    height: 500,
-                                                    decoration: BoxDecoration(
-                                                        color: Colors.white,
-                                                        borderRadius: BorderRadius.only(
-                                                            topLeft: Radius.circular(2.h),
-                                                            topRight:
-                                                            Radius.circular(2.h))),
-                                                    child: const FilterBarberSheet(),
-                                                  );
-                                                },
-                                              ),
-                                              shouldShowBoxShadow: false,
-                                              isIconSuffix: true,
-                                              padding:
-                                              EdgeInsets.symmetric(
-                                                vertical: 1.5.w,
-                                                horizontal: 2.5.w,
-                                              ),
-                                            ),
-                                          ),
-                                          SizedBox(height: 2.h),
-                                        ],
+                                      return Container(
+                                        width: double.maxFinite,
+                                        height: 500,
+                                        decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            borderRadius: BorderRadius.only(
+                                                topLeft: Radius.circular(2.h),
+                                                topRight:
+                                                Radius.circular(2.h))),
+                                        child: const FilterBarberSheet(),
                                       );
                                     },
                                   ),
@@ -2011,93 +1934,16 @@ class _ExploreScreen3State extends State<ExploreScreen3>
                                       ),
                                     ),
                                     builder: (context) {
-                                      return Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: <Widget>[
-                                          Text(
-                                            StringConstant.filter,
-                                            style: TextStyle(
-                                              fontSize: 20.sp,
-                                              fontWeight: FontWeight.w600,
-                                              color:
-                                              ColorsConstant.appColor,
-                                            ),
-                                          ),
-                                          Divider(
-                                            thickness: 2,
-                                            color:
-                                            ColorsConstant.textLight,
-                                          ),
-                                          SizedBox(height: 2.h),
-                                          SizedBox(
-                                            width: 30.w,
-                                            child: RedButtonWithText(
-                                              buttonText:
-                                              StringConstant.rating,
-                                              icon: CircleAvatar(
-                                                radius: 1.5.h,
-                                                backgroundColor:
-                                                Colors.white,
-                                                child: Icon(
-                                                  Icons.close,
-                                                  color: ColorsConstant
-                                                      .appColor,
-                                                  size: 2.h,
-                                                ),
-                                              ),
-                                              textColor: provider
-                                                  .selectedFilterTypeList
-                                                  .contains(FilterType
-                                                  .Rating)
-                                                  ? Colors.white
-                                                  : ColorsConstant
-                                                  .appColor,
-                                              fontSize: 10.sp,
-                                              border: Border.all(
-                                                  color: ColorsConstant
-                                                      .appColor),
-                                              fillColor: provider
-                                                  .selectedFilterTypeList
-                                                  .contains(FilterType
-                                                  .Rating)
-                                                  ? ColorsConstant
-                                                  .appColor
-                                                  : ColorsConstant
-                                                  .lightAppColor,
-                                              borderRadius: 3.h,
-                                              onTap: () => showModalBottomSheet(
-                                                context: context,
-                                                isScrollControlled: true,
-                                                shape: RoundedRectangleBorder(
-                                                  borderRadius: BorderRadius.vertical(
-                                                    top: Radius.circular(2.h),
-                                                  ),
-                                                ),
-                                                builder: (context) {
-                                                  return Container(
-                                                    width: double.maxFinite,
-                                                    height: 500,
-                                                    decoration: BoxDecoration(
-                                                        color: Colors.white,
-                                                        borderRadius: BorderRadius.only(
-                                                            topLeft: Radius.circular(2.h),
-                                                            topRight:
-                                                            Radius.circular(2.h))),
-                                                    child: const FilterBarberSheet(),
-                                                  );
-                                                },
-                                              ),
-                                              shouldShowBoxShadow: false,
-                                              isIconSuffix: true,
-                                              padding:
-                                              EdgeInsets.symmetric(
-                                                vertical: 1.5.w,
-                                                horizontal: 2.5.w,
-                                              ),
-                                            ),
-                                          ),
-                                          SizedBox(height: 2.h),
-                                        ],
+                                      return Container(
+                                        width: double.maxFinite,
+                                        height: 500,
+                                        decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            borderRadius: BorderRadius.only(
+                                                topLeft: Radius.circular(2.h),
+                                                topRight:
+                                                Radius.circular(2.h))),
+                                        child: const FilterBarberSheet(),
                                       );
                                     },
                                   ),
@@ -2257,7 +2103,7 @@ class _ExploreScreen3State extends State<ExploreScreen3>
                               ),
                             ),
                             Text(
-                              artist.salonId ?? '',
+                              artist.salonName ?? '',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 color: ColorsConstant.textLight,
