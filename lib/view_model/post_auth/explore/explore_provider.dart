@@ -7,7 +7,6 @@ import 'package:naai/models/artist.dart';
 import 'package:location/location.dart' as location;
 import 'package:naai/models/salon.dart';
 import 'package:naai/models/service_detail.dart';
-import 'package:naai/services/database.dart';
 import 'package:naai/utils/enums.dart';
 import 'package:naai/utils/loading_indicator.dart';
 import 'package:naai/utils/shared_preferences/shared_keys.dart';
@@ -440,7 +439,7 @@ class ExploreProvider with ChangeNotifier {
   /// Method to initialize values of Explore screen viz. [_salonData] and [_userCurrentLatLng]
   void initExploreScreen(BuildContext context) async {
     Loader.showLoader(context);
-    await getSalonList(context);
+    //await getSalonList(context);
     artistList.forEach((artist) {
       artist.distanceFromUser = salonData
           .firstWhere((element) => element.id == artist.salonId)
@@ -467,58 +466,7 @@ class ExploreProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  /// Get the list of salons and save it in [_salonData] and [_filteredSalonData]
-  Future<void> getSalonList(BuildContext context,
-      {bool justDistance = false}) async {
-    try {
-      if (!justDistance) _salonData = await DatabaseService().getSalonList(SharedKeys.userId);
-      // print(context.read<HomeProvider>().userData.toMap());
-      final latitude =
-          context.read<HomeProvider>().userData.homeLocation != null
-              ? context
-                  .read<HomeProvider>()
-                  .userData
-                  .homeLocation!
-                  .geoLocation!
-                  .latitude
-              : context.read<HomeProvider>().userCurrentLatLng.latitude;
-      final longitude =
-          context.read<HomeProvider>().userData.homeLocation != null
-              ? context
-                  .read<HomeProvider>()
-                  .userData
-                  .homeLocation!
-                  .geoLocation!
-                  .longitude
-              : context.read<HomeProvider>().userCurrentLatLng.longitude;
 
-      _salonData.forEach((element) {
-        element.distanceFromUserAsString = "NA";
-        if (element.address!.geoLocation != null) {
-          element.distanceFromUser = element.address!.calculateDistance(
-            latitude,
-            longitude,
-            element.address!.geoLocation!.latitude,
-            element.address!.geoLocation!.longitude,
-          );
-          element.distanceFromUserAsString =
-              '${element.address!.calculateDistance(
-                    latitude,
-                    longitude,
-                    element.address!.geoLocation!.latitude,
-                    element.address!.geoLocation!.longitude,
-                  ).toStringAsFixed(2)}km';
-        }
-      });
-      _salonData.sort((first, second) =>
-          first.distanceFromUser!.compareTo(second.distanceFromUser!));
-      _filteredSalonData.clear();
-      _filteredSalonData.addAll(_salonData);
-    } catch (e) {
-    //  ReusableWidgets.showFlutterToast(context, '$e');
-    }
-    notifyListeners();
-  }
 
 
 

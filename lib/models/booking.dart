@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+// not in used
 
 class Booking {
   String? id;
@@ -53,7 +53,7 @@ class Booking {
     this.selectedDateInDateTimeFormat,
   });
 
-  factory Booking.fromDocumentSnapshot(DocumentSnapshot docData) {
+  factory Booking.fromDocumentSnapshot(docData) {
     Map<String, dynamic> data = docData.data() as Map<String, dynamic>;
 
     return Booking(

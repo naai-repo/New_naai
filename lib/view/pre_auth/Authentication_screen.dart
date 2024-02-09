@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -52,7 +51,7 @@ class AuthenticationScreen extends StatelessWidget {
                   children: <Widget>[
                     Column(
                         children: <Widget>[
-                          SvgPicture.asset(ImagePathConstant.loginScreen,fit: BoxFit.fill,),
+                          SvgPicture.asset(ImagePathConstant.loginScreen,height: 50.h,width: 50.w),
                           SizedBox(height: 4.h),
                 Padding(
                   padding:
@@ -112,7 +111,10 @@ class AuthenticationScreen extends StatelessWidget {
                                   horizontal: MediaQuery.of(context).size.width * 0.1,
                                 ),
                                 child:Text(StringConstant.Continueguest,
-                                  style: TextStyle(color: Colors.grey),
+                                  style: TextStyle(color: Colors.grey,
+                                    fontSize: 10.5.sp,
+
+                                  ),
                                 ),
                               ),
                             ),

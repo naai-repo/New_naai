@@ -1,7 +1,5 @@
 import 'dart:io';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dio/dio.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -302,44 +300,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Future<void> deleteUserAccount() async {
-    try {
-      User? user = FirebaseAuth.instance.currentUser;
-      if(user != null){
-        await user.delete();
-      }
-    } on FirebaseAuthException catch (e) {
-      print('FirebaseAuthException: $e');
 
-    } catch (e) {
-      print('General exception: $e');
-      // Handle general exception
-    }
-  }
-
-
-  Future<void> deleteAccount() async {
-    try {
-      // Get the current user from Firebase Authentication
-      User? user = FirebaseAuth.instance.currentUser;
-
-      if (user != null) {
-        // Delete the user document from 'userData' collection using the UID
-        await FirebaseFirestore.instance
-            .collection('users') // Replace with your collection name
-            .doc(user.uid) // Use the UID as the document ID
-            .delete();
-
-        // Delete the user account from Firebase Authentication
-        await user.delete();
-
-        print('Account deleted successfully!');
-      }
-    } catch (e) {
-      print('Error deleting account: $e');
-      // Handle any errors that might occur during the deletion process
-    }
-  }
 
   Future<void> deleteAccountAndUserData(BuildContext context) async {
     try {
@@ -569,8 +530,8 @@ class _ProfileScreen2State extends State<ProfileScreen2> {
                                 Center(
                                   child: Image.asset(
                                     "assets/images/app_logo.png",
-                                    height: 80,
-                                    width: 80,
+                                    height: 20.h,
+                                    width: 20.w,
                                   ),
                                 ),
                                 SizedBox(height: 8.0),
@@ -579,7 +540,7 @@ class _ProfileScreen2State extends State<ProfileScreen2> {
                                   child: Text(
                                     "Please create your account to see your profile",
                                     style: TextStyle(
-                                        fontSize: 16.0),
+                                        fontSize: 13.sp),
                                   ),
                                 ),
                                 SizedBox(height:20),
@@ -591,6 +552,7 @@ class _ProfileScreen2State extends State<ProfileScreen2> {
                                         child: Text("SignIn", style: TextStyle(
                                           color: Colors.white,
                                           fontWeight: FontWeight.bold,
+                                          fontSize: 8.sp,
                                         )),
                                           style: ButtonStyle(
                                             backgroundColor: MaterialStateProperty.all<Color>(Colors.black),

@@ -1,13 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_phoenix/flutter_phoenix.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:naai/models/user.dart';
-import 'package:naai/services/database.dart';
 import 'package:naai/utils/exception/exception_handling.dart';
 import 'package:naai/utils/loading_indicator.dart';
 import 'package:naai/utils/routing/named_routes.dart';
@@ -64,70 +61,10 @@ class AuthenticationProvider with ChangeNotifier {
   TextEditingController get otpDigitSixController => _otpDigitSixController;
 
   /// Method to trigger the social login flow depending upon which social login method is chosen
-  void socialLogin({
-    required bool isGoogle,
-    required BuildContext context,
-  }) async {
-    Loader.showLoader(context);
-    try {
-      isGoogle ? await googleLogIn(context) : await appleLogin(context);
-      Loader.hideLoader(context);
-      if (FirebaseAuth.instance.currentUser != null) {
-        Navigator.pushNamed(context, NamedRoutes.bottomNavigationRoute);
-      }
-    } catch (e) {
-      Loader.hideLoader(context);
-      ReusableWidgets.showFlutterToast(
-        context,
-        '$e',
-      );
-    }
-  }
+
 
   /// Triggers Google authentication flow
-  Future<void> googleLogIn(BuildContext context) async {
-    await GoogleSignIn().signOut();
-    await FirebaseAuth.instance.signOut();
-    final GoogleSignInAccount? googleUser = GoogleSignIn().currentUser ??
-        await GoogleSignIn(scopes: <String>['email'])
-            .signIn()
-            .onError((error, stackTrace) {
-          throw Exception('Something went wrong!');
-        });
 
-    if (googleUser == null) {
-      return;
-    }
-
-    final GoogleSignInAuthentication googleAuth =
-    await googleUser.authentication;
-
-    final credential = GoogleAuthProvider.credential(
-      accessToken: googleAuth.accessToken,
-      idToken: googleAuth.idToken,
-    );
-
-    User? user = (await FirebaseAuth.instance
-        .signInWithCredential(credential)
-        .onError((error, stackTrace) {
-      throw Exception('Something went wrong!');
-    }))
-        .user;
-    setUserId(userId: user!.uid);
-    if ((await DatabaseService().checkUserExists(uid: user.uid)) == false) {
-      storeUserDataInCollection(
-        context: context,
-        userData: UserModel(
-            name: user.displayName,
-            gmailId: user.email,
-            id: user.uid,
-            image: user.photoURL
-        ),
-        docId: user.uid,
-      );
-    }
-    notifyListeners();
-  }
 
   Future<String> getGender(GoogleSignInAccount googleSignIn) async {
     final headers = await googleSignIn.authHeaders;
@@ -160,32 +97,7 @@ class AuthenticationProvider with ChangeNotifier {
   }
 
 
-  Future<bool> storeUserDataInCollection({
-    required BuildContext context,
-    required UserModel userData,
-    required String docId,
-  }) async {
-    Loader.showLoader(context);
-    try {
-      await DatabaseService()
-          .setUserData(
-        userData: userData.toMap(),
-        docId: docId,
-      )
-          .onError(
-            (FirebaseException error, stackTrace) =>
-        throw ExceptionHandling(message: error.message ?? ""),
-      );
-      return true;
-    } catch (e) {
-      Loader.hideLoader(context);
-      ReusableWidgets.showFlutterToast(
-        context,
-        '$e',
-      );
-    }
-    return false;
-  }
+
 
   /// Method to set user's gender
   void setGender(String value) {

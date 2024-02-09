@@ -387,7 +387,7 @@ class _FavourtieScreenState extends State<FavourtieScreen> {
                                 ),
                               ),
                               Text(
-                                '${preferredSalon.address?.addressString}',
+                                '${preferredSalon.address?? ''}',
                                 style: TextStyle(
                                   color: ColorsConstant.greySalonAddress,
                                   fontSize: 11.sp,

@@ -2,27 +2,6 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
- <!-- Permissions list starts here -->
-        <!-- Permission while running on backgroud -->
-        <key>UIBackgroundModes</key>
-        <string>location</string>
-        <!-- Permission options for the `location` group -->
-
-       <key>NSLocationWhenInUseUsageDescription</key>
-       <string>Your location is used to find nearby salons when the app is in use.</string>
-       <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-       <string>Your location is used to find nearby salons even when the app is not in use.</string>
-       <key>NSLocationUsageDescription</key>
-       <string>Your location is used to find nearby salons.</string>
-       <key>NSLocationAlwaysUsageDescription</key>
-       <string>Your location is used to find nearby salons even when the app is not in use.</string>
-       <key>UIRequiredDeviceCapabilities</key>
-       <string>location-services</string>
-            <!-- You may or may not include "gps" based on your app's requirements -->
-            <!-- <string>gps</string> -->
-        <!-- Permissions lists ends here -->
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>We need access to your photo library to enable you to set and update your profile picture. Your profile picture is used exclusively for personalizing your account, and it will not be shared with other users.</string>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>
@@ -83,12 +62,30 @@
 	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Your location is used to find nearby salons even when the app is not in use.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>Your location is used to find nearby salons even when the app is not in use.</string>
+	<key>NSLocationUsageDescription</key>
+	<string>Your location is used to find nearby salons.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Your location is used to find nearby salons when the app is in use.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>We need access to your photo library to enable you to set and update your profile picture. Your profile picture is used exclusively for personalizing your account, and it will not be shared with other users.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
 	<string>Main</string>
+	<key>UIRequiredDeviceCapabilities</key>
+	<array>
+	<string>location-services</string>
+	</array>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>

@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'package:naai/utils/enums.dart';
 
 class ServiceDetail {
@@ -18,7 +18,7 @@ class ServiceDetail {
     this.id,
   });
 
-  factory ServiceDetail.fromDocumentSnapshot(DocumentSnapshot docData) {
+  factory ServiceDetail.fromDocumentSnapshot( docData) {
     Map<String, dynamic> data = docData.data() as Map<String, dynamic>;
 
     return ServiceDetail(

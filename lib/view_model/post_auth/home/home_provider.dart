@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:dio/dio.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
@@ -16,7 +15,6 @@ import 'package:naai/models/salon.dart';
 import 'package:naai/models/user.dart';
 import 'package:naai/models/user_location.dart';
 import 'package:naai/services/api_service/base_client.dart';
-import 'package:naai/services/database.dart';
 import 'package:naai/utils/api_constant.dart';
 import 'package:naai/utils/api_endpoint_constant.dart';
 import 'package:naai/utils/colors_constant.dart';
@@ -781,12 +779,12 @@ String ?  _addressText;
                       ),
                     ),
                     const SizedBox(height: 8.0),
-                    const Align(
+                     Align(
                       alignment: Alignment.center,
                       child: Center(
                         child: Text(
                           "Set your location to Start \n exploring\n salons near you",
-                          style: TextStyle(fontSize: 16.0),
+                          style: TextStyle(fontSize: 10.sp),
                           textAlign: TextAlign.center,
                         ),
                       ),
@@ -800,11 +798,12 @@ String ?  _addressText;
                         children: [
                           Expanded(
                             child: ElevatedButton(
-                              child: const Text(
+                              child:  Text(
                                 "Enable Device Location",
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
+                                  fontSize: 8.sp,
                                 ),
                               ),
                               style: ElevatedButton.styleFrom(
@@ -832,11 +831,12 @@ String ?  _addressText;
                           children: [
                             Expanded(
                               child: ElevatedButton(
-                                child: const Text(
+                                child:  Text(
                                   "Enter your Location Manually",
                                   style: TextStyle(
                                     color: ColorsConstant.appColor,
                                     fontWeight: FontWeight.bold,
+                                    fontSize: 8.sp,
                                   ),
                                 ),
                                 style: ElevatedButton.styleFrom(
@@ -898,12 +898,12 @@ String ?  _addressText;
                       ),
                     ),
                     const SizedBox(height: 8.0),
-                    const Align(
+                     Align(
                       alignment: Alignment.center,
                       child: Center(
                         child: Text(
                           "Set your location to Start \n exploring\n salons near you",
-                          style: TextStyle(fontSize: 16.0),
+                          style: TextStyle(fontSize: 10.sp),
                           textAlign: TextAlign.center,
                         ),
                       ),
@@ -917,11 +917,12 @@ String ?  _addressText;
                           children: [
                             Expanded(
                               child: ElevatedButton(
-                                child: const Text(
+                                child:  Text(
                                   "Enable Device Location",
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.bold,
+                                     fontSize: 8.sp,
                                   ),
                                 ),
                                 style: ElevatedButton.styleFrom(
@@ -948,11 +949,12 @@ String ?  _addressText;
                           children: [
                             Expanded(
                               child: ElevatedButton(
-                                child: const Text(
+                                child:  Text(
                                   "Enter your Location Manually",
                                   style: TextStyle(
                                     color: ColorsConstant.appColor,
                                     fontWeight: FontWeight.bold,
+                                      fontSize: 8.sp,
                                   ),
                                 ),
                                 style: ElevatedButton.styleFrom(
@@ -979,6 +981,7 @@ String ?  _addressText;
         },
       );
   }
+
 
   Future<void> getAppointments() async {
     final String apiUrl = 'http://13.235.49.214:8800/appointments/user/bookings';
@@ -1234,7 +1237,7 @@ String ?  _addressText;
   /// Fetch the user details from [FirebaseFirestore]
   Future<void> getUserDetails(BuildContext context) async {
     try {
-      _userData = await DatabaseService().getUserDetails();
+
     } catch (e) {
     //  ReusableWidgets.showFlutterToast(context, '$e');
     }
@@ -1244,7 +1247,6 @@ String ?  _addressText;
   /// Fetch the user details from [FirebaseFirestore]
   Future<void> getAllArtists(BuildContext context) async {
     try {
-      _artistList = await DatabaseService().getAllArtists();
       _artistList.sort((a, b) => ((a.rating ?? 0) - (b.rating ?? 0)).toInt());
       context.read<ExploreProvider>().setArtistList(_artistList);
     } catch (e) {
@@ -1255,7 +1257,7 @@ String ?  _addressText;
 
   Future<void> getAllReviews(context) async {
     try {
-      _allReviewList = await DatabaseService().getAllReviews();
+
     } catch (e) {
      // ReusableWidgets.showFlutterToast(context, '$e');
     }
@@ -1263,57 +1265,7 @@ String ?  _addressText;
   }
 
   /// Fetch the booking details of user from [FirebaseFirestore]
-  Future<void> getUserBookings(BuildContext context) async {
-    try {
-      List<Booking> response =
-      await DatabaseService().getUserBookings(userId: userData.id ?? '');
-      _allBookings = response;
-      _lastOrNextBooking.clear();
-      for (int i = 0; i < response.length; i++) {
-        if (DateTime.parse(response[i].bookingCreatedFor ?? '')
-            .isAfter(DateTime.now())) {
-          _lastOrNextBooking.add(response[i]);
-          if (_salonList.isNotEmpty) {
-            _lastOrNextBooking.last.salonName = _salonList
-                .firstWhere(
-                    (element) => element.id == _lastOrNextBooking.last.salonId)
-                .name;
-          }
-          _lastOrNextBooking.last.createdOnString =
-              getTimeAgoString(_lastOrNextBooking.last.bookingCreatedOn);
-          if (_artistList.isNotEmpty) {
-            _lastOrNextBooking.last.artistName = _artistList
-                .firstWhere(
-                    (element) => element.id == _lastOrNextBooking.last.artistId)
-                .name;
-          }
-          _lastOrNextBooking.last.isUpcoming = true;
-        }
-      }
 
-      if (_lastOrNextBooking.isEmpty && response.isNotEmpty) {
-        _lastOrNextBooking.add(response.last);
-        _lastOrNextBooking.last.isUpcoming = false;
-        if (_salonList.isNotEmpty) {
-          _lastOrNextBooking.last.salonName = _salonList
-              .firstWhere(
-                  (element) => element.id == _lastOrNextBooking.last.salonId)
-              .name;
-        }
-        _lastOrNextBooking.last.createdOnString =
-            getTimeAgoString(_lastOrNextBooking.last.bookingCreatedOn);
-        if (_artistList.isNotEmpty) {
-          _lastOrNextBooking.last.artistName = _artistList
-              .firstWhere(
-                  (element) => element.id == _lastOrNextBooking.last.artistId)
-              .name;
-        }
-      }
-    } catch (e) {
-      ReusableWidgets.showFlutterToast(context, '$e');
-    }
-    notifyListeners();
-  }
 
 
   String getTimeAgoString(String? dateTimeString) {
@@ -1339,25 +1291,6 @@ String ?  _addressText;
   }
 
   /// Fetch the service names from [FirebaseFirestore]
-  Future<void> getServicesNamesAndPrice(BuildContext context) async {
-    try {
-      var response = await DatabaseService().getAllServices();
-      for (int i = 0; i < _lastOrNextBooking.length; i++) {
-        _lastOrNextBooking[i].bookedServiceNames = [];
-        response.forEach((element) {
-          if (_lastOrNextBooking[i].serviceIds?.contains(element.id) == true) {
-            _lastOrNextBooking[i]
-                .bookedServiceNames
-                ?.add(element.serviceTitle ?? '');
-            _lastOrNextBooking[i].totalPrice += element.price ?? 0;
-          }
-        });
-      }
-    } catch (e) {
-      // ReusableWidgets.showFlutterToast(context, '$e');
-    }
-    notifyListeners();
-  }
 
   /// Initialising map related values as soon as the map is rendered on screen.
   Future<void> onMapCreated(
@@ -1385,6 +1318,7 @@ String ?  _addressText;
       );
       return; // Exit the method
     }
+
     Loader.showLoader(context);
     var _locationData = await _mapLocation.getLocation();
 
@@ -1429,6 +1363,7 @@ String ?  _addressText;
       );
       return; // Exit the method
     }
+
     Loader.showLoader(context);
     var _locationData = await _mapLocation.getLocation();
 
@@ -1895,10 +1830,10 @@ String ?  _addressText;
 
   /// Get the address text from the user's home location
   String? getHomeAddressText() {
-    return userData.homeLocation?.addressString ;
+   // return userData.homeLocation?.addressString ;
   }
   String? getDummyHomeAddressText() {
-    return userData.homeLocation?.addressString??"Your Location will be show when you Sign In" ;
+   // return userData.homeLocation?.addressString??"Your Location will be show when you Sign In" ;
   }
 
   /// Dispose [_controller] when the map is unmounted
@@ -1912,9 +1847,6 @@ String ?  _addressText;
     notifyListeners();
   }
 
-  Future<List<Review>> getUserReviews() async {
-    return await DatabaseService().getUserReviewsList(userData.id);
-  }
 
   void changeRatings(BuildContext context, {bool notify = false}) {
     salonList.forEach((salon) {

@@ -2,7 +2,6 @@
 import 'dart:convert';
 import 'package:collection/collection.dart';
 import 'package:dio/dio.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:naai/models/artist.dart';
@@ -10,7 +9,6 @@ import 'package:naai/models/booking.dart';
 import 'package:naai/models/review.dart';
 import 'package:naai/models/salon.dart';
 import 'package:naai/models/service_detail.dart';
-import 'package:naai/services/database.dart';
 import 'package:naai/utils/enums.dart';
 import 'package:naai/utils/exception/exception_handling.dart';
 import 'package:naai/utils/loading_indicator.dart';
@@ -628,77 +626,7 @@ class SalonDetailsProvider with ChangeNotifier {
   }
 
   /// Get the current bookings of a given artist
-  Future<void> getArtistBooking(BuildContext context) async {
-    Loader.showLoader(context);
-    try {
-      String bookingDate = DateFormat('dd-MM-yyyy')
-          .parse(_currentBooking.selectedDate ?? '')
-          .toString();
-      List<Booking> _bookingList = await DatabaseService().getArtistBookingList(
-        _currentBooking.artistId,
-        bookingDate,
-      );
-      Loader.hideLoader(context);
-      _bookingList.forEach((booking) {
-        for (int i = booking.startTime ?? 0;
-        i < (booking.endTime ?? 0);
-        i += 1800) {
-          _artistAvailabilityForCalculation
-              .removeWhere((availability) => availability == i);
-          _artistAvailabilityToDisplay
-              .removeWhere((availability) => availability == i);
-        }
-      });
 
-      _initialAvailability.forEach((element) {
-        if (_artistAvailabilityToDisplay.contains(element)) {
-          bool accessibleSlot =
-              _artistAvailabilityToDisplay.contains(element + 1800) &&
-                  ((element + 3600) <= _initialAvailability.last);
-          if (!accessibleSlot) {
-            _artistAvailabilityToDisplay.removeWhere((e) => e == element);
-          }
-        }
-      });
-
-      if (_currentBooking.selectedDateInDateTimeFormat!.day ==
-          DateTime
-              .now()
-              .day &&
-          _currentBooking.selectedDateInDateTimeFormat!.month ==
-              DateTime
-                  .now()
-                  .month) {
-        int secondsElapsedTillNow =
-            DateTime
-                .now()
-                .hour * 3600 + DateTime
-                .now()
-                .minute * 60;
-        _artistAvailabilityToDisplay
-            .removeWhere((element) => element <= secondsElapsedTillNow);
-      }
-    } catch (e) {
-      Loader.hideLoader(context);
-      ReusableWidgets.showFlutterToast(context, '$e');
-    }
-    notifyListeners();
-  }
-
-  Future<void> getSalonData(BuildContext context, {
-    required String salonId,
-  }) async {
-    Loader.showLoader(context);
-    try {
-      _selectedSalonData = await DatabaseService().getSalonData(salonId);
-      Loader.hideLoader(context);
-    } catch (e) {
-      Loader.hideLoader(context);
-      ReusableWidgets.showFlutterToast(context, '$e');
-    }
-
-    notifyListeners();
-  }
 
   ///Get the list of image for current
   Future<void> getImageList(BuildContext context,
@@ -862,14 +790,7 @@ class SalonDetailsProvider with ChangeNotifier {
     );
 
     try {
-      await DatabaseService()
-          .addReview(
-            reviewData: review,
-          )
-          .onError(
-            (FirebaseException error, stackTrace) =>
-                throw ExceptionHandling(message: error.message ?? ""),
-          );
+    ;
       context.read<HomeProvider>().addReview(review);
       context.read<HomeProvider>().changeRatings(context, notify: true);
       Loader.hideLoader(context);
@@ -890,8 +811,7 @@ class SalonDetailsProvider with ChangeNotifier {
     List<String> _artistIdList = _artistList.map((e) => e.id ?? '').toList();
     if (_artistIdList.isNotEmpty) {
       try {
-        _serviceList = await DatabaseService().getServiceList(_artistIdList);
-        print(_serviceList);
+
         _filteredServiceList.clear();
         _filteredServiceList.addAll(_serviceList);
       } catch (e) {
@@ -937,28 +857,13 @@ class SalonDetailsProvider with ChangeNotifier {
 
     Map<String, dynamic> _finalData = _currentBooking.toJson();
 
-    try {
-      await DatabaseService().createBooking(bookingData: _finalData);
-      Loader.hideLoader(context);
-      context.read<HomeProvider>().getUserBookings(context);
-      if (transactionStatus == "Paid not yet") {
-        Navigator.pushReplacementNamed(
-          context,
-          NamedRoutes.bookingConfirmedRoute,
-        );
-      }
-    } catch (e) {
-      Loader.hideLoader(context);
-      ReusableWidgets.showFlutterToast(context, '$e');
-    }
     notifyListeners();
   }
 
   /// Get the list of salons and save it in [_salonData] and [_filteredSalonData]
   Future<void> getArtistList(BuildContext context) async {
     try {
-      _artistList =
-          await DatabaseService().getArtistListOfSalon(_selectedSalonData.id);
+
     } catch (e) {
       ReusableWidgets.showFlutterToast(context, '$e');
     }
@@ -1130,18 +1035,14 @@ _selectedTime = null;
   Future<void> addPreferedSalon(BuildContext context, String? salonId) async {
     if (salonId == null) return;
     context.read<HomeProvider>().userData.preferredSalon!.add(salonId);
-    await DatabaseService().updateUserData(
-      data: context.read<HomeProvider>().userData.toMap(),
-    );
+
     notifyListeners();
   }
 
   Future<void> removePreferedSalon(
       BuildContext context, String? salonId) async {
     context.read<HomeProvider>().userData.preferredSalon!.remove(salonId);
-    await DatabaseService().updateUserData(
-      data: context.read<HomeProvider>().userData.toMap(),
-    );
+
     notifyListeners();
   }
 

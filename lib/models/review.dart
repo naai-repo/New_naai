@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+
 
 class Review {
   String? salonName;
@@ -27,14 +27,14 @@ class Review {
     this.artistName,
   });
 
-  factory Review.fromDocumentSnapshot(DocumentSnapshot docData) {
+  factory Review.fromDocumentSnapshot( docData) {
     Map<String, dynamic> json = docData.data() as Map<String, dynamic>;
 
     return Review(
       artistId: json['artistId'],
       comment: json['comment'],
       id: json['id'],
-      createdAt: (json['createdAt'] as Timestamp).toDate(),
+      createdAt: (json['createdAt']).toDate(),
       salonId: json['salonId'],
       userId: json['userId'],
       imagePath: json['imagePath'] ?? 'assets/images/salon_dummy_image.png',
@@ -50,7 +50,7 @@ class Review {
       'artistId': artistId,
       'comment': comment,
       'id': id,
-      'createdAt': Timestamp.fromDate(createdAt ?? DateTime.now()),
+      'createdAt': createdAt ?? DateTime.now(),
       'salonId': salonId,
       'userId': userId,
       'userName': userName,

@@ -1,9 +1,9 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'package:naai/models/user.dart';
 
 class SalonData {
   String? id;
-  HomeLocation? address;
+  String? address;
   num? rating, originalRating;
   String? name;
   String? imagePath;
@@ -35,12 +35,12 @@ class SalonData {
     this.discountPercentage
   });
 
-  factory SalonData.fromDocumentSnapshot(DocumentSnapshot data) {
+  factory SalonData.fromDocumentSnapshot( data) {
     Map<String, dynamic> docData = data.data() as Map<String, dynamic>;
 
     return SalonData(
         id: docData['id'],
-        address: HomeLocation.fromFirestore(docData['address'] ?? {}),
+      //  address: ['address'] ?? {},
         name: docData['name'],
         rating: docData['rating'],
         originalRating: docData['rating'],
@@ -64,7 +64,7 @@ class SalonData {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'address': address!.toMap(),
+      'address': address,
       'name': name,
       'rating': rating,
       'salonType': salonType,

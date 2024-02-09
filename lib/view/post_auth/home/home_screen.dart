@@ -1285,7 +1285,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           child: Stack(
             children: <Widget>[
               Positioned(
-                left:2.w,
+                right : 0.5.w,
                 child: Row(
                   children: <Widget>[
                     Image.asset(
@@ -1356,7 +1356,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             child: Stack(
               children: <Widget>[
                 Positioned(
-                  left:2.w,
+                  right: 0.5.w,
                   child: Row(
                     children: <Widget>[
                       Image.asset(
@@ -2603,7 +2603,7 @@ class _HomeScreen2State extends State<HomeScreen2>with WidgetsBindingObserver {
           },
           child: Container(
             height: 20.h,
-            width:45.w,
+            width:  45.w,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(1.5.h),
               color: const Color(0xFF13ABA1),
@@ -2611,7 +2611,7 @@ class _HomeScreen2State extends State<HomeScreen2>with WidgetsBindingObserver {
             child: Stack(
               children: <Widget>[
                 Positioned(
-                  left:2.w,
+                  right: 0.5.w,
                   child: Row(
                     children: <Widget>[
                       Image.asset(
@@ -2677,7 +2677,7 @@ class _HomeScreen2State extends State<HomeScreen2>with WidgetsBindingObserver {
             child: Stack(
               children: <Widget>[
                 Positioned(
-                  left:2.w,
+                  right: 0.5.w,
                   child: Row(
                     children: <Widget>[
                       Image.asset(

@@ -206,7 +206,7 @@ class ReusableWidgets {
                             ),
                           ),
                           Text(
-                            clickedSalonData.address?.addressString ?? "",
+                            clickedSalonData.address ?? "",
                             style: TextStyle(
                               fontSize: 9.sp,
                               color: ColorsConstant.greySalonAddress,

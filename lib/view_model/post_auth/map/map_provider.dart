@@ -1,7 +1,9 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:location/location.dart' as location;
+import 'package:location/location.dart';
 import 'package:logger/logger.dart';
 import 'package:mapbox_gl/mapbox_gl.dart';
 import 'package:naai/models/salon.dart';
@@ -47,55 +49,74 @@ class MapProvider with ChangeNotifier {
     this._controller = mapController;
 
     var _serviceEnabled = await _mapLocation.serviceEnabled();
+    var _permissionGranted = await _mapLocation.hasPermission();
 
+    double savedLat = 0.0;
+    double savedLong = 0.0;
     if (!_serviceEnabled) {
       _serviceEnabled = await _mapLocation.requestService();
     }
-    var _permissionGranted = await _mapLocation.hasPermission();
+    if (_permissionGranted != location.PermissionStatus.granted) {
+      final box = await Hive.openBox('userBox');
+      savedLat = box.get('savedLatitude') ?? 0.0;
+      savedLong = box.get('savedLongitude') ?? 0.0;
+    }
+
     if (_permissionGranted == location.PermissionStatus.denied) {
       _permissionGranted = await _mapLocation.requestPermission();
     }
 
     Loader.showLoader(context);
-    var _locationData = await _mapLocation.getLocation();
+    try {
+      var _locationData;
+      if (_permissionGranted == location.PermissionStatus.granted) {
+        _locationData = await _mapLocation.getLocation();
+      } else {
 
-    _userCurrentLatLng =
-        LatLng(_locationData.latitude!, _locationData.longitude!);
+        _userCurrentLatLng =
+            LatLng(savedLat , savedLong);
 
-    await mapController.animateCamera(
-      CameraUpdate.newCameraPosition(
-        CameraPosition(
-          target: _userCurrentLatLng,
-          zoom: 16,
+      }
+
+
+      _userCurrentLatLng =
+          LatLng(_locationData.latitude!, _locationData.longitude!);
+
+      await mapController.animateCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(
+            target: _userCurrentLatLng,
+            zoom: 16,
+          ),
         ),
-      ),
-    );
-
-    List<SalonData> _salonData = [...context.read<ExploreProvider>().salonData];
-
-    _salonData.forEach((salon) async {
-      LatLng salonGeoLocation = LatLng(
-        salon.address?.geoLocation?.latitude ?? 0.0,
-        salon.address?.geoLocation?.longitude ?? 0.0,
       );
-      _symbol = await this._controller.addSymbol(
-        UtilityFunctions.getCurrentLocationSymbolOptions(
-          latLng: salonGeoLocation,
-        ),
-        {StringConstant.salonData: salon},
-      );
-    });
 
-    this._controller.onSymbolTapped.add((argument) {
-      ReusableWidgets.salonOverviewOnMapDialogue(
-        context,
-        clickedSalonData: argument.data?[StringConstant.salonData],
-      );
-    });
+      List<SalonData> _salonData = [...context
+          .read<ExploreProvider>()
+          .salonData
+      ];
 
-    Loader.hideLoader(context);
+      _salonData.forEach((salon) async {
+        //_symbol = await this._controller.addSymbol(
+        // UtilityFunctions.getCurrentLocationSymbolOptions(
+        //  latLng: salonGeoLocation,
+        //),
+        //{StringConstant.salonData: salon},
+        //);
+      });
+
+      this._controller.onSymbolTapped.add((argument) {
+        ReusableWidgets.salonOverviewOnMapDialogue(
+          context,
+          clickedSalonData: argument.data?[StringConstant.salonData],
+        );
+      });
+    } catch (e){
+      print("Error gettig location : $e");
+    }
+      Loader.hideLoader(context);
+
   }
-
   /// Get place suggestions according to the search text
   Future<List<Feature>> getPlaceSuggestions(BuildContext context) async {
     List<Feature> _data = [];

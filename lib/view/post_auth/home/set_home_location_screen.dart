@@ -34,7 +34,9 @@ class _SetHomeLocationScreenState extends State<SetHomeLocationScreen> {
     return Consumer<HomeProvider>(builder: (context, provider, child) {
       return WillPopScope(
         onWillPop: () async {
-         return false;
+
+            return false;
+
         },
         child: Scaffold(
           resizeToAvoidBottomInset: false,

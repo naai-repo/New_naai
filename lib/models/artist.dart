@@ -1,5 +1,5 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 
+// Not in used
 class Artist {
   String? id;
   String? name;
@@ -23,7 +23,7 @@ class Artist {
     this.instagramLink,
   });
 
-  factory Artist.fromDocumentSnapshot(DocumentSnapshot docData) {
+  factory Artist.fromDocumentSnapsh( docData) {
     Map<String, dynamic> json = docData.data() as Map<String, dynamic>;
     return Artist(
       id: json['id'],

@@ -5,7 +5,6 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:naai/models/user.dart';
-import 'package:naai/services/database.dart';
 import 'package:naai/utils/exception/exception_handling.dart';
 import 'package:naai/utils/loading_indicator.dart';
 import 'package:naai/view/widgets/reusable_widgets.dart';

@@ -1,11 +1,9 @@
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:naai/models/artist.dart';
 import 'package:naai/models/service_detail.dart';
-import 'package:naai/services/database.dart';
 import 'package:naai/utils/enums.dart';
 import 'package:naai/utils/exception/exception_handling.dart';
 import 'package:naai/utils/loading_indicator.dart';
@@ -310,8 +308,6 @@ class BarberProvider with ChangeNotifier {
   /// Get the list of services provided by the selected salon
   Future<void> getServiceList(BuildContext context) async {
     try {
-      _serviceList =
-          await DatabaseService().getServiceListForArtist(_artist.id ?? '');
       _filteredServiceList.clear();
       _filteredServiceList.addAll(_serviceList);
     } catch (e) {
