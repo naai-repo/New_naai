@@ -2,10 +2,33 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+ <!-- Permissions list starts here -->
+        <!-- Permission while running on backgroud -->
+        <key>UIBackgroundModes</key>
+        <string>location</string>
+        <!-- Permission options for the `location` group -->
+
+       <key>NSLocationWhenInUseUsageDescription</key>
+       <string>Your location is used to find nearby salons when the app is in use.</string>
+       <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+       <string>Your location is used to find nearby salons even when the app is not in use.</string>
+       <key>NSLocationUsageDescription</key>
+       <string>Your location is used to find nearby salons.</string>
+       <key>NSLocationAlwaysUsageDescription</key>
+       <string>Your location is used to find nearby salons even when the app is not in use.</string>
+       <key>UIRequiredDeviceCapabilities</key>
+       <string>location-services</string>
+            <!-- You may or may not include "gps" based on your app's requirements -->
+            <!-- <string>gps</string> -->
+        <!-- Permissions lists ends here -->
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>We need access to your photo library to enable you to set and update your profile picture. Your profile picture is used exclusively for personalizing your account, and it will not be shared with other users.</string>
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Videoconferenceapp</string>
+	<string>Naai</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -13,16 +36,54 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>videoconferenceapp</string>
+	<string>naai</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
 	<string>$(FLUTTER_BUILD_NAME)</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>Google login</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.78905451649-kd4641igt898tj2bnsvvl5f79favcg7j</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>Phone login</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>app-1-78905451649-ios-18ed3b12cfc4e4eedbd980</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>freecharge</string>
+		<string>gpay</string>
+		<string>in.fampay.app</string>
+		<string>lotza</string>
+		<string>mobikwik</string>
+		<string>paytm</string>
+		<string>phonepe</string>
+		<string>upi</string>
+		<string>upibillpay</string>
+		<string>whatsapp</string>
+	</array>
 	<key>LSRequiresIPhoneOS</key>
+	<true/>
+	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
@@ -43,9 +104,5 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
-	<key>CADisableMinimumFrameDurationOnPhone</key>
-	<true/>
-	<key>UIApplicationSupportsIndirectInputEvents</key>
-	<true/>
 </dict>
 </plist>
