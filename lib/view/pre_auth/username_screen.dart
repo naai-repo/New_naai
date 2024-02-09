@@ -74,6 +74,14 @@ class UsernameScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
                         Text(
+                          StringConstant.Optional,
+                          style: TextStyle(
+                            fontSize: 11.sp,
+                            color: ColorsConstant.textLight,
+                          ),
+                        ),
+                        SizedBox(height: 3.h),
+                        Text(
                           StringConstant.chooseYourGender,
                           style: TextStyle(
                             fontSize: 11.sp,

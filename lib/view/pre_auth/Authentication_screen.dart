@@ -51,7 +51,7 @@ class AuthenticationScreen extends StatelessWidget {
                   children: <Widget>[
                     Column(
                         children: <Widget>[
-                          SvgPicture.asset(ImagePathConstant.loginScreen,height: 50.h,width: 50.w),
+                          SvgPicture.asset(ImagePathConstant.loginScreen,height: 50.h,width: 50.w,fit: BoxFit.fill),
                           SizedBox(height: 4.h),
                 Padding(
                   padding:

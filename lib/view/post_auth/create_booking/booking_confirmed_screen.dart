@@ -48,7 +48,7 @@ class BookingConfirmedSreen extends StatelessWidget {
                     color: ColorsConstant.textLight,
                   ),
                 ),
-                SizedBox(height: 10.h),
+                SizedBox(height: 5.h),
                 Text(
                   provider.salonDetails!.data.data.name?? '',
                   style: TextStyle(

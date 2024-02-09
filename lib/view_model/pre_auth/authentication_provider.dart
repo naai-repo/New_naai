@@ -124,8 +124,8 @@ class AuthenticationProvider with ChangeNotifier {
 
   /// Check if the entered username is valid and set the value of [_isUsernameButtonActive]
   void setUsernameButtonActive() {
-    _isUsernameButtonActive = _userNameController.text.trim().length > 0 &&
-        _selectedGender.isNotEmpty;
+    _isUsernameButtonActive = _userNameController.text.trim().length > 0 ;
+       //&& _selectedGender.isNotEmpty;
     notifyListeners();
   }
 

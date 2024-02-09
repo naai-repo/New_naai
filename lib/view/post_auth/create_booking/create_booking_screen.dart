@@ -1451,7 +1451,8 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
                           onChanged: (value) {
                             setState(() {
                               selectedRadio = value! as int;
-                              // Handle logic for single staff selection
+                              // Clear the selected artists in the provider
+                              provider.artistServiceList!.selectedArtistMap.clear();
                               singleStaffListExpanded = true;
                               multipleStaffListExpanded = false;
                               provider.currentBooking.artistId = null;
@@ -1569,7 +1570,9 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
                 )
                     : Image.asset(
                   'assets/images/salon_dummy_image.png',
-                  fit: BoxFit.cover,
+                  height: 15.h,
+                  width: 28.w,
+                  fit: BoxFit.fill,
                 ),
               ),
               SizedBox(width: 2.w),
@@ -1689,6 +1692,8 @@ print('request body :- $requestBody');
                               selectedRadio = value! as int;
                               singleStaffListExpanded = false;
                               multipleStaffListExpanded = true;
+                              // Clear the selected artist in the provider
+                              provider.artistServiceList!.selectedArtist = null;
                               if (!multipleStaffListExpanded) {
                                 provider.artistServiceList!.selectedArtistMap.clear();
                               }
@@ -1703,7 +1708,7 @@ print('request body :- $requestBody');
                         interactive: true,
                         showTrackOnHover: true,
                         child: Container(
-                          height: 30.h, // Set a fixed height for the container
+                          height: 25.h, // Set a fixed height for the container
                           child: ListView.builder(
                             itemCount: provider.getSelectedServices().length,
                             itemBuilder: (context, index) {
@@ -2000,7 +2005,7 @@ class _CreateBookingScreen2State extends State<CreateBookingScreen2> {
   void initState() {
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
       context.read<ProfileProvider>().getUserDetails(context);
-    });
+   });
     super.initState();
   }
 
@@ -3454,7 +3459,9 @@ class _CreateBookingScreen2State extends State<CreateBookingScreen2> {
                 )
                     : Image.asset(
                   'assets/images/salon_dummy_image.png',
-                  fit: BoxFit.cover,
+                  height: 15.h,
+                  width: 28.w,
+                  fit: BoxFit.fill,
                 ),
               ),
               SizedBox(width: 2.w),
@@ -5177,7 +5184,9 @@ class _CreateBookingScreen3State extends State<CreateBookingScreen3> {
                 )
                     : Image.asset(
                   'assets/images/salon_dummy_image.png',
-                  fit: BoxFit.cover,
+                  height: 15.h,
+                  width: 28.w,
+                  fit: BoxFit.fill,
                 ),
               ),
               SizedBox(width: 2.w),

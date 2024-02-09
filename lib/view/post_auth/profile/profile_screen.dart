@@ -303,6 +303,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
 
   Future<void> deleteAccountAndUserData(BuildContext context) async {
+    AuthenticationProvider AuthProvider = context.read<AuthenticationProvider>();
     try {
       Loader.showLoader(context);
       Dio dio = Dio();
@@ -324,6 +325,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       Loader.hideLoader(context);
 
       if (response.statusCode == 200) {
+        AuthProvider.resetMobielNumberController();
         await AccessTokenManager.removeAccessToken();
         print("Account and user data deleted successfully!");
         print(response.data);

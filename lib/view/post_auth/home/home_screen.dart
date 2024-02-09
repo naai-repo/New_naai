@@ -301,11 +301,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Widget upcomingBookingCard(CurrentBooking booking,index) {
     return Consumer<HomeProvider>(builder: (context, provider, child) {
       return GestureDetector(
-        onTap: () => Navigator.pushNamed(
-          context,
-          NamedRoutes.appointmentDetailsRoute2,
-          arguments: provider.upcomingBooking[index],
-        ),
+       // onTap: () => Navigator.pushNamed(
+         // context,
+         // NamedRoutes.appointmentDetailsRoute2,
+        //  arguments: provider.upcomingBooking[index],
+      //  ),
         child: Container(
           padding: EdgeInsets.all(1.5.h),
           decoration: const BoxDecoration(
@@ -423,6 +423,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       );
     });
   }
+
   static void navigateTo(double lat, double lng) async {
     var uri = Uri.parse("google.navigation:q=$lat,$lng&mode=d");
     if (await canLaunchUrl(uri)) {
