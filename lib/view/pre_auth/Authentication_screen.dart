@@ -51,7 +51,21 @@ class AuthenticationScreen extends StatelessWidget {
                   children: <Widget>[
                     Column(
                         children: <Widget>[
-                          SvgPicture.asset(ImagePathConstant.loginScreen,height: 50.h,width: 50.w,fit: BoxFit.fill),
+                          Container(
+                            width: 70.h,
+                            decoration: BoxDecoration(
+                              color: ColorsConstant.appColor,
+                              borderRadius: BorderRadius.only(
+                                bottomLeft: Radius.circular(20.0), // Adjust the radius as needed
+                                bottomRight: Radius.circular(20.0), // Adjust the radius as needed
+                              ),
+                            ),
+                            child: SvgPicture.asset(
+                              ImagePathConstant.loginScreen,
+                              height: 50.h,
+                              fit: BoxFit.fill,
+                            ),
+                          ),
                           SizedBox(height: 4.h),
                 Padding(
                   padding:
