@@ -208,6 +208,7 @@ class AuthenticationProvider with ChangeNotifier {
   void clearUsernameController() {
     _userNameController.clear();
     _selectedGender = '';
+    _emailController.clear();
     notifyListeners();
   }
 }

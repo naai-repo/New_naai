@@ -64,7 +64,11 @@ class StyleConstant {
     fontSize: 15.sp,
     color: ColorsConstant.textDark,
   );
-
+  static TextStyle textDark10sp500Style = TextStyle(
+    fontWeight: FontWeight.w400,
+    fontSize: 11.sp,
+    color: ColorsConstant.textDark,
+  );
   static TextStyle bookingDateTimeTextStyle = TextStyle(
     color: Colors.white,
     fontSize: 10.sp,

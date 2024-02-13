@@ -62,7 +62,7 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
               provider.setShowPrice(provider.totalPrice,provider.salonDetails!.data.data.discount!);
               myShowPrice = provider.showPrice;
             }
-            bool servicesSelected = provider.getSelectedServices().isNotEmpty;
+            bool servicesSelected = provider.getSelectedServicesCombined().isNotEmpty;
             return Scaffold(
           body: Stack(
             children: <Widget>[
@@ -199,10 +199,11 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
                       ],
                     ),
                     VariableWidthCta(
+
                       onTap: () async {
                         String salonId = provider.salonDetails!.data.data.id;
-                        List<String> selectedServiceIds = provider.getSelectedServices()
-                            .map((service) => service.id)
+                        List<String> selectedServiceIds = provider.getSelectedServicesCombined()
+                            .map((service) => service.id.toString())
                             .toList();
                         await provider.fetchArtistListAndNavigate(context,salonId, selectedServiceIds);
                       },
@@ -363,14 +364,37 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
       );
     });
   }
+  ServicesWithSubCategory2? selectedService2;
 
   Widget servicesTab() {
     return Consumer<SalonDetailsProvider>(builder: (context, provider, child) {
       Set<ServicesWithoutSubCategory> selectedServices = provider.getSelectedServices();
-      List<ServicesWithoutSubCategory> filteredServices = provider.salonDetails!.data.services.servicesWithoutSubCategory.where((service) {
+      Set<ServicesWithSubCategory2> selectedServices2 = provider.getSelectedServices2();
+      List<ServicesWithoutSubCategory> filteredServices = [];
+      List<ServicesWithSubCategory2> filteredServices2 = [];
+
+      // Add services with subcategory
+      filteredServices2.addAll(provider.salonDetails!.data.services.servicesWithSubCategory.hairColor.where((service) {
         return (provider.selectedGendersFilter.isEmpty || provider.selectedGendersFilter.contains(service.targetGender)) &&
             (provider.selectedServiceCategories2.isEmpty || provider.selectedServiceCategories2.contains(service.category));
-      }).toList();
+      }));
+
+      // Find the service with the minimum base price in ServicesWithSubCategory
+      ServicesWithSubCategory2? minBasePriceService;
+      double? minBasePrice;
+      for (var service in filteredServices2) {
+        if (minBasePrice == null || service.basePrice < minBasePrice!) {
+          minBasePrice = service.basePrice.toDouble();
+          minBasePriceService = service;
+        }
+      }
+
+      // Add services without subcategory
+      filteredServices.addAll(provider.salonDetails!.data.services.servicesWithoutSubCategory.where((service) {
+        return (provider.selectedGendersFilter.isEmpty || provider.selectedGendersFilter.contains(service.targetGender)) &&
+            (provider.selectedServiceCategories2.isEmpty || provider.selectedServiceCategories2.contains(service.category));
+      }));
+
       return Column(
         children: <Widget>[
           GestureDetector(
@@ -403,51 +427,43 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
             ),
           ),
           SizedBox(height: 1.h),
-          filteredServices.isEmpty
-              ? Container(
-            height: 10.h,
-            child: Center(
-              child: Text('Nothing here :('),
+          if (filteredServices.isEmpty && minBasePriceService == null)
+            Container(
+              height: 10.h,
+              child: Center(
+                child: Text('Nothing here :('),
+              ),
             ),
-          )
-              : ListView.builder(
-            padding: EdgeInsets.zero,
-            shrinkWrap: true,
-            physics: NeverScrollableScrollPhysics(),
-            itemCount: filteredServices.length,
-            itemBuilder: (context, index) {
-              ServicesWithoutSubCategory serviceDetail = filteredServices[index];
-              bool isAdded = selectedServices.contains(serviceDetail);
-              return Container(
-                padding: EdgeInsets.all(3.w),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Text(
-                          serviceDetail.serviceTitle,
-                          style: TextStyle(
-                            color: const Color(0xFF2B2F34),
-                            fontSize: 12.sp,
-                            fontFamily: 'Poppins',
-                            fontWeight: FontWeight.w700,
-                          ),
+          if (minBasePriceService != null)
+            Container(
+              padding: EdgeInsets.all(3.w),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Text(
+                        minBasePriceService!.serviceTitle,
+                        style: TextStyle(
+                          color: const Color(0xFF2B2F34),
+                          fontSize: 12.sp,
+                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.w700,
                         ),
-                        SvgPicture.asset(
-                          serviceDetail.targetGender == 'male'
-                              ? ImagePathConstant.manIcon
-                              : ImagePathConstant.womanIcon,
-                          height: 3.h,
-                        ),
-                      ],
-                    ),
-                    if (serviceDetail.description.isNotEmpty) SizedBox(height: 1.h),
-                    if (serviceDetail.description.isNotEmpty) Text(
-                      serviceDetail.description,
+                      ),
+                      SvgPicture.asset(
+                        minBasePriceService!.targetGender == 'male' ? ImagePathConstant.manIcon : ImagePathConstant.womanIcon,
+                        height: 3.h,
+                      ),
+                    ],
+                  ),
+                  if (minBasePriceService!.description.isNotEmpty) SizedBox(height: 1.h),
+                  if (minBasePriceService!.description.isNotEmpty)
+                    Text(
+                      minBasePriceService!.description,
                       style: TextStyle(
                         color: const Color(0xFF8B9AAC),
                         fontSize: 10.sp,
@@ -455,93 +471,507 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
                         fontWeight: FontWeight.w500,
                       ),
                     ),
-                    SizedBox(height: 1.h),
-                    RichText(
+                  SizedBox(height: 1.h),
+                  RichText(
+                    text: TextSpan(
+                      children: [
+                        TextSpan(
+                          text: "Rs. ${minBasePriceService!.basePrice}",
+                          style: TextStyle(
+                            color: const Color(0xFF373737),
+                            fontSize: 13.sp,
+                            fontFamily: 'Helvetica Neue',
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        WidgetSpan(child: SizedBox(width: 2.w)),
+                        TextSpan(
+                          text: "Rs. ${minBasePriceService!.cutPrice}",
+                          style: TextStyle(
+                            color: const Color(0xFF8B9AAC),
+                            fontSize: 12.sp,
+                            fontFamily: 'Helvetica Neue',
+                            fontWeight: FontWeight.w400,
+                            decoration: TextDecoration.lineThrough,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: 2.h),
+                  TextButton(
+                    onPressed: () {
+                      if (selectedServices2.contains(selectedService2)) {
+                        provider.toggleSelectedService(selectedService2!);
+                      } else {
+                        showModalBottomSheet(
+                          backgroundColor: ColorsConstant.graphicFillDark,
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.only(
+                              topLeft: Radius.circular(35),
+                              topRight: Radius.circular(35),
+                            ),
+                          ),
+                          context: context,
+                          builder: (BuildContext context) {
+                            selectedService2 = minBasePriceService;
+                            return StatefulBuilder(
+                              builder: (BuildContext context,
+                                  StateSetter setState) {
+                                return SingleChildScrollView(
+                                  child: Column(
+                                    children: [
+                                      Container(
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius: BorderRadius.only(
+                                            topLeft: Radius.circular(35),
+                                            topRight: Radius.circular(35),
+                                          ),
+                                        ),
+                                        child: Padding(
+                                          padding: EdgeInsets.all(2.h),
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment
+                                                .start,
+                                            children: [
+                                              Row(
+                                                mainAxisAlignment: MainAxisAlignment
+                                                    .spaceBetween,
+                                                crossAxisAlignment: CrossAxisAlignment
+                                                    .start,
+                                                children: [
+                                                  Text(
+                                                    'Hair Color',
+                                                    style: TextStyle(
+                                                      color: const Color(
+                                                          0xFF2B2F34),
+                                                      fontSize: 12.sp,
+                                                      fontFamily: 'Poppins',
+                                                      fontWeight: FontWeight
+                                                          .w700,
+                                                    ),
+                                                  ),
+                                                  SvgPicture.asset(
+                                                    minBasePriceService!
+                                                        .targetGender == 'male'
+                                                        ? ImagePathConstant
+                                                        .manIcon
+                                                        : ImagePathConstant
+                                                        .womanIcon,
+                                                    height: 3.h,
+                                                  ),
+                                                ],
+                                              ),
+                                              Text(
+                                                minBasePriceService!
+                                                    .description,
+                                                style: TextStyle(
+                                                  color: const Color(
+                                                      0xFF8B9AAC),
+                                                  fontSize: 10.sp,
+                                                  fontFamily: 'Poppins',
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                      Padding(
+                                        padding: EdgeInsets.all(1.5.h),
+                                        child: Container(
+                                          color: Colors.white,
+                                          child: Padding(
+                                            padding: EdgeInsets.all(1.5.h),
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment
+                                                  .start,
+                                              children: [
+                                                Text(
+                                                  'Hair Length',
+                                                  style: TextStyle(
+                                                    color: const Color(
+                                                        0xFF2B2F34),
+                                                    fontSize: 10.sp,
+                                                    fontFamily: 'Poppins',
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                ),
+                                                Column(
+                                                  crossAxisAlignment: CrossAxisAlignment
+                                                      .start,
+                                                  children: (provider.salonDetails!.data.services.servicesWithSubCategory.hairColor
+                                                      .toList() // Convert to list to use the sort method
+                                                    ..sort((a, b) => a.basePrice.compareTo(b.basePrice))) // Sort the list based on basePrice
+                                                      .map((service){
+                                                    return Padding(
+                                                      padding: EdgeInsets.all(
+                                                          1.5.h),
+                                                      child: Column(
+                                                        crossAxisAlignment: CrossAxisAlignment
+                                                            .start,
+                                                        children: [
+                                                          Row(
+                                                            mainAxisAlignment: MainAxisAlignment
+                                                                .spaceBetween,
+                                                            children: [
+                                                              Text(
+                                                                service
+                                                                    .serviceTitle,
+                                                                style: TextStyle(
+                                                                  color: const Color(
+                                                                      0xFF2B2F34),
+                                                                  fontSize: 12
+                                                                      .sp,
+                                                                  fontFamily: 'Poppins',
+                                                                  fontWeight: FontWeight
+                                                                      .w700,
+                                                                ),
+                                                              ),
+                                                              RichText(
+                                                                text: TextSpan(
+                                                                  children: [
+                                                                    TextSpan(
+                                                                      text: "Rs. ${service
+                                                                          .basePrice}",
+                                                                      style: TextStyle(
+                                                                        color: const Color(
+                                                                            0xFF373737),
+                                                                        fontSize: 13
+                                                                            .sp,
+                                                                        fontFamily: 'Helvetica Neue',
+                                                                        fontWeight: FontWeight
+                                                                            .w500,
+                                                                      ),
+                                                                    ),
+                                                                  ],
+                                                                ),
+                                                              ),
+                                                              Radio(
+                                                                activeColor: ColorsConstant
+                                                                    .appColor,
+                                                                value: service,
+                                                                groupValue: selectedService2,
+                                                                onChanged: (
+                                                                    value) {
+                                                                  setState(() {
+                                                                    selectedService2 = service;
+                                                                    print("Selected Service Title: ${service.serviceTitle}");
+                                                                    print("Selected Service price: ${service.basePrice}");
+
+                                                                  });
+                                                                },
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    );
+                                                  }).toList(),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      Container(
+                                        color: Colors.white,
+                                        child: Padding(
+                                          padding: EdgeInsets.all(1.h),
+                                          child: Row(
+                                            mainAxisAlignment: MainAxisAlignment
+                                                .spaceBetween,
+                                            children: [
+                                              RichText(
+                                                text: TextSpan(
+                                                  children: [
+                                                    TextSpan(
+                                                      text: selectedService2 !=
+                                                          null
+                                                          ? "Rs. ${selectedService2!
+                                                          .basePrice}"
+                                                          : "",
+                                                      style: TextStyle(
+                                                        color: const Color(
+                                                            0xFF373737),
+                                                        fontSize: 15.sp,
+                                                        fontFamily: 'Helvetica Neue',
+                                                        fontWeight: FontWeight
+                                                            .w800,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+
+                                              TextButton(
+                                                onPressed: () {
+                                                  provider
+                                                      .toggleSelectedService(
+                                                      selectedService2!);
+                                                  Navigator.pop(context);
+                                                  if (!selectedServices2
+                                                      .contains(
+                                                      selectedService2)) {
+                                                    provider
+                                                        .toggleSelectedService(
+                                                        selectedService2!);
+                                                  }
+                                                },
+                                                style: TextButton.styleFrom(
+                                                  padding: EdgeInsets.symmetric(
+                                                      horizontal: 6.w,
+                                                      vertical: 2.w),
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius: BorderRadius
+                                                        .circular(10.sp),
+                                                    side: BorderSide(
+                                                        color: const Color(
+                                                            0xFFAA2F4C),
+                                                        width: 0.2.w),
+                                                  ),
+                                                  backgroundColor: !selectedServices2
+                                                      .contains(
+                                                      selectedService2)
+                                                      ? null
+                                                      : const Color(0xFFAA2F4C),
+                                                ),
+                                                child: RichText(
+                                                  text: TextSpan(
+                                                    style: TextStyle(
+                                                      color: const Color(
+                                                          0xFFAA2F4C),
+                                                      fontSize: 12.sp,
+                                                      fontFamily: 'Poppins',
+                                                      fontWeight: FontWeight
+                                                          .w600,
+                                                    ),
+                                                    children: [
+                                                      WidgetSpan(
+                                                        alignment: PlaceholderAlignment
+                                                            .middle,
+                                                        child: Icon(
+                                                          !selectedServices2
+                                                              .contains(
+                                                              selectedService2)
+                                                              ? Icons.add
+                                                              : Icons.remove,
+                                                          size: 14.sp,
+                                                          color: !selectedServices2
+                                                              .contains(
+                                                              selectedService2)
+                                                              ? const Color(
+                                                              0xFFAA2F4C)
+                                                              : Colors.white,
+                                                        ),
+                                                      ),
+                                                      WidgetSpan(
+                                                          child: SizedBox(
+                                                              width: 2.w)),
+                                                      TextSpan(
+                                                        text: !selectedServices2
+                                                            .contains(
+                                                            selectedService2)
+                                                            ? "Add"
+                                                            : "Remove",
+                                                        style: TextStyle(
+                                                          color: !selectedServices2
+                                                              .contains(
+                                                              selectedService2)
+                                                              ? const Color(
+                                                              0xFFAA2F4C)
+                                                              : Colors.white,
+                                                          backgroundColor: !selectedServices2
+                                                              .contains(
+                                                              selectedService2)
+                                                              ? Colors.white
+                                                              : const Color(
+                                                              0xFFAA2F4C),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            );
+                          },
+                        );
+                      }
+                    },
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.w),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10.sp),
+                        side: BorderSide(color: const Color(0xFFAA2F4C), width: 0.2.w),
+                      ),
+                      backgroundColor: !selectedServices2.contains(selectedService2) ? null : const Color(0xFFAA2F4C),
+                    ),
+                    child: RichText(
                       text: TextSpan(
+                        style: TextStyle(
+                          color: const Color(0xFFAA2F4C),
+                          fontSize: 12.sp,
+                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.w600,
+                        ),
                         children: [
-                          TextSpan(
-                            text: "Rs. ${serviceDetail.basePrice}",
-                            style: TextStyle(
-                              color: const Color(0xFF373737),
-                              fontSize: 13.sp,
-                              fontFamily: 'Helvetica Neue',
-                              fontWeight: FontWeight.w800,
+                          WidgetSpan(
+                            alignment: PlaceholderAlignment.middle,
+                            child: Icon(
+                              !selectedServices2.contains(selectedService2) ? Icons.add : Icons.remove,
+                              size: 14.sp,
+                              color: !selectedServices2.contains(selectedService2) ? const Color(0xFFAA2F4C) : Colors.white,
                             ),
                           ),
                           WidgetSpan(child: SizedBox(width: 2.w)),
                           TextSpan(
-                            text: "Rs. ${serviceDetail.cutPrice}",
+                            text: !selectedServices2.contains(selectedService2) ? "Add" : "Remove",
                             style: TextStyle(
-                              color: const Color(0xFF8B9AAC),
-                              fontSize: 12.sp,
-                              fontFamily: 'Helvetica Neue',
-                              fontWeight: FontWeight.w400,
-                              decoration: TextDecoration.lineThrough,
+                              color: !selectedServices2.contains(selectedService2) ? const Color(0xFFAA2F4C) : Colors.white,
+                              backgroundColor: !selectedServices2.contains(selectedService2) ? Colors.white : const Color(0xFFAA2F4C),
                             ),
                           ),
                         ],
                       ),
                     ),
-                    SizedBox(height: 2.h),
-                    TextButton(
-                      onPressed: () {
-                        provider.toggleSelectedService(serviceDetail);
-                      },
-                      style: TextButton.styleFrom(
-                        padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.w),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10.sp),
-                          side: BorderSide(color: const Color(0xFFAA2F4C), width: 0.2.w),
+                  ),
+                ],
+              ),
+            ),
+
+          SizedBox(height: 3.h),
+          if (filteredServices.isNotEmpty)
+            ...filteredServices.map((service) => Container(
+              padding: EdgeInsets.all(3.w),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Text(
+                        service.serviceTitle,
+                        style: TextStyle(
+                          color: const Color(0xFF2B2F34),
+                          fontSize: 12.sp,
+                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.w700,
                         ),
-                        backgroundColor: !isAdded ? null : const Color(0xFFAA2F4C),
                       ),
-                      child: RichText(
-                        text: TextSpan(
-                          style: TextStyle(
-                            color: const Color(0xFFAA2F4C),
-                            fontSize: 12.sp,
-                            fontFamily: 'Poppins',
-                            fontWeight: FontWeight.w600,
-                          ),
-                          children: [
-                            WidgetSpan(
-                              alignment: PlaceholderAlignment.middle,
-                              child: Icon(
-                                !isAdded ? Icons.add : Icons.remove,
-                                size: 14.sp,
-                                color: !isAdded ? const Color(0xFFAA2F4C) : Colors.white,
-                              ),
-                            ),
-                            WidgetSpan(child: SizedBox(width: 2.w)),
-                            TextSpan(
-                              text: !isAdded ? "Add" : "Remove",
-                              style: TextStyle(
-                                color: !isAdded ? const Color(0xFFAA2F4C) : Colors.white,
-                                backgroundColor: !isAdded ? Colors.white : const Color(0xFFAA2F4C),
-                              ),
-                            ),
-                          ],
-                        ),
+                      SvgPicture.asset(
+                        service.targetGender == 'male' ? ImagePathConstant.manIcon : ImagePathConstant.womanIcon,
+                        height: 3.h,
+                      ),
+                    ],
+                  ),
+                  if (service.description.isNotEmpty) SizedBox(height: 1.h),
+                  if (service.description.isNotEmpty)
+                    Text(
+                      service.description,
+                      style: TextStyle(
+                        color: const Color(0xFF8B9AAC),
+                        fontSize: 10.sp,
+                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
-                  ],
-                ),
-              );
-            },
-          ),
-          SizedBox(height: 3.h),
+                  SizedBox(height: 1.h),
+                  RichText(
+                    text: TextSpan(
+                      children: [
+                        TextSpan(
+                          text: "Rs. ${service.basePrice}",
+                          style: TextStyle(
+                            color: const Color(0xFF373737),
+                            fontSize: 13.sp,
+                            fontFamily: 'Helvetica Neue',
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        WidgetSpan(child: SizedBox(width: 2.w)),
+                        TextSpan(
+                          text: "Rs. ${service.cutPrice}",
+                          style: TextStyle(
+                            color: const Color(0xFF8B9AAC),
+                            fontSize: 12.sp,
+                            fontFamily: 'Helvetica Neue',
+                            fontWeight: FontWeight.w400,
+                            decoration: TextDecoration.lineThrough,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: 2.h),
+                  TextButton(
+                    onPressed: () {
+                      provider.toggleSelectedService(service);
+                    },
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.w),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10.sp),
+                        side: BorderSide(color: const Color(0xFFAA2F4C), width: 0.2.w),
+                      ),
+                      backgroundColor: !selectedServices.contains(service) ? null : const Color(0xFFAA2F4C),
+                    ),
+                    child: RichText(
+                      text: TextSpan(
+                        style: TextStyle(
+                          color: const Color(0xFFAA2F4C),
+                          fontSize: 12.sp,
+                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.w600,
+                        ),
+                        children: [
+                          WidgetSpan(
+                            alignment: PlaceholderAlignment.middle,
+                            child: Icon(
+                              !selectedServices.contains(service) ? Icons.add : Icons.remove,
+                              size: 14.sp,
+                              color: !selectedServices.contains(service) ? const Color(0xFFAA2F4C) : Colors.white,
+                            ),
+                          ),
+                          WidgetSpan(child: SizedBox(width: 2.w)),
+                          TextSpan(
+                            text: !selectedServices.contains(service) ? "Add" : "Remove",
+                            style: TextStyle(
+                              color: !selectedServices.contains(service) ? const Color(0xFFAA2F4C) : Colors.white,
+                              backgroundColor: !selectedServices.contains(service) ? Colors.white : const Color(0xFFAA2F4C),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            )),
         ],
       );
     });
   }
 
+
+
   Widget serviceCategoryFilterWidget() {
     return Consumer<SalonDetailsProvider>(
       builder: (context, provider, child) {
         // Get unique categories from selected services
-        Set<String> uniqueCategories = provider.salonDetails!.data.services.servicesWithoutSubCategory
-            .map((service) => service.category)
-            .toSet();
+        Set<String> uniqueCategories = {...provider.salonDetails!.data.services.servicesWithoutSubCategory
+            .map((service) => service.category), ...provider.salonDetails!.data.services.servicesWithSubCategory.hairColor
+            .map((service) => service.category)};
 
         return Container(
           height: 4.2.h,
@@ -558,12 +988,18 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
               return GestureDetector(
                 onTap: () {
                   // Filter services based on the selected category
-                  List<ServicesWithoutSubCategory> filteredServices = provider.salonDetails!.data.services.servicesWithoutSubCategory
+                  List<ServicesWithoutSubCategory> filteredServicesWithoutSub = provider.salonDetails!.data.services.servicesWithoutSubCategory
+                      .where((service) => service.category == category)
+                      .toList();
+
+                  List<ServicesWithSubCategory2> filteredServicesWithSub = provider.salonDetails!.data.services.servicesWithSubCategory.hairColor
                       .where((service) => service.category == category)
                       .toList();
 
                   // Update the list of filtered services in the provider
-                  provider.setFilteredServices(filteredServices);
+                //  provider.setFilteredServices(filteredServices);
+                  provider.setFilteredServices(filteredServicesWithoutSub);
+                  provider.setFilteredServices2(filteredServicesWithSub);
 
                   // Update selected service categories
                   provider.setSelectedServiceCategories(selectedServiceCategory: category);
@@ -1256,7 +1692,7 @@ class _SalonDetailsScreen2State extends State<SalonDetailsScreen2> {
               provider.setShowPrice(provider.totalPrice,provider.salonDetails!.data.data.discount!);
               myShowPrice = provider.showPrice;
             }
-            bool servicesSelected = provider.getSelectedServices().isNotEmpty;
+            bool servicesSelected = provider.getSelectedServicesCombined().isNotEmpty;
             return Scaffold(
               body: Stack(
                 children: <Widget>[
@@ -1394,12 +1830,7 @@ class _SalonDetailsScreen2State extends State<SalonDetailsScreen2> {
                       ),
                       VariableWidthCta(
                         onTap: () async {
-                          String salonId = provider.salonDetails!.data.data.id;
-                          List<String> selectedServiceIds = provider.getSelectedServices()
-                              .map((service) => service.id)
-                              .toList();
-                       //   await provider.fetchArtistListAndNavigate(context,salonId, selectedServiceIds);
-                          showSignInDialog(context);
+                            showSignInDialog(context);
                         },
                         isActive: true,
                         buttonText: StringConstant.confirmBooking,
@@ -1558,13 +1989,36 @@ class _SalonDetailsScreen2State extends State<SalonDetailsScreen2> {
       );
     });
   }
+  ServicesWithSubCategory2? selectedService2;
   Widget servicesTab() {
     return Consumer<SalonDetailsProvider>(builder: (context, provider, child) {
       Set<ServicesWithoutSubCategory> selectedServices = provider.getSelectedServices();
-      List<ServicesWithoutSubCategory> filteredServices = provider.salonDetails!.data.services.servicesWithoutSubCategory.where((service) {
+      Set<ServicesWithSubCategory2> selectedServices2 = provider.getSelectedServices2();
+      List<ServicesWithoutSubCategory> filteredServices = [];
+      List<ServicesWithSubCategory2> filteredServices2 = [];
+
+      // Add services with subcategory
+      filteredServices2.addAll(provider.salonDetails!.data.services.servicesWithSubCategory.hairColor.where((service) {
         return (provider.selectedGendersFilter.isEmpty || provider.selectedGendersFilter.contains(service.targetGender)) &&
             (provider.selectedServiceCategories2.isEmpty || provider.selectedServiceCategories2.contains(service.category));
-      }).toList();
+      }));
+
+      // Find the service with the minimum base price in ServicesWithSubCategory
+      ServicesWithSubCategory2? minBasePriceService;
+      double? minBasePrice;
+      for (var service in filteredServices2) {
+        if (minBasePrice == null || service.basePrice < minBasePrice!) {
+          minBasePrice = service.basePrice.toDouble();
+          minBasePriceService = service;
+        }
+      }
+
+      // Add services without subcategory
+      filteredServices.addAll(provider.salonDetails!.data.services.servicesWithoutSubCategory.where((service) {
+        return (provider.selectedGendersFilter.isEmpty || provider.selectedGendersFilter.contains(service.targetGender)) &&
+            (provider.selectedServiceCategories2.isEmpty || provider.selectedServiceCategories2.contains(service.category));
+      }));
+
       return Column(
         children: <Widget>[
           GestureDetector(
@@ -1597,51 +2051,43 @@ class _SalonDetailsScreen2State extends State<SalonDetailsScreen2> {
             ),
           ),
           SizedBox(height: 1.h),
-          filteredServices.isEmpty
-              ? Container(
-            height: 10.h,
-            child: Center(
-              child: Text('Nothing here :('),
+          if (filteredServices.isEmpty && minBasePriceService == null)
+            Container(
+              height: 10.h,
+              child: Center(
+                child: Text('Nothing here :('),
+              ),
             ),
-          )
-              : ListView.builder(
-            padding: EdgeInsets.zero,
-            shrinkWrap: true,
-            physics: NeverScrollableScrollPhysics(),
-            itemCount: filteredServices.length,
-            itemBuilder: (context, index) {
-              ServicesWithoutSubCategory serviceDetail = filteredServices[index];
-              bool isAdded = selectedServices.contains(serviceDetail);
-              return Container(
-                padding: EdgeInsets.all(3.w),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Text(
-                          serviceDetail.serviceTitle,
-                          style: TextStyle(
-                            color: const Color(0xFF2B2F34),
-                            fontSize: 12.sp,
-                            fontFamily: 'Poppins',
-                            fontWeight: FontWeight.w700,
-                          ),
+          if (minBasePriceService != null)
+            Container(
+              padding: EdgeInsets.all(3.w),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Text(
+                        minBasePriceService!.serviceTitle,
+                        style: TextStyle(
+                          color: const Color(0xFF2B2F34),
+                          fontSize: 12.sp,
+                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.w700,
                         ),
-                        SvgPicture.asset(
-                          serviceDetail.targetGender == 'male'
-                              ? ImagePathConstant.manIcon
-                              : ImagePathConstant.womanIcon,
-                          height: 3.h,
-                        ),
-                      ],
-                    ),
-                    if (serviceDetail.description.isNotEmpty) SizedBox(height: 1.h),
-                    if (serviceDetail.description.isNotEmpty) Text(
-                      serviceDetail.description,
+                      ),
+                      SvgPicture.asset(
+                        minBasePriceService!.targetGender == 'male' ? ImagePathConstant.manIcon : ImagePathConstant.womanIcon,
+                        height: 3.h,
+                      ),
+                    ],
+                  ),
+                  if (minBasePriceService!.description.isNotEmpty) SizedBox(height: 1.h),
+                  if (minBasePriceService!.description.isNotEmpty)
+                    Text(
+                      minBasePriceService!.description,
                       style: TextStyle(
                         color: const Color(0xFF8B9AAC),
                         fontSize: 10.sp,
@@ -1649,81 +2095,493 @@ class _SalonDetailsScreen2State extends State<SalonDetailsScreen2> {
                         fontWeight: FontWeight.w500,
                       ),
                     ),
-                    SizedBox(height: 1.h),
-                    RichText(
+                  SizedBox(height: 1.h),
+                  RichText(
+                    text: TextSpan(
+                      children: [
+                        TextSpan(
+                          text: "Rs. ${minBasePriceService!.basePrice}",
+                          style: TextStyle(
+                            color: const Color(0xFF373737),
+                            fontSize: 13.sp,
+                            fontFamily: 'Helvetica Neue',
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        WidgetSpan(child: SizedBox(width: 2.w)),
+                        TextSpan(
+                          text: "Rs. ${minBasePriceService!.cutPrice}",
+                          style: TextStyle(
+                            color: const Color(0xFF8B9AAC),
+                            fontSize: 12.sp,
+                            fontFamily: 'Helvetica Neue',
+                            fontWeight: FontWeight.w400,
+                            decoration: TextDecoration.lineThrough,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: 2.h),
+                  TextButton(
+                    onPressed: () {
+                      if (selectedServices2.contains(selectedService2)) {
+                        provider.toggleSelectedService(selectedService2!);
+                      } else {
+                        showModalBottomSheet(
+                          backgroundColor: ColorsConstant.graphicFillDark,
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.only(
+                              topLeft: Radius.circular(35),
+                              topRight: Radius.circular(35),
+                            ),
+                          ),
+                          context: context,
+                          builder: (BuildContext context) {
+                            selectedService2 = minBasePriceService;
+                            return StatefulBuilder(
+                              builder: (BuildContext context,
+                                  StateSetter setState) {
+                                return SingleChildScrollView(
+                                  child: Column(
+                                    children: [
+                                      Container(
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius: BorderRadius.only(
+                                            topLeft: Radius.circular(35),
+                                            topRight: Radius.circular(35),
+                                          ),
+                                        ),
+                                        child: Padding(
+                                          padding: EdgeInsets.all(2.h),
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment
+                                                .start,
+                                            children: [
+                                              Row(
+                                                mainAxisAlignment: MainAxisAlignment
+                                                    .spaceBetween,
+                                                crossAxisAlignment: CrossAxisAlignment
+                                                    .start,
+                                                children: [
+                                                  Text(
+                                                    'Hair Color',
+                                                    style: TextStyle(
+                                                      color: const Color(
+                                                          0xFF2B2F34),
+                                                      fontSize: 12.sp,
+                                                      fontFamily: 'Poppins',
+                                                      fontWeight: FontWeight
+                                                          .w700,
+                                                    ),
+                                                  ),
+                                                  SvgPicture.asset(
+                                                    minBasePriceService!
+                                                        .targetGender == 'male'
+                                                        ? ImagePathConstant
+                                                        .manIcon
+                                                        : ImagePathConstant
+                                                        .womanIcon,
+                                                    height: 3.h,
+                                                  ),
+                                                ],
+                                              ),
+                                              Text(
+                                                minBasePriceService!
+                                                    .description,
+                                                style: TextStyle(
+                                                  color: const Color(
+                                                      0xFF8B9AAC),
+                                                  fontSize: 10.sp,
+                                                  fontFamily: 'Poppins',
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                      Padding(
+                                        padding: EdgeInsets.all(1.5.h),
+                                        child: Container(
+                                          color: Colors.white,
+                                          child: Padding(
+                                            padding: EdgeInsets.all(1.5.h),
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment
+                                                  .start,
+                                              children: [
+                                                Text(
+                                                  'Hair Length',
+                                                  style: TextStyle(
+                                                    color: const Color(
+                                                        0xFF2B2F34),
+                                                    fontSize: 10.sp,
+                                                    fontFamily: 'Poppins',
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                ),
+                                                Column(
+                                                  crossAxisAlignment: CrossAxisAlignment
+                                                      .start,
+                                                  children: (provider.salonDetails!.data.services.servicesWithSubCategory.hairColor
+                                                      .toList() // Convert to list to use the sort method
+                                                    ..sort((a, b) => a.basePrice.compareTo(b.basePrice))) // Sort the list based on basePrice
+                                                      .map((service) {
+                                                    return Padding(
+                                                      padding: EdgeInsets.all(
+                                                          1.5.h),
+                                                      child: Column(
+                                                        crossAxisAlignment: CrossAxisAlignment
+                                                            .start,
+                                                        children: [
+                                                          Row(
+                                                            mainAxisAlignment: MainAxisAlignment
+                                                                .spaceBetween,
+                                                            children: [
+                                                              Text(
+                                                                service
+                                                                    .serviceTitle,
+                                                                style: TextStyle(
+                                                                  color: const Color(
+                                                                      0xFF2B2F34),
+                                                                  fontSize: 12
+                                                                      .sp,
+                                                                  fontFamily: 'Poppins',
+                                                                  fontWeight: FontWeight
+                                                                      .w700,
+                                                                ),
+                                                              ),
+                                                              RichText(
+                                                                text: TextSpan(
+                                                                  children: [
+                                                                    TextSpan(
+                                                                      text: "Rs. ${service
+                                                                          .basePrice}",
+                                                                      style: TextStyle(
+                                                                        color: const Color(
+                                                                            0xFF373737),
+                                                                        fontSize: 13
+                                                                            .sp,
+                                                                        fontFamily: 'Helvetica Neue',
+                                                                        fontWeight: FontWeight
+                                                                            .w500,
+                                                                      ),
+                                                                    ),
+                                                                  ],
+                                                                ),
+                                                              ),
+                                                              Radio(
+                                                                activeColor: ColorsConstant
+                                                                    .appColor,
+                                                                value: service,
+                                                                groupValue: selectedService2,
+                                                                onChanged: (
+                                                                    value) {
+                                                                  setState(() {
+                                                                    selectedService2 = service;
+                                                                    print("Selected Service Title: ${service.serviceTitle}");
+                                                                    print("Selected Service price: ${service.basePrice}");
+
+                                                                  });
+                                                                },
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    );
+                                                  }).toList(),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      Container(
+                                        color: Colors.white,
+                                        child: Padding(
+                                          padding: EdgeInsets.all(1.h),
+                                          child: Row(
+                                            mainAxisAlignment: MainAxisAlignment
+                                                .spaceBetween,
+                                            children: [
+                                              RichText(
+                                                text: TextSpan(
+                                                  children: [
+                                                    TextSpan(
+                                                      text: selectedService2 !=
+                                                          null
+                                                          ? "Rs. ${selectedService2!
+                                                          .basePrice}"
+                                                          : "",
+                                                      style: TextStyle(
+                                                        color: const Color(
+                                                            0xFF373737),
+                                                        fontSize: 15.sp,
+                                                        fontFamily: 'Helvetica Neue',
+                                                        fontWeight: FontWeight
+                                                            .w800,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+
+                                              TextButton(
+                                                onPressed: () {
+                                                  provider
+                                                      .toggleSelectedService(
+                                                      selectedService2!);
+                                                  Navigator.pop(context);
+                                                  if (!selectedServices2
+                                                      .contains(
+                                                      selectedService2)) {
+                                                    provider
+                                                        .toggleSelectedService(
+                                                        selectedService2!);
+                                                  }
+                                                },
+                                                style: TextButton.styleFrom(
+                                                  padding: EdgeInsets.symmetric(
+                                                      horizontal: 6.w,
+                                                      vertical: 2.w),
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius: BorderRadius
+                                                        .circular(10.sp),
+                                                    side: BorderSide(
+                                                        color: const Color(
+                                                            0xFFAA2F4C),
+                                                        width: 0.2.w),
+                                                  ),
+                                                  backgroundColor: !selectedServices2
+                                                      .contains(
+                                                      selectedService2)
+                                                      ? null
+                                                      : const Color(0xFFAA2F4C),
+                                                ),
+                                                child: RichText(
+                                                  text: TextSpan(
+                                                    style: TextStyle(
+                                                      color: const Color(
+                                                          0xFFAA2F4C),
+                                                      fontSize: 12.sp,
+                                                      fontFamily: 'Poppins',
+                                                      fontWeight: FontWeight
+                                                          .w600,
+                                                    ),
+                                                    children: [
+                                                      WidgetSpan(
+                                                        alignment: PlaceholderAlignment
+                                                            .middle,
+                                                        child: Icon(
+                                                          !selectedServices2
+                                                              .contains(
+                                                              selectedService2)
+                                                              ? Icons.add
+                                                              : Icons.remove,
+                                                          size: 14.sp,
+                                                          color: !selectedServices2
+                                                              .contains(
+                                                              selectedService2)
+                                                              ? const Color(
+                                                              0xFFAA2F4C)
+                                                              : Colors.white,
+                                                        ),
+                                                      ),
+                                                      WidgetSpan(
+                                                          child: SizedBox(
+                                                              width: 2.w)),
+                                                      TextSpan(
+                                                        text: !selectedServices2
+                                                            .contains(
+                                                            selectedService2)
+                                                            ? "Add"
+                                                            : "Remove",
+                                                        style: TextStyle(
+                                                          color: !selectedServices2
+                                                              .contains(
+                                                              selectedService2)
+                                                              ? const Color(
+                                                              0xFFAA2F4C)
+                                                              : Colors.white,
+                                                          backgroundColor: !selectedServices2
+                                                              .contains(
+                                                              selectedService2)
+                                                              ? Colors.white
+                                                              : const Color(
+                                                              0xFFAA2F4C),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            );
+                          },
+                        );
+                      }
+                    },
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.w),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10.sp),
+                        side: BorderSide(color: const Color(0xFFAA2F4C), width: 0.2.w),
+                      ),
+                      backgroundColor: !selectedServices2.contains(selectedService2) ? null : const Color(0xFFAA2F4C),
+                    ),
+                    child: RichText(
                       text: TextSpan(
+                        style: TextStyle(
+                          color: const Color(0xFFAA2F4C),
+                          fontSize: 12.sp,
+                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.w600,
+                        ),
                         children: [
-                          TextSpan(
-                            text: "Rs. ${serviceDetail.basePrice}",
-                            style: TextStyle(
-                              color: const Color(0xFF373737),
-                              fontSize: 13.sp,
-                              fontFamily: 'Helvetica Neue',
-                              fontWeight: FontWeight.w800,
+                          WidgetSpan(
+                            alignment: PlaceholderAlignment.middle,
+                            child: Icon(
+                              !selectedServices2.contains(selectedService2) ? Icons.add : Icons.remove,
+                              size: 14.sp,
+                              color: !selectedServices2.contains(selectedService2) ? const Color(0xFFAA2F4C) : Colors.white,
                             ),
                           ),
                           WidgetSpan(child: SizedBox(width: 2.w)),
                           TextSpan(
-                            text: "Rs. ${serviceDetail.cutPrice}",
+                            text: !selectedServices2.contains(selectedService2) ? "Add" : "Remove",
                             style: TextStyle(
-                              color: const Color(0xFF8B9AAC),
-                              fontSize: 12.sp,
-                              fontFamily: 'Helvetica Neue',
-                              fontWeight: FontWeight.w400,
-                              decoration: TextDecoration.lineThrough,
+                              color: !selectedServices2.contains(selectedService2) ? const Color(0xFFAA2F4C) : Colors.white,
+                              backgroundColor: !selectedServices2.contains(selectedService2) ? Colors.white : const Color(0xFFAA2F4C),
                             ),
                           ),
                         ],
                       ),
                     ),
-                    SizedBox(height: 2.h),
-                    TextButton(
-                      onPressed: () {
-                        provider.toggleSelectedService(serviceDetail);
-                      },
-                      style: TextButton.styleFrom(
-                        padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.w),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10.sp),
-                          side: BorderSide(color: const Color(0xFFAA2F4C), width: 0.2.w),
+                  ),
+                ],
+              ),
+            ),
+
+          SizedBox(height: 3.h),
+          if (filteredServices.isNotEmpty)
+            ...filteredServices.map((service) => Container(
+              padding: EdgeInsets.all(3.w),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Text(
+                        service.serviceTitle,
+                        style: TextStyle(
+                          color: const Color(0xFF2B2F34),
+                          fontSize: 12.sp,
+                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.w700,
                         ),
-                        backgroundColor: !isAdded ? null : const Color(0xFFAA2F4C),
                       ),
-                      child: RichText(
-                        text: TextSpan(
-                          style: TextStyle(
-                            color: const Color(0xFFAA2F4C),
-                            fontSize: 12.sp,
-                            fontFamily: 'Poppins',
-                            fontWeight: FontWeight.w600,
-                          ),
-                          children: [
-                            WidgetSpan(
-                              alignment: PlaceholderAlignment.middle,
-                              child: Icon(
-                                !isAdded ? Icons.add : Icons.remove,
-                                size: 14.sp,
-                                color: !isAdded ? const Color(0xFFAA2F4C) : Colors.white,
-                              ),
-                            ),
-                            WidgetSpan(child: SizedBox(width: 2.w)),
-                            TextSpan(
-                              text: !isAdded ? "Add" : "Remove",
-                              style: TextStyle(
-                                color: !isAdded ? const Color(0xFFAA2F4C) : Colors.white,
-                                backgroundColor: !isAdded ? Colors.white : const Color(0xFFAA2F4C),
-                              ),
-                            ),
-                          ],
-                        ),
+                      SvgPicture.asset(
+                        service.targetGender == 'male' ? ImagePathConstant.manIcon : ImagePathConstant.womanIcon,
+                        height: 3.h,
+                      ),
+                    ],
+                  ),
+                  if (service.description.isNotEmpty) SizedBox(height: 1.h),
+                  if (service.description.isNotEmpty)
+                    Text(
+                      service.description,
+                      style: TextStyle(
+                        color: const Color(0xFF8B9AAC),
+                        fontSize: 10.sp,
+                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
-                  ],
-                ),
-              );
-            },
-          ),
-          SizedBox(height: 3.h),
+                  SizedBox(height: 1.h),
+                  RichText(
+                    text: TextSpan(
+                      children: [
+                        TextSpan(
+                          text: "Rs. ${service.basePrice}",
+                          style: TextStyle(
+                            color: const Color(0xFF373737),
+                            fontSize: 13.sp,
+                            fontFamily: 'Helvetica Neue',
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        WidgetSpan(child: SizedBox(width: 2.w)),
+                        TextSpan(
+                          text: "Rs. ${service.cutPrice}",
+                          style: TextStyle(
+                            color: const Color(0xFF8B9AAC),
+                            fontSize: 12.sp,
+                            fontFamily: 'Helvetica Neue',
+                            fontWeight: FontWeight.w400,
+                            decoration: TextDecoration.lineThrough,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: 2.h),
+                  TextButton(
+                    onPressed: () {
+                      provider.toggleSelectedService(service);
+                    },
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.w),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10.sp),
+                        side: BorderSide(color: const Color(0xFFAA2F4C), width: 0.2.w),
+                      ),
+                      backgroundColor: !selectedServices.contains(service) ? null : const Color(0xFFAA2F4C),
+                    ),
+                    child: RichText(
+                      text: TextSpan(
+                        style: TextStyle(
+                          color: const Color(0xFFAA2F4C),
+                          fontSize: 12.sp,
+                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.w600,
+                        ),
+                        children: [
+                          WidgetSpan(
+                            alignment: PlaceholderAlignment.middle,
+                            child: Icon(
+                              !selectedServices.contains(service) ? Icons.add : Icons.remove,
+                              size: 14.sp,
+                              color: !selectedServices.contains(service) ? const Color(0xFFAA2F4C) : Colors.white,
+                            ),
+                          ),
+                          WidgetSpan(child: SizedBox(width: 2.w)),
+                          TextSpan(
+                            text: !selectedServices.contains(service) ? "Add" : "Remove",
+                            style: TextStyle(
+                              color: !selectedServices.contains(service) ? const Color(0xFFAA2F4C) : Colors.white,
+                              backgroundColor: !selectedServices.contains(service) ? Colors.white : const Color(0xFFAA2F4C),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            )),
         ],
       );
     });
@@ -1733,9 +2591,9 @@ class _SalonDetailsScreen2State extends State<SalonDetailsScreen2> {
     return Consumer<SalonDetailsProvider>(
       builder: (context, provider, child) {
         // Get unique categories from selected services
-        Set<String> uniqueCategories = provider.salonDetails!.data.services.servicesWithoutSubCategory
-            .map((service) => service.category)
-            .toSet();
+        Set<String> uniqueCategories = {...provider.salonDetails!.data.services.servicesWithoutSubCategory
+            .map((service) => service.category), ...provider.salonDetails!.data.services.servicesWithSubCategory.hairColor
+            .map((service) => service.category)};
 
         return Container(
           height: 4.2.h,
@@ -1752,12 +2610,18 @@ class _SalonDetailsScreen2State extends State<SalonDetailsScreen2> {
               return GestureDetector(
                 onTap: () {
                   // Filter services based on the selected category
-                  List<ServicesWithoutSubCategory> filteredServices = provider.salonDetails!.data.services.servicesWithoutSubCategory
+                  List<ServicesWithoutSubCategory> filteredServicesWithoutSub = provider.salonDetails!.data.services.servicesWithoutSubCategory
+                      .where((service) => service.category == category)
+                      .toList();
+
+                  List<ServicesWithSubCategory2> filteredServicesWithSub = provider.salonDetails!.data.services.servicesWithSubCategory.hairColor
                       .where((service) => service.category == category)
                       .toList();
 
                   // Update the list of filtered services in the provider
-                  provider.setFilteredServices(filteredServices);
+                  //  provider.setFilteredServices(filteredServices);
+                  provider.setFilteredServices(filteredServicesWithoutSub);
+                  provider.setFilteredServices2(filteredServicesWithSub);
 
                   // Update selected service categories
                   provider.setSelectedServiceCategories(selectedServiceCategory: category);
@@ -1793,6 +2657,7 @@ class _SalonDetailsScreen2State extends State<SalonDetailsScreen2> {
       },
     );
   }
+
 
 
 

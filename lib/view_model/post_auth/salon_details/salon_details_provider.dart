@@ -30,12 +30,14 @@ import '../../../utils/access_token.dart';
 class SalonDetailsProvider with ChangeNotifier {
   Set<String> _selectedServiceCategories2 = {};
   List<ServicesWithoutSubCategory> _filteredServices = [];
-
+  List<ServicesWithSubCategory2> _filteredServices2 = [];
   // Getter for selected service categories
   Set<String> get selectedServiceCategories2 => _selectedServiceCategories2;
 
   // Getter for filtered services
   List<ServicesWithoutSubCategory> get filteredServices => _filteredServices;
+  List<ServicesWithSubCategory2> get filteredServices2 => _filteredServices2;
+
 
   // Method to update selected service categories
   void setSelectedServiceCategories({required String selectedServiceCategory}) {
@@ -48,10 +50,17 @@ class SalonDetailsProvider with ChangeNotifier {
   }
 
   // Method to set filtered services
-  void setFilteredServices(List<ServicesWithoutSubCategory> services) {
+  void setFilteredServices(List<ServicesWithoutSubCategory> services ) {
     _filteredServices = services;
+   // _filteredServices2 = services2;
     notifyListeners();
   }
+  void setFilteredServices2(List<ServicesWithSubCategory2> services2 ) {
+    _filteredServices2 = services2;
+    // _filteredServices2 = services2;
+    notifyListeners();
+  }
+
   List<String> _imageList = [];
   final Dio dio = Dio();
   List<String> _selectedGendersFilter = []; // Change the type to List<String>
@@ -396,25 +405,67 @@ class SalonDetailsProvider with ChangeNotifier {
   Set<ServicesWithoutSubCategory> _selectedServices = Set<ServicesWithoutSubCategory>();
   Set<Service2> _barberselectedServices = Set<Service2>();
   Set<ServicesWithoutSubCategory> getSelectedServices() => _selectedServices;
+  Set<ServicesWithSubCategory2> getSelectedServices2() => _selectedServices2;
+  Set<ServicesWithSubCategory2> _selectedServices2 = Set<ServicesWithSubCategory2>();
 
   Set<Service2> barbergetSelectedServices() => _barberselectedServices;
+  Set<dynamic> getSelectedServicesCombined() {
+    Set<dynamic> combinedServices = Set<dynamic>();
+    combinedServices.addAll(_selectedServices);
+    combinedServices.addAll(_selectedServices2);
+    return combinedServices;
+  }
 
   List<Object> allSelectedServices = [];
 
 
+  String? _selectedServiceSubCategory;
 
-  void toggleSelectedService(ServicesWithoutSubCategory service) {
-    if (_selectedServices.contains(service)) {
-      _selectedServices.remove(service);
+  String? get selectedServiceSubCategory => _selectedServiceSubCategory;
+
+  set selectedServiceSubCategory(String? value) {
+    _selectedServiceSubCategory = value;
+    notifyListeners();
+  }
+
+  void toggleSelectedService(dynamic service) {
+    if (_selectedServices.contains(service) || _selectedServices2.contains(service)) {
+      if (service is ServicesWithoutSubCategory) {
+        _selectedServices.remove(service);
+      } else if (service is ServicesWithSubCategory2) {
+        _selectedServices2.remove(service);
+      }
     } else {
-      _selectedServices.add(service);
+      if (service is ServicesWithoutSubCategory) {
+        _selectedServices.add(service);
+      } else if (service is ServicesWithSubCategory2) {
+        _selectedServices2.add(service);
+      }
     }
+
+    // Recalculate total price
     _totalPrice = calculateTotalPrice();
+
     // Recalculate show price if a discount is applied
     setShowPrice(_totalPrice, _salonDetails?.data.data.discount ?? 0);
 
     notifyListeners();
   }
+
+
+  void toggleSelectedService2(ServicesWithSubCategory2 service) {
+    if (_selectedServices2.contains(service)) {
+      _selectedServices2.remove(service);
+    } else {
+      _selectedServices2.add(service);
+    }
+    _totalPrice = calculateTotalPrice2();
+    // Recalculate show price if a discount is applied
+    setShowPrice(_totalPrice, _salonDetails?.data.data.discount ?? 0);
+
+    notifyListeners();
+  }
+
 
   void toggleSelectedServicebarber(Service2 service) {
     if ( _barberselectedServices.contains(service)) {
@@ -450,10 +501,24 @@ class SalonDetailsProvider with ChangeNotifier {
   }
 
   double calculateTotalPrice() {
-    // Calculate total price by summing up the base prices of selected services
-    return _selectedServices.fold(0.0, (sum, service) => sum + service.basePrice);
+    // Calculate total price by summing up the base prices of selected services from both categories
+    double totalPrice = 0.0;
+
+    for (var service in _selectedServices) {
+      totalPrice += service.basePrice;
+    }
+
+    for (var service in _selectedServices2) {
+      totalPrice += service.basePrice;
+    }
+
+    return totalPrice;
   }
 
+  double calculateTotalPrice2() {
+    // Calculate total price by summing up the base prices of selected services
+    return _selectedServices2.fold(0.0, (sum, service) => sum + service.basePrice);
+  }
 
   double calculateTotalbarberPrice() {
     // Calculate total price by summing up the base prices of selected services
@@ -734,29 +799,7 @@ class SalonDetailsProvider with ChangeNotifier {
 
 
   /// Add selected service's id into [_currentBooking]
-  void setSelectedService(
-    String id, {
-    bool removeService = false,
-  }) {
-    if (_currentBooking.serviceIds == null) {
-      _currentBooking.serviceIds = [];
-    }
-    var service = _serviceList.firstWhere((element) => element.id == id);
-    if (removeService) {
-      _currentBooking.serviceIds?.removeWhere((element) => element == id);
-      _totalPrice -= service.price ?? 0;
 
-    } else {
-      if (_currentBooking.serviceIds?.contains(id) == true) {
-        _currentBooking.serviceIds?.remove(id);
-        _totalPrice -= service.price ?? 0;
-      } else {
-        _currentBooking.serviceIds?.add(id);
-        _totalPrice += service.price ?? 0;
-      }
-    }
-    notifyListeners();
-  }
    /// Set Service Time
 
   void setServiceIds({
@@ -768,44 +811,6 @@ class SalonDetailsProvider with ChangeNotifier {
     _totalPrice = totalPrice;
     notifyListeners();
   }
-
-  Future<void> submitReview(
-    BuildContext context, {
-    required int stars,
-    required String text,
-  }) async {
-    if (stars < 1) {
-      ReusableWidgets.showFlutterToast(context, "Please add stars");
-      return;
-    }
-    Loader.showLoader(context);
-    Review review = Review(
-      salonId: selectedSalonData.id,
-      salonName: selectedSalonData.name,
-      comment: text,
-      createdAt: DateTime.now(),
-      userId: context.read<HomeProvider>().userData.id,
-      userName: context.read<HomeProvider>().userData.name,
-      rating: stars.toDouble(),
-    );
-
-    try {
-    ;
-      context.read<HomeProvider>().addReview(review);
-      context.read<HomeProvider>().changeRatings(context, notify: true);
-      Loader.hideLoader(context);
-    } catch (e) {
-      Loader.hideLoader(context);
-      ReusableWidgets.showFlutterToast(
-        context,
-        '$e',
-      );
-    }
-    notifyListeners();
-  }
-
-
-
   /// Get the list of services provided by the selected salon
   Future<void> getServiceList(BuildContext context) async {
     List<String> _artistIdList = _artistList.map((e) => e.id ?? '').toList();
@@ -982,6 +987,9 @@ class SalonDetailsProvider with ChangeNotifier {
   }
   void resetCurrentBooking2() {
     _selectedServices.clear(); // Clear selected services
+
+    _selectedServices2.clear(); // Clear selected services
+
     _barberselectedServices.clear();
   //  _totalPrice = 0; // Reset total price
   //  _showPrice = 0; // Reset show price

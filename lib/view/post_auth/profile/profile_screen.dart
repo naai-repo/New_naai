@@ -326,6 +326,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       if (response.statusCode == 200) {
         AuthProvider.resetMobielNumberController();
+        AuthProvider.resetOtpControllers();
         await AccessTokenManager.removeAccessToken();
         print("Account and user data deleted successfully!");
         print(response.data);
@@ -406,6 +407,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 children: <Widget>[
                   Text( provider.userData?.name?? '',
                       style: StyleConstant.textDark15sp600Style),
+                  if(provider.userData!.email.isNotEmpty)
+                  Text( provider.userData?.email?? '',
+                      style: StyleConstant.textDark10sp500Style),
                   Text(
                         provider.userData?.phoneNumber.toString()?? '',
                     style: TextStyle(

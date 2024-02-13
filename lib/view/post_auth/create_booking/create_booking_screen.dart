@@ -258,7 +258,7 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
                                   provider.setSchedulingStatus(selectStaffFinished: true);
                                 }
                                 List<String> selectedServiceIds = provider.getSelectedServices()
-                                    .map((service) => service.id)
+                                    .map<String>((service) => service.id.toString())
                                     .toList();
                                 if (selectedServiceIds.isNotEmpty &&
                                     provider.getSelectedServices().every((service) => provider.artistServiceList!.selectedArtistMap[service.id]?.artist != null)) {
@@ -553,7 +553,7 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
                       ),
                     ),
                     SizedBox(height: 1.h),
-                    ...( provider.getSelectedServices().map(
+                    ...( provider.getSelectedServicesCombined().map(
                           (element) => Container(
                         margin: EdgeInsets.symmetric(vertical: 2.w),
                         child: Column(
@@ -1117,10 +1117,9 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
                                   }
                                 },
                                 */
-                                    List<String> selectedServiceIds = provider.getSelectedServices()
-                                        .map((service) => service.id)
+                                    List<String> selectedServiceIds = provider.getSelectedServicesCombined()
+                                        .map((service) => service.id.toString())
                                         .toList();
-
                                     if (provider.artistServiceList!.selectedArtist != null) {
                                       // Call API A and schedule appointment
                                       await callApiAAndSchedule(provider, selectedServiceIds, formattedDate);
@@ -4262,7 +4261,7 @@ class _CreateBookingScreen3State extends State<CreateBookingScreen3> {
                       ),
                     ),
                     SizedBox(height: 1.h),
-                    ...( provider.getSelectedServices().map(
+                    ...( provider.getSelectedServicesCombined().map(
                           (element) => Container(
                         margin: EdgeInsets.symmetric(vertical: 2.w),
                         child: Column(
@@ -4738,8 +4737,8 @@ class _CreateBookingScreen3State extends State<CreateBookingScreen3> {
                                     DateTime selectedDate = provider.selectedDate!;
                                     String formattedDate = DateFormat('MM-dd-yyyy').format(selectedDate);
                                     List<Map<String, String>> requests = [];
-                                    List<String> selectedServiceIds = provider.getSelectedServices()
-                                        .map((service) => service.id)
+                                    List<String> selectedServiceIds = provider.getSelectedServicesCombined()
+                                        .map((service) => service.id.toString())
                                         .toList();
                                     String selectedArtistId = provider.artistServiceList!.selectedArtist?.artistId ?? "";
                                     for (String serviceId in selectedServiceIds) {

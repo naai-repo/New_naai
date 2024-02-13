@@ -30,6 +30,8 @@ class UsernameScreen extends StatelessWidget {
           title: IconButton(
             onPressed: () {
               provider.clearUsernameController();
+              provider.resetOtpControllers();
+              provider.resetMobielNumberController();
               Navigator.pushReplacementNamed(
                 context,
                 NamedRoutes.authenticationRoute,
@@ -143,6 +145,7 @@ class UsernameScreen extends StatelessWidget {
                             context,
                             NamedRoutes.bottomNavigationRoute,
                           );
+                          provider.clearUsernameController();
                         } else {
                           // Handle update user failure, show an error message or perform any other actions
                           print('Update user failed: ${response.message}');
@@ -291,11 +294,7 @@ class UsernameScreen extends StatelessWidget {
           textCapitalization: TextCapitalization.words,
           keyboardType: TextInputType.emailAddress,
           cursorColor: ColorsConstant.appColor,
-          maxLength: 20,
           onChanged: (value) => provider.setUsernameButtonActive(),
-          inputFormatters: <TextInputFormatter>[
-            FilteringTextInputFormatter.deny(RegExp('[0-9]'))
-          ],
           style: TextStyle(
             fontSize: 12.sp,
             letterSpacing: 3.0,
@@ -319,6 +318,19 @@ class UsernameScreen extends StatelessWidget {
             ),
             counterText: '',
           ),
+          validator: (value) {
+            // Check if the email field is not empty
+            if (value != null && value.isNotEmpty) {
+              // Use regex pattern for email validation
+              // The following regex pattern allows most email formats
+              // Feel free to customize it according to your needs
+              final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+              if (!emailRegex.hasMatch(value)) {
+                return 'Please enter a valid email';
+              }
+            }
+            return null; // Return null if validation succeeds or if the field is empty
+          },
         );
       },
     );

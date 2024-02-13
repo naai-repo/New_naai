@@ -379,18 +379,18 @@ class DataService {
   };
 }
 class ServicesWithSubCategory {
-  List<ServicesWithoutSubCategory> hairColor;
+  List<ServicesWithSubCategory2> hairColor;
 
   ServicesWithSubCategory({
     required this.hairColor,
   });
 
   factory ServicesWithSubCategory.fromJson(Map<String, dynamic> json) {
-    List<ServicesWithoutSubCategory> hairColorList = [];
+    List<ServicesWithSubCategory2> hairColorList = [];
 
-    if (json['Hair color'] != null) {
-      hairColorList = List<ServicesWithoutSubCategory>.from(
-        json['Hair color'].map((x) => ServicesWithoutSubCategory.fromJson(x)),
+    if (json['hair color'] != null) {
+      hairColorList = List<ServicesWithSubCategory2>.from(
+        json['hair color'].map((x) => ServicesWithSubCategory2.fromJson(x)),
       );
     }
 
@@ -398,7 +398,7 @@ class ServicesWithSubCategory {
   }
 
   Map<String, dynamic> toJson() => {
-    "Hair color": List<dynamic>.from(hairColor.map((x) => x.toJson())),
+    "hair color": List<dynamic>.from(hairColor.map((x) => x.toJson())),
   };
 }
 class barberServices {
@@ -434,6 +434,7 @@ class ServicesWithoutSubCategory {
   int cutPrice;
   DateTime createdAt;
   DateTime updatedAt;
+  String ?  _serviceSubCategory;
   int v;
 
   ServicesWithoutSubCategory({
@@ -450,7 +451,13 @@ class ServicesWithoutSubCategory {
     required this.updatedAt,
     required this.cutPrice,
     required this.v,
-  });
+    required String serviceSubCategory, // Modify the constructor to include this parameter
+  }) : _serviceSubCategory = serviceSubCategory;
+  String get serviceSubCategory => _serviceSubCategory ?? ''; // Add getter for serviceSubCategory
+
+  set serviceSubCategory(String value) {
+    _serviceSubCategory = value; // Add setter for serviceSubCategory
+  }
 
   factory ServicesWithoutSubCategory.fromJson(Map<String, dynamic> json) => ServicesWithoutSubCategory(
     id: json["_id"],
@@ -463,6 +470,7 @@ class ServicesWithoutSubCategory {
     avgTime: json["avgTime"],
     basePrice: json["basePrice"],
     cutPrice: json['cutPrice'],
+    serviceSubCategory: json['serviceSubCategory'] ?? '', // Assign value from JSON to serviceSubCategory
     createdAt: DateTime.parse(json["createdAt"]),
     updatedAt: DateTime.parse(json["updatedAt"]),
     v: json["__v"],
@@ -479,9 +487,82 @@ class ServicesWithoutSubCategory {
     "avgTime": avgTime,
     "basePrice": basePrice,
     "cutPrice": cutPrice,
+    'serviceSubCategory': serviceSubCategory, // Include serviceSubCategory in JSON output
     "createdAt": createdAt.toIso8601String(),
     "updatedAt": updatedAt.toIso8601String(),
     "__v": v,
   };
 }
 
+class ServicesWithSubCategory2 {
+  String id;
+  String salonId;
+  String category;
+  String subCategory;
+  String serviceTitle;
+  String description;
+  String targetGender;
+  int avgTime;
+  int basePrice;
+  int cutPrice;
+  DateTime createdAt;
+  DateTime updatedAt;
+  String ?  _serviceSubCategory;
+  int v;
+
+  ServicesWithSubCategory2({
+    required this.id,
+    required this.salonId,
+    required this.category,
+    required this.subCategory,
+    required this.serviceTitle,
+    required this.description,
+    required this.targetGender,
+    required this.avgTime,
+    required this.basePrice,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.cutPrice,
+    required this.v,
+    required String serviceSubCategory, // Modify the constructor to include this parameter
+  }) : _serviceSubCategory = serviceSubCategory;
+  String get serviceSubCategory => _serviceSubCategory ?? ''; // Add getter for serviceSubCategory
+
+  set serviceSubCategory(String value) {
+    _serviceSubCategory = value; // Add setter for serviceSubCategory
+  }
+
+  factory ServicesWithSubCategory2.fromJson(Map<String, dynamic> json) => ServicesWithSubCategory2(
+    id: json["_id"],
+    salonId: json["salonId"],
+    category: json["category"],
+    subCategory: json["sub_category"],
+    serviceTitle: json["serviceTitle"],
+    description: json["description"],
+    targetGender: json["targetGender"],
+    avgTime: json["avgTime"],
+    basePrice: json["basePrice"],
+    cutPrice: json['cutPrice'],
+    serviceSubCategory: json['serviceSubCategory'] ?? '', // Assign value from JSON to serviceSubCategory
+    createdAt: DateTime.parse(json["createdAt"]),
+    updatedAt: DateTime.parse(json["updatedAt"]),
+    v: json["__v"],
+  );
+
+  Map<String, dynamic> toJson() => {
+    "_id": id,
+    "salonId": salonId,
+    "category": category,
+    "sub_category": subCategory,
+    "serviceTitle": serviceTitle,
+    "description": description,
+    "targetGender": targetGender,
+    "avgTime": avgTime,
+    "basePrice": basePrice,
+    "cutPrice": cutPrice,
+    'serviceSubCategory': serviceSubCategory, // Include serviceSubCategory in JSON output
+    "createdAt": createdAt.toIso8601String(),
+    "updatedAt": updatedAt.toIso8601String(),
+    "__v": v,
+  };
+}
