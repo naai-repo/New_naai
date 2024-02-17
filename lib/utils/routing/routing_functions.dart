@@ -38,16 +38,16 @@ class RoutingFunctions {
 
     switch (routeUri.path) {
       case NamedRoutes.splashRoute:
-        target = SplashScreen();
+        target = const SplashScreen();
         break;
       case NamedRoutes.authenticationRoute:
-        target = AuthenticationScreen();
+        target = const AuthenticationScreen();
         break;
       case NamedRoutes.verifyOtpRoute:
-        target = VerifyOtpScreen();
+        target = const VerifyOtpScreen();
         break;
       case NamedRoutes.addUserNameRoute:
-        target = UsernameScreen();
+        target = const UsernameScreen();
         break;
       case NamedRoutes.bottomNavigationRoute:
         target = BottomNavigationScreen();
@@ -62,37 +62,37 @@ class RoutingFunctions {
         target = BottomNavigationScreen3();
         break;
       case NamedRoutes.exploreRoute:
-        target = ExploreScreen();
+        target = const ExploreScreen();
         break;
       case NamedRoutes.exploreRoute2:
-        target = ExploreScreen2();
+        target = const ExploreScreen2();
         break;
       case NamedRoutes.exploreRoute3:
-        target = ExploreScreen3();
+        target = const ExploreScreen3();
         break;
       case NamedRoutes.exploreStylistRoute:
-        target = ExploreStylist();
+        target = const ExploreStylist();
         break;
       case NamedRoutes.exploreStylistRoute2:
-        target = ExploreStylist2();
+        target = const ExploreStylist2();
         break;
       case NamedRoutes.homeRoute:
-        target = HomeScreen();
+        target = const HomeScreen();
         break;
       case NamedRoutes.salonDetailsRoute:
-        target = SalonDetailsScreen();
+        target = const SalonDetailsScreen();
         break;
       case NamedRoutes.salonDetailsRoute2:
-        target = SalonDetailsScreen2();
+        target = const SalonDetailsScreen2();
         break;
       case NamedRoutes.setHomeLocationRoute:
-        target = SetHomeLocationScreen();
+        target = const SetHomeLocationScreen();
         break;
       case NamedRoutes.setHomeLocationRoute2:
-        target = SetHomeLocationScreen2();
+        target = const SetHomeLocationScreen2();
         break;
       case NamedRoutes.mapRoute:
-        target = MapScreen();
+        target = const MapScreen();
         break;
       case NamedRoutes.barberProfileRoute:
         target = BarberProfileScreen();
@@ -107,16 +107,16 @@ class RoutingFunctions {
         target = CreateBookingScreen3();
         break;
       case NamedRoutes.createBookingRoute2:
-        target = CreateBookingScreen2();
+        target = const CreateBookingScreen2();
         break;
       case NamedRoutes.reviewsRoute:
-        target = ReviewsScreen();
+        target = const ReviewsScreen();
         break;
       case NamedRoutes.favouritesRoute:
-        target = FavourtieScreen();
+        target = const FavourtieScreen();
         break;
       case NamedRoutes.bookingConfirmedRoute:
-        target = BookingConfirmedSreen();
+        target = const BookingConfirmedSreen();
         break;
       case NamedRoutes.appointmentDetailsRoute:
         target = AppointmentDetails(index: settings.arguments as int);
@@ -125,7 +125,7 @@ class RoutingFunctions {
         target = AppointmentDetails2(index: settings.arguments as int);
         break;
       case NamedRoutes.bookingHistoryRoute:
-        target = BookingHistoryScreen();
+        target = const BookingHistoryScreen();
         break;
     }
 
@@ -143,7 +143,7 @@ class RoutingFunctions {
     return PageRouteBuilder(
       pageBuilder: (context, animation, secondaryAnimation) => widget,
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
-        var begin = Offset(0, 0);
+        var begin = const Offset(0, 0);
         var end = Offset.zero;
         var curve = Curves.ease;
         var tween =

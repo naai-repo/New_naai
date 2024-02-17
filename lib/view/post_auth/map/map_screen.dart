@@ -171,8 +171,7 @@ class _MapScreenState extends State<MapScreen> {
                                     onSuggestionSelected: (Feature suggestion) {
                                       // DO NOT REMOVE THIS PRINT STATEMENT OTHERWISE THE FUNCTION
                                       // WILL NOT BE TRIGGERED
-                                      print(
-                                          "\t\tNOTE: Do not remove this print statement.");
+                                      print("\t\tNOTE: Do not remove this print statement.");
                                       provider.handlePlaceSelectionEvent(
                                           suggestion, context);
                                       FocusManager.instance.primaryFocus

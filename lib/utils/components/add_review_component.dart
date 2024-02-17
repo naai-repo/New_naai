@@ -38,7 +38,7 @@ class _AddReviewComponentState extends State<AddReviewComponent> {
         borderRadius: BorderRadius.circular(2.h),
       ),
       child: Column(
-        children: <Widget>[
+        children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
@@ -151,6 +151,7 @@ class _AddReviewComponentState extends State<AddReviewComponent> {
       ),
     );
   }
+
 }
 
 

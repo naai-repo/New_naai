@@ -4,7 +4,6 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:logger/logger.dart';
 import 'package:mapbox_gl/mapbox_gl.dart';
 import 'package:naai/models/salon.dart';
-import 'package:naai/models/service_detail.dart';
 import 'package:naai/utils/colors_constant.dart';
 import 'package:naai/utils/enums.dart';
 import 'package:naai/utils/image_path_constant.dart';
@@ -39,7 +38,7 @@ class ReusableWidgets {
           borderRadius: BorderRadius.circular(10),
           boxShadow: isActive
               ? <BoxShadow>[
-                  BoxShadow(
+                  const BoxShadow(
                     offset: Offset(0, 2.0),
                     color: Colors.grey,
                     spreadRadius: 0.2,

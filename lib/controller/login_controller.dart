@@ -11,9 +11,8 @@ import '../view_model/pre_auth/loginResult.dart';
 class LoginController {
   final Dio dio = Dio();
 
-
   LoginController() {
-    dio.options.connectTimeout = Duration(milliseconds: 30000);
+    dio.options.connectTimeout = const Duration(milliseconds: 30000);
   }
 
 
@@ -71,3 +70,5 @@ class LoginController {
     }
   }
 }
+
+

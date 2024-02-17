@@ -251,14 +251,14 @@ class AuthenticationProvider with ChangeNotifier {
   }
 
 
-
-
   /// Save the [_userId] after authentication in [SharedPreferences]
   /// and in [AuthenticationProvider]
   void setUserId({required String? userId}) async {
     _userId = userId;
     await SharedPreferenceHelper.setUserId(userId ?? '');
   }
+
+
   void handleLogoutClick(BuildContext context ) async {
     // Delete the access token
     await AccessTokenManager.removeAccessToken();

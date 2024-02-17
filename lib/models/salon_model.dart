@@ -21,6 +21,8 @@ class SalonApiResponse {
     );
   }
 }
+
+
 class SalonData2 {
   final String id;
   final String address;
@@ -101,6 +103,7 @@ class SalonData2 {
     );
   }
 }
+
 class ImageData {
   final String key;
   final String url;
@@ -149,7 +152,6 @@ class Location {
   }
 }
 
-
 class Timing {
   final String opening;
   final String closing;
@@ -166,3 +168,5 @@ class Timing {
     );
   }
 }
+
+

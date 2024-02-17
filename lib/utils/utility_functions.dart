@@ -20,8 +20,7 @@ class UtilityFunctions {
   }
 
   /// [SymbolOptions] for user's current location
-  static SymbolOptions getCurrentLocationSymbolOptions(
-      {required LatLng latLng}) {
+  static SymbolOptions getCurrentLocationSymbolOptions({required LatLng latLng}) {
     return SymbolOptions(
       geometry: latLng,
       iconImage: ImagePathConstant.currentLocationPointer,

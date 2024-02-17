@@ -1,5 +1,3 @@
-import 'dart:io';
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -8,15 +6,12 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:naai/utils/colors_constant.dart';
 import 'package:naai/utils/image_path_constant.dart';
 import 'package:naai/utils/string_constant.dart';
-import 'package:naai/view/post_auth/home/home_screen.dart';
 import 'package:naai/view/widgets/reusable_widgets.dart';
 import 'package:naai/view_model/pre_auth/authentication_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:sizer/sizer.dart';
 import '../../controller/login_controller.dart';
 import '../../models/login_model.dart';
-import '../../utils/loading_indicator.dart';
-import '../../utils/no_internet.dart';
 import '../../utils/routing/named_routes.dart';
 import 'package:naai/view_model/pre_auth/loginResult.dart';
 
@@ -38,7 +33,6 @@ class AuthenticationScreen extends StatelessWidget {
           child: AppBar(
             elevation: 0,
             backgroundColor: ColorsConstant.appColor,
-
           ),
         ),
         backgroundColor: Colors.white,
@@ -137,11 +131,12 @@ class AuthenticationScreen extends StatelessWidget {
       ),
     );
   }
+
+
   Future<void> saveIsGuestStatus(bool isGuest) async {
     final box = await Hive.openBox('userBox');
     box.put('isGuest', isGuest);
   }
-
 
   Widget authenticationOptionsDivider() {
     return Row(
@@ -220,4 +215,6 @@ class AuthenticationScreen extends StatelessWidget {
       },
     );
   }
+  
 }
+

@@ -55,8 +55,7 @@ class StringConstant {
   // Home screen strings
   static const String home = 'Home';
   static const String setLocation = 'Set Location';
-  static const String setLocationSubtext =
-      'SET YOUR HOME LOCATION TO  SEE SALONS NEAR TO YOUR PLACE';
+  static const String setLocationSubtext = 'SET YOUR HOME LOCATION TO  SEE SALONS NEAR TO YOUR PLACE';
   static const String viewMore = 'View more';
   static const String categories = 'Categories';
   static const String salonsNearMe = 'Salons near me';

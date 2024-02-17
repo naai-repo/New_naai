@@ -9,7 +9,7 @@ import '../view/widgets/reusable_widgets.dart';
 
 class OtpVerificationController {
   final Dio dio = Dio();
-String ? name;
+  String ? name;
   String ? email;
   String ? phoneNumber;
   Future<OtpVerificationResponse> verifyOtp(String userId, String otp, BuildContext context) async {
@@ -44,4 +44,5 @@ String ? name;
       );
     }
   }
+
 }

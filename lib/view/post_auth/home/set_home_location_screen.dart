@@ -60,10 +60,8 @@ class _SetHomeLocationScreenState extends State<SetHomeLocationScreen> {
               children: <Widget>[
                 IconButton(
                   onPressed: () {
-
                       provider.clearMapSearchText();
                       Navigator.pop(context);
-
                   },
                   splashRadius: 0.1,
                   splashColor: Colors.transparent,
@@ -91,7 +89,7 @@ class _SetHomeLocationScreenState extends State<SetHomeLocationScreen> {
                       padding: EdgeInsets.symmetric(vertical: 2.h),
                       child: SingleChildScrollView(
                         child: TypeAheadField(
-                          debounceDuration: Duration(milliseconds: 300),
+                          debounceDuration: const Duration(milliseconds: 300),
                           hideSuggestionsOnKeyboardHide: false,
                           suggestionsCallback: (pattern) async {
                             return await provider.getPlaceSuggestions(context);
@@ -148,8 +146,7 @@ class _SetHomeLocationScreenState extends State<SetHomeLocationScreen> {
                                   provider.clearMapSearchText();
                                   FocusManager.instance.primaryFocus!.unfocus();
                                   Loader.showLoader(context);
-                                  LatLng latLng = await provider
-                                      .fetchCurrentLocation(context);
+                                  LatLng latLng = await provider.fetchCurrentLocation(context);
                                   await provider.animateToPosition(latLng);
                                   Loader.hideLoader(context);
                                 },
@@ -186,8 +183,7 @@ class _SetHomeLocationScreenState extends State<SetHomeLocationScreen> {
                           onSuggestionSelected: (Feature suggestion) {
                             // DO NOT REMOVE THIS PRINT STATEMENT OTHERWISE THE FUNCTION
                             // WILL NOT BE TRIGGERED
-                            print(
-                                "\t\tNOTE: Do not remove this print statement.");
+                            print("\t\tNOTE: Do not remove this print statement.");
                             provider.handlePlaceSelectionEvent(
                               suggestion,
                               context,

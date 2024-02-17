@@ -28,6 +28,7 @@ class _SplashScreenState extends State<SplashScreen> {
     super.initState();
     checkIfUserExists();
   }
+
   // Function to retrieve isGuest status from Hive
   Future<bool> getIsGuestStatus() async {
     final box = await Hive.openBox('userBox');
@@ -38,6 +39,7 @@ class _SplashScreenState extends State<SplashScreen> {
     Timer(const Duration(seconds: 2), () async {
       String? accessToken = await AccessTokenManager.getAccessToken();
       bool isGuest = await getIsGuestStatus();
+      
       if (accessToken != null && accessToken.isNotEmpty) {
         Navigator.pushReplacementNamed(
           context,

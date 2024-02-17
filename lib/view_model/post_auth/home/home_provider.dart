@@ -559,6 +559,7 @@ String ?  _addressText;
       "location": {"type": "Point", "coordinates": coords},
     };
 
+   
     try {
       final response = await dio.post(
         apiUrl,
@@ -569,8 +570,6 @@ String ?  _addressText;
       );
 
       if (response.statusCode == 200) {
-
-
         print("Response of artist:- ${ArtistApiResponse.fromJson(response.data)}");
         ArtistApiResponse artistApiResponse = ArtistApiResponse.fromJson(response.data);
         print('Response of artist2:-${artistApiResponse.data} ');
@@ -607,6 +606,7 @@ String ?  _addressText;
       print("Dio error for top artists: $e");
     }
   }
+  
   Map<String, ServiceResponse> serviceDetailsMap = {}; // Use a map to store service details
 
 
@@ -1435,8 +1435,7 @@ print('token is :- $bearerToken');
       ) async {
     _mapSearchController.text = place.placeName ?? "";
 
-    LatLng selectedLatLng =
-    LatLng(place.center?[1] ?? 0.0, place.center?[0] ?? 0.0);
+    LatLng selectedLatLng = LatLng(place.center?[1] ?? 0.0, place.center?[0] ?? 0.0);
 
     await _controller.removeSymbol(_symbol);
 
@@ -1856,8 +1855,7 @@ print('token is :- $bearerToken');
       hours = 12;
     }
 
-    String formattedTime =
-        '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')} $amPm';
+    String formattedTime = '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')} $amPm';
     return formattedTime;
   }
 

@@ -39,7 +39,7 @@ class ArtistData {
   final double score;
   final String imageKey;
   final String imageUrl;
-  String  salonName ;
+   String  salonName;
 
   ArtistData({
     required this.id,

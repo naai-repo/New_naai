@@ -64,8 +64,8 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
               myShowPrice = provider.showPrice;
             }
             bool servicesSelected = provider.getSelectedServices().isNotEmpty;
-            return Scaffold(
-          body: Stack(
+       return Scaffold(
+           body: Stack(
             children: <Widget>[
               ReusableWidgets.appScreenCommonBackground(),
               CustomScrollView(
@@ -222,6 +222,7 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
       }),
     );
   }
+
   static Widget genderFilterTabs({
     required bool isMen,
     required bool isWomen,
@@ -269,7 +270,7 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
                 : null
                 : provider.selectedGendersFilter.contains(Gender.WOMEN)
                 ? [
-              BoxShadow(
+              const BoxShadow(
                 color: ColorsConstant.dropShadowColor,
                 blurRadius: 10,
                 spreadRadius: 2,
@@ -303,6 +304,7 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
       );
     });
   }
+  
   static Widget genderAndSearchFilterWidget() {
     return Consumer<SalonDetailsProvider>(builder: (context, provider, child) {
       return Row(
@@ -401,7 +403,7 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
           ),
           SizedBox(height: 1.h),
           provider.salonDetails!.data.services.servicesWithoutSubCategory.isEmpty
-              ? Container(
+              ?  Container(
             height: 10.h,
             child: Center(
               child: Text('Nothing here :('),
@@ -531,7 +533,6 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
     });
   }
 
-
    Widget serviceCategoryFilterWidget() {
     return Consumer<SalonDetailsProvider>(builder: (context, provider, child) {
       return Container(
@@ -577,6 +578,7 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
       );
     });
   }
+   
    Widget imageCarousel() {
     return Consumer<SalonDetailsProvider>(builder: (context, provider, child) {
       return Stack(
@@ -878,7 +880,6 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
       },
     );
   }
-
 
   Widget salonDetailOverview() {
     return Consumer<SalonDetailsProvider>(builder: (context, provider, child) {
@@ -1197,6 +1198,7 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
       throw 'Could not launch ${uri.toString()}';
     }
   }
+
 }
 
 
@@ -2391,3 +2393,4 @@ class _SalonDetailsScreen2State extends State<SalonDetailsScreen2> {
     );
   }
 }
+

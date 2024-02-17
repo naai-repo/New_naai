@@ -531,7 +531,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     );
   }
 
-
   Widget ourStylist() {
     return Consumer<HomeProvider>(builder: (context, provider, child) {
       List<ArtistData> displayedArtists = provider.getDisplayedArtists();
@@ -654,7 +653,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         index = 2 * index + 1;
                         ArtistData artist = provider.artistList2[index];
 
-
                         return artistCard(
                           isThin: ((index - 1) / 2).floor().isOdd,
                           name: artist.name ?? '',
@@ -776,7 +774,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     required String imagePath,
     required Function() onTap,
   }) {
-    print('imagePathggggggg: $imagePath'); // Add this line for debugging
+    print('ImagePath: $imagePath'); // Add this line for debugging
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -1384,6 +1383,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     ],
     );
   }
+
 }
 
 //Continue as a guest
@@ -4037,7 +4037,6 @@ class _HomeScreen3State extends State<HomeScreen3> {
     );
   }
 }
-
 
 
 class HomeScreen4 extends StatefulWidget {

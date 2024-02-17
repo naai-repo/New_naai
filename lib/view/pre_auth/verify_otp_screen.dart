@@ -219,4 +219,5 @@ class VerifyOtpScreen extends StatelessWidget {
       ),
     );
   }
+  
 }
