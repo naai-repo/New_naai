@@ -407,7 +407,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 children: <Widget>[
                   Text( provider.userData?.name?? '',
                       style: StyleConstant.textDark15sp600Style),
-                  if(provider.userData!.email.isNotEmpty)
+                  if (provider.userData != null && provider.userData!.email.isNotEmpty)
                   Text( provider.userData?.email?? '',
                       style: StyleConstant.textDark10sp500Style),
                   Text(
