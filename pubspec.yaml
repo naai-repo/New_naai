@@ -15,7 +15,7 @@ publish_to: "none" # Remove this line if you wish to publish to pub.dev
 # In iOS, build-name is used as CFBundleShortVersionString while build-number used as CFBundleVersion.
 # Read more about iOS versioning at
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
-version: 1.0.0+24 # 1.1.0 is the release on date 15/10/2023 and 1.0.0+5 was old.
+version: 1.0.0+25 # 1.1.0 is the release on date 15/10/2023 and 1.0.0+5 was old.
 
 environment:
   sdk: ">=2.17.3 <3.0.0"
@@ -66,7 +66,7 @@ dependencies:
   syncfusion_flutter_pdf: 23.2.7
   path_provider: ^2.0.1
   open_file: ^3.1.0
-  mapbox_gl: ^0.16.0
+ # mapbox_gl: ^0.16.0
   geocoding: ^2.1.1
   collection: ^1.15.0
   intl: ^0.18.0
@@ -76,10 +76,10 @@ dependencies:
     git:
       url: https://github.com/Davenchy/flutter_launcher_icons.git
       ref: fixMinSdkParseFlutter2.8
- # mapbox_gl:
-   # git:
-    #  url: https://github.com/Sipioteo/maps_3_0_0
-     # ref: master
+  mapbox_gl:
+    git:
+      url: https://github.com/Sipioteo/maps_3_0_0
+      ref: master
   salomon_bottom_bar:
     git:
       url: https://github.com/lukepighetti/salomon_bottom_bar

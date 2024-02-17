@@ -14,8 +14,6 @@ import 'package:naai/view_model/post_auth/map/map_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:sizer/sizer.dart';
 
-import '../../../view_model/post_auth/home/home_provider.dart';
-
 class MapScreen extends StatefulWidget {
   const MapScreen({Key? key}) : super(key: key);
 
@@ -27,8 +25,7 @@ class _MapScreenState extends State<MapScreen> {
   @override
   void initState() {
     super.initState();
-   context.read<MapProvider>().initializeSymbol();
-   // context.read<HomeProvider>().initializeSymbol();
+    context.read<MapProvider>().initializeSymbol();
   }
 
   @override
@@ -65,7 +62,7 @@ class _MapScreenState extends State<MapScreen> {
                                   padding: EdgeInsets.symmetric(vertical: 2.h),
                                   child: TypeAheadField(
                                     debounceDuration:
-                                        Duration(milliseconds: 300),
+                                    Duration(milliseconds: 300),
                                     hideSuggestionsOnKeyboardHide: false,
                                     suggestionsCallback: (pattern) async {
                                       return await provider
@@ -102,7 +99,7 @@ class _MapScreenState extends State<MapScreen> {
                                                 style: TextStyle(
                                                   fontSize: 12.sp,
                                                   color:
-                                                      ColorsConstant.appColor,
+                                                  ColorsConstant.appColor,
                                                 ),
                                               ),
                                             ],
@@ -150,7 +147,7 @@ class _MapScreenState extends State<MapScreen> {
                                                 style: TextStyle(
                                                   fontSize: 12.sp,
                                                   color:
-                                                      ColorsConstant.appColor,
+                                                  ColorsConstant.appColor,
                                                 ),
                                               ),
                                             ],
@@ -179,7 +176,7 @@ class _MapScreenState extends State<MapScreen> {
                                           ?.unfocus();
                                     },
                                     textFieldConfiguration:
-                                        TextFieldConfiguration(
+                                    TextFieldConfiguration(
                                       textInputAction: TextInputAction.done,
                                       cursorColor: ColorsConstant.appColor,
                                       style: StyleConstant.searchTextStyle,
@@ -220,7 +217,7 @@ class _MapScreenState extends State<MapScreen> {
       return Stack(
         children: <Widget>[
           MapboxMap(
-           // compassEnabled: true,
+            compassEnabled: false,
             accessToken: Keys.mapbox_public_key,
             initialCameraPosition: const CameraPosition(
                 target: LatLng(28.6304, 77.2177), zoom: 15.0),

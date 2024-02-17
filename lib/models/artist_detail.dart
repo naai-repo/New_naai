@@ -53,7 +53,8 @@ class Data {
   String targetGender;
   String imageKey;
   String imageUrl;
-
+  double distance;
+  double score;
   Data({
     required this.location,
     required this.timing,
@@ -75,29 +76,33 @@ class Data {
     required this.targetGender,
     required this.imageKey,
     required this.imageUrl,
+    required this.distance,
+    required this.score,
   });
 
   factory Data.fromJson(Map<String, dynamic> json) => Data(
-    location: Location.fromJson(json["location"]),
-    timing: Timing.fromJson(json["timing"]),
-    links: Links.fromJson(json["links"]),
-    id: json["_id"],
-    name: json["name"],
-    rating: json["rating"]?.toDouble(),
-    salonId: json["salonId"],
+    location: Location.fromJson(json["location"] ?? {}),
+    timing: Timing.fromJson(json["timing"]?? {}),
+    links: Links.fromJson(json["links"]?? ''),
+    id: json["_id"]?? '',
+    name: json["name"]?? '',
+    rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
+    salonId: json["salonId"]?? '',
     services: List<Service2>.from(json["services"].map((x) => Service2.fromJson(x))),
-    phoneNumber: json["phoneNumber"],
-    availability: json["availability"],
-    live: json["live"],
+    phoneNumber: json["phoneNumber"]?? '',
+    availability: json["availability"]?? '',
+    live: json["live"]?? '',
     createdAt: DateTime.parse(json["createdAt"]),
     updatedAt: DateTime.parse(json["updatedAt"]),
     v: json["__v"],
     offDay: List<String>.from(json["offDay"].map((x) => x)),
     paid: json["paid"],
-    bookings: json["bookings"],
-    targetGender: json["targetGender"],
+    bookings: json["bookings"]?? '',
+    targetGender: json["targetGender"]?? '',
     imageKey: json["imageKey"]?? '',
     imageUrl: json["imageUrl"]??'',
+    distance: json["distance"]?.toDouble()?? 0.0,
+    score: json["score"]?.toDouble()?? 0.0,
   );
 
   Map<String, dynamic> toJson() => {
@@ -121,6 +126,8 @@ class Data {
     "targetGender": targetGender,
     "imageKey": imageKey,
     "imageUrl": imageUrl,
+    "distance": distance,
+    "score": score,
   };
 }
 
@@ -164,21 +171,58 @@ class Service2 {
   String serviceId;
   int price;
   String id;
+  List<Variable>? variables;
 
   Service2({
     required this.serviceId,
     required this.price,
     required this.id,
+    this.variables,
   });
 
-  factory Service2.fromJson(Map<String, dynamic> json) => Service2(
-    serviceId: json["serviceId"],
+  factory Service2.fromJson(Map<String, dynamic> json) {
+    return Service2(
+      serviceId: json["serviceId"],
+      price: json["price"],
+      id: json["_id"],
+      variables: json.containsKey("variables")
+          ? List<Variable>.from(json["variables"].map((x) => Variable.fromJson(x)))
+          : null, // Check if "variables" key exists
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = {
+      "serviceId": serviceId,
+      "price": price,
+      "_id": id,
+    };
+    if (variables != null) {
+      data["variables"] = List<dynamic>.from(variables!.map((x) => x.toJson()));
+    }
+    return data;
+  }
+}
+
+class Variable {
+  String variableId;
+  int price;
+  String id;
+
+  Variable({
+    required this.variableId,
+    required this.price,
+    required this.id,
+  });
+
+  factory Variable.fromJson(Map<String, dynamic> json) => Variable(
+    variableId: json["variableId"],
     price: json["price"],
     id: json["_id"],
   );
 
   Map<String, dynamic> toJson() => {
-    "serviceId": serviceId,
+    "variableId": variableId,
     "price": price,
     "_id": id,
   };

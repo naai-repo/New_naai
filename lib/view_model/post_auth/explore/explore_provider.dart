@@ -535,10 +535,10 @@ class ExploreProvider with ChangeNotifier {
   /// Search the index of selected salon and set the index value
   void setSalonIndexByData(
     BuildContext context,
-    SalonData clickedSalonData,
+    SalonData2 clickedSalonData,
   ) {
     int indexOfSalon =
-        _salonData.indexWhere((salon) => salon.id == clickedSalonData.id);
+    _salonList2.indexWhere((salon) => salon.id == clickedSalonData.id);
     setSelectedSalonIndex(context, index: indexOfSalon);
   }
 

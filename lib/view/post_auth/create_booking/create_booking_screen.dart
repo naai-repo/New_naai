@@ -30,6 +30,7 @@ import '../../../models/Time_Slot_model.dart';
 import '../../../models/artist_detail.dart';
 import '../../../models/artist_request.dart';
 import '../../../models/artist_services.dart';
+import '../../../models/salon_detail.dart';
 import '../../../models/service_detail.dart';
 import '../../../utils/access_token.dart';
 import '../../../utils/loading_indicator.dart';
@@ -573,6 +574,7 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
                                               : ImagePathConstant.womanIcon,
                                           height: 3.h,
                                         ),
+
                                         SizedBox(width: 2.w),
                                         Text(
                                           element.serviceTitle ?? '',
@@ -1263,6 +1265,7 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
       return {
         "service": request.service,
         "artist": request.artist,
+
       };
     }).toList();
 
@@ -4069,8 +4072,7 @@ class _CreateBookingScreen3State extends State<CreateBookingScreen3> {
                             // Use the selected slot to get the corresponding time slot
                             List<String> timeSlot = selectedSlot.slot;
 
-                            Map<String,
-                                dynamic> bookingRequestBody = {
+                            Map<String, dynamic> bookingRequestBody = {
                               "key": 1,
                               "timeSlot": timeSlot,
                               "bookingDate": DateFormat(
@@ -4736,17 +4738,41 @@ class _CreateBookingScreen3State extends State<CreateBookingScreen3> {
                                   if (provider.selectedDate != null && provider.salonDetails != null) {
                                     DateTime selectedDate = provider.selectedDate!;
                                     String formattedDate = DateFormat('MM-dd-yyyy').format(selectedDate);
-                                    List<Map<String, String>> requests = [];
+                                    List<Map<String, dynamic>> requests = [];
                                     List<String> selectedServiceIds = provider.getSelectedServicesCombined()
                                         .map((service) => service.id.toString())
                                         .toList();
                                     String selectedArtistId = provider.artistServiceList!.selectedArtist?.artistId ?? "";
+/*
                                     for (String serviceId in selectedServiceIds) {
                                         requests.add({
                                           "service": serviceId,
                                           "artist": selectedArtistId,
                                         });
                                       }
+*/
+                                    for (var service in provider.getSelectedServicesCombined()) {
+                                      Map<String, dynamic> request = {
+                                        "service": service.id.toString(),
+                                        "artist": selectedArtistId,
+                                      };
+
+                                      // Check if the service has a variable associated with it
+                                      if (service.variables.isNotEmpty) {
+                                        // If yes, add the variable to the request
+                                        FluffyVariable variable = service.variables.first; // Assuming there's only one variable per service
+                                        request["variable"] = {
+                                          "variableType": variable.variableType,
+                                          "variableName": variable.variableName,
+                                          "variablePrice": variable.variablePrice,
+                                          "variableCutPrice": variable.variableCutPrice,
+                                          "variableTime": variable.variableTime,
+                                          "_id": variable.id,
+                                        };
+                                      }
+
+                                      requests.add(request);
+                                    }
                                     Map<String, dynamic> requestBody = {
                                       "salonId": provider.salonDetails!.data.data.id ?? "",
                                       "requests": requests,

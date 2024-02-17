@@ -598,6 +598,7 @@ String ?  _addressText;
     }
   }
   ArtistData?  artist;
+
   Future<void> getTopArtists({required List<double> coords}) async {
     final apiUrl = UrlConstants.topArtist;
     final Map<String, dynamic> requestData = {
@@ -619,6 +620,7 @@ String ?  _addressText;
         print("Response of artist:- ${ArtistApiResponse.fromJson(response.data)}");
         ArtistApiResponse artistApiResponse = ArtistApiResponse.fromJson(response.data);
         print('Response of artist2:-${artistApiResponse.data} ');
+
         for (var artistData in artistApiResponse.data) {
           var salonId = artistData.salonId;
 
@@ -643,6 +645,7 @@ String ?  _addressText;
 
           print("SalonName in home screen :- $SalonNames");
         }
+
         artistList2 = artistApiResponse.data;
       } else {
         print("Failed to fetch top artists");

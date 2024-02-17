@@ -4,6 +4,8 @@
 
 import 'dart:convert';
 
+import 'package:naai/models/salon_detail.dart';
+
 TimeSlotResponse timeSlotResponseFromJson(String str) => TimeSlotResponse.fromJson(json.decode(str));
 
 String timeSlotResponseToJson(TimeSlotResponse data) => json.encode(data.toJson());
@@ -83,21 +85,30 @@ class TimeSlotResponseTimeSlot {
 
 class Order {
   TimeService service;
+  FluffyVariable variable;
   String artist;
+  int time;
 
   Order({
     required this.service,
     required this.artist,
+    required this.variable,
+    required this.time,
   });
 
   factory Order.fromJson(Map<String, dynamic> json) => Order(
     service: TimeService.fromJson(json["service"]),
     artist: json["artist"],
+    variable: FluffyVariable.fromJson(json['variable']
+    ),
+    time: json['time'],
   );
 
   Map<String, dynamic> toJson() => {
     "service": service.toJson(),
     "artist": artist,
+    "variable": variable.toJson(),
+    "time": time
   };
 }
 

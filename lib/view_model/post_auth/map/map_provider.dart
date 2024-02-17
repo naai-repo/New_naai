@@ -1,12 +1,11 @@
 import 'dart:convert';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:location/location.dart' as location;
-import 'package:location/location.dart';
 import 'package:logger/logger.dart';
 import 'package:mapbox_gl/mapbox_gl.dart';
-import 'package:naai/models/salon.dart';
 import 'package:naai/models/user_location.dart';
 import 'package:naai/services/api_service/base_client.dart';
 import 'package:naai/utils/api_endpoint_constant.dart';
@@ -14,19 +13,23 @@ import 'package:naai/utils/loading_indicator.dart';
 import 'package:naai/utils/string_constant.dart';
 import 'package:naai/utils/utility_functions.dart';
 import 'package:naai/view/widgets/reusable_widgets.dart';
-import 'package:naai/view_model/post_auth/explore/explore_provider.dart';
 import 'package:provider/provider.dart';
+
+import '../../../models/salon_model.dart';
+import '../../../view/post_auth/salon_details/salon_details_screen.dart';
+import '../salon_details/salon_details_provider.dart';
 
 class MapProvider with ChangeNotifier {
   late MapboxMapController _controller;
 
   late Symbol _symbol;
+  Dio dio = Dio(); // Initialize Dio instance
 
   final _mapLocation = location.Location();
-
+  List<SalonData2> salonList2 = []; // Define salonList2 as a global variable.
   late LatLng _userCurrentLatLng;
 
-  TextEditingController _mapSearchController = TextEditingController();
+  final TextEditingController _mapSearchController = TextEditingController();
 
   //============= GETTERS =============//
   LatLng get userCurrentLatLng => _userCurrentLatLng;
@@ -37,50 +40,47 @@ class MapProvider with ChangeNotifier {
   void initializeSymbol() {
     _symbol = Symbol(
       'marker',
-      SymbolOptions(),
+      const SymbolOptions(),
     );
   }
 
   /// Initialising map related values as soon as the map is rendered on screen.
   Future<void> onMapCreated(
-    MapboxMapController mapController,
-    BuildContext context,
-  ) async {
-    this._controller = mapController;
+      MapboxMapController mapController,
+      BuildContext context,
+      ) async {
+    _controller = mapController;
 
-    var _serviceEnabled = await _mapLocation.serviceEnabled();
-    var _permissionGranted = await _mapLocation.hasPermission();
+    var serviceEnabled = await _mapLocation.serviceEnabled();
+    var permissionGranted = await _mapLocation.hasPermission();
 
     double savedLat = 0.0;
     double savedLong = 0.0;
-    if (!_serviceEnabled) {
-      _serviceEnabled = await _mapLocation.requestService();
+    if (!serviceEnabled) {
+      serviceEnabled = await _mapLocation.requestService();
     }
-    if (_permissionGranted != location.PermissionStatus.granted) {
+    if (permissionGranted != location.PermissionStatus.granted) {
       final box = await Hive.openBox('userBox');
       savedLat = box.get('savedLatitude') ?? 0.0;
       savedLong = box.get('savedLongitude') ?? 0.0;
     }
 
-    if (_permissionGranted == location.PermissionStatus.denied) {
-      _permissionGranted = await _mapLocation.requestPermission();
+    if (permissionGranted == location.PermissionStatus.denied) {
+      permissionGranted = await _mapLocation.requestPermission();
     }
 
     Loader.showLoader(context);
     try {
-      var _locationData;
-      if (_permissionGranted == location.PermissionStatus.granted) {
-        _locationData = await _mapLocation.getLocation();
+      var locationData;
+      if (permissionGranted == location.PermissionStatus.granted) {
+        locationData = await _mapLocation.getLocation();
       } else {
-
-        _userCurrentLatLng =
-            LatLng(savedLat , savedLong);
-
+        _userCurrentLatLng = LatLng(savedLat, savedLong);
       }
 
-
-      _userCurrentLatLng =
-          LatLng(_locationData.latitude!, _locationData.longitude!);
+      _userCurrentLatLng = locationData != null
+          ? LatLng(locationData.latitude!, locationData.longitude!)
+          : _userCurrentLatLng;
 
       await mapController.animateCamera(
         CameraUpdate.newCameraPosition(
@@ -90,36 +90,67 @@ class MapProvider with ChangeNotifier {
           ),
         ),
       );
+      await getTopSalons(coords: [_userCurrentLatLng.longitude, _userCurrentLatLng.latitude]);
+      // Iterate over salon data and add symbols on the map
+      for (var salon in salonList2) {
+        List<double> coordinates = salon.location.coordinates;
+        LatLng salonGeoLocation = LatLng(coordinates[1], coordinates[0]);
 
-      List<SalonData> _salonData = [...context
-          .read<ExploreProvider>()
-          .salonData
-      ];
+        _symbol = await _controller.addSymbol(
+          UtilityFunctions.getCurrentLocationSymbolOptions(
+            latLng: salonGeoLocation,
+          ),
+          {StringConstant.salonData: salon},
+        );
+      }
 
-      _salonData.forEach((salon) async {
-        //_symbol = await this._controller.addSymbol(
-        // UtilityFunctions.getCurrentLocationSymbolOptions(
-        //  latLng: salonGeoLocation,
-        //),
-        //{StringConstant.salonData: salon},
-        //);
-      });
-
-      this._controller.onSymbolTapped.add((argument) {
+      // Add symbol tapped listener
+      _controller.onSymbolTapped.add((argument) {
         ReusableWidgets.salonOverviewOnMapDialogue(
           context,
           clickedSalonData: argument.data?[StringConstant.salonData],
         );
       });
-    } catch (e){
-      print("Error gettig location : $e");
-    }
-      Loader.hideLoader(context);
 
+    } catch (e) {
+      print('error $e');
+    } finally {
+      Loader.hideLoader(context);
+    }
   }
+
+  Future<void> getTopSalons({required List<double> coords}) async {
+    final apiUrl = 'http://13.235.49.214:8800/partner/salon/topSalons?page=1&limit=30&type=male';
+
+    final Map<String, dynamic> requestData = {
+      "location": {"type": "Point", "coordinates": coords},
+    };
+
+    try {
+      final response = await dio.post(
+        apiUrl,
+        options: Options(
+          headers: {'Content-Type': 'application/json; charset=UTF-8'},
+        ),
+        data: requestData,
+      );
+
+      if (response.statusCode == 200) {
+        // Save response data in salonList2
+        salonList2 = SalonApiResponse.fromJson(response.data).data;
+        print("Top Salons: $salonList2");
+      } else {
+        print("Failed to fetch top salons");
+        print(response.data);
+      }
+    } catch (e) {
+      print("Dio error for top salons: $e");
+    }
+  }
+
   /// Get place suggestions according to the search text
   Future<List<Feature>> getPlaceSuggestions(BuildContext context) async {
-    List<Feature> _data = [];
+    List<Feature> data = [];
 
     Uri uri = Uri.parse(
             "${ApiEndpointConstant.mapboxPlacesApi}${_mapSearchController.text}.json")
@@ -133,17 +164,17 @@ class MapProvider with ChangeNotifier {
       UserLocationModel responseData =
           UserLocationModel.fromJson(jsonDecode(response.body));
 
-      _data = responseData.features ?? [];
-      _data = [
+      data = responseData.features ?? [];
+      data = [
         Feature(id: StringConstant.yourCurrentLocation),
-        ..._data,
+        ...data,
       ];
     } catch (e) {
       Logger().d(e);
       ReusableWidgets.showFlutterToast(context, e.toString());
     }
 
-    return _data;
+    return data;
   }
 
   /// Take user to the place, selected from search suggestions
@@ -171,19 +202,19 @@ class MapProvider with ChangeNotifier {
 
   /// Method to fetch the current location of the user using [location] package
   Future<LatLng> fetchCurrentLocation(BuildContext context) async {
-    var _serviceEnabled = await _mapLocation.serviceEnabled();
+    var serviceEnabled = await _mapLocation.serviceEnabled();
 
-    if (!_serviceEnabled) {
-      _serviceEnabled = await _mapLocation.requestService();
+    if (!serviceEnabled) {
+      serviceEnabled = await _mapLocation.requestService();
     }
-    var _permissionGranted = await _mapLocation.hasPermission();
-    if (_permissionGranted == location.PermissionStatus.denied) {
-      _permissionGranted = await _mapLocation.requestPermission();
+    var permissionGranted = await _mapLocation.hasPermission();
+    if (permissionGranted == location.PermissionStatus.denied) {
+      permissionGranted = await _mapLocation.requestPermission();
     }
 
-    var _locationData = await _mapLocation.getLocation();
+    var locationData = await _mapLocation.getLocation();
 
-    return LatLng(_locationData.latitude!, _locationData.longitude!);
+    return LatLng(locationData.latitude!, locationData.longitude!);
   }
 
   /// Animate the map to given [latLng]

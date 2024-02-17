@@ -37,7 +37,7 @@ class ApiResponse {
 class ApiResponseData {
   DataData data;
   List<Artist2> artists;
-  DataService services;
+  List<DataService> services;
 
   ApiResponseData({
     required this.data,
@@ -48,15 +48,16 @@ class ApiResponseData {
   factory ApiResponseData.fromJson(Map<String, dynamic> json) => ApiResponseData(
     data: DataData.fromJson(json["data"]),
     artists: List<Artist2>.from(json["artists"].map((x) => Artist2.fromJson(x))),
-    services:DataService.fromJson(json["services"]),
+    services: List<DataService>.from(json["services"].map((x) => DataService.fromJson(x))),
   );
 
   Map<String, dynamic> toJson() => {
     "data": data.toJson(),
     "artists": List<dynamic>.from(artists.map((x) => x.toJson())),
-    "services": services.toJson(),
+    "services": List<dynamic>.from(services.map((x) => x.toJson())),
   };
 }
+
 
 class Artist2 {
   Location location;
@@ -111,9 +112,7 @@ class Artist2 {
     name: json["name"] ?? '',
     rating: (json["rating"] ?? 0).toDouble(),
     salonId: json["salonId"] ?? '',
-    services: (json['services'] as List<dynamic>)
-        .map((service) => Service.fromJson(service))
-        .toList(),
+    services: List<Service>.from(json["services"].map((x) => Service.fromJson(x))),
     phoneNumber: json["phoneNumber"] ?? 0,
     availability: json["availability"] ?? false,
     live: json["live"] ?? false,
@@ -268,8 +267,8 @@ class DataData {
     rating: (json["rating"] ?? 0).toDouble(),
     closedOn: json["closedOn"] ?? '',
     phoneNumber: json["phoneNumber"] ?? 0,
-    createdAt: DateTime.parse(json["createdAt"]?.toString() ?? ''),
-    updatedAt: DateTime.parse(json["updatedAt"]?.toString() ?? ''),
+    createdAt: DateTime.parse(json["createdAt"] ?? ''),
+    updatedAt: DateTime.parse(json["updatedAt"] ?? ''),
     v: json["__v"] ?? 0,
     live: json["live"] ?? false,
     paid: json["paid"] ?? false,
@@ -358,74 +357,61 @@ class DataTiming {
   };
 }
 
-class DataService {
-  ServicesWithSubCategory servicesWithSubCategory;
-  List<ServicesWithoutSubCategory> servicesWithoutSubCategory;
-
-  DataService ({
-    required this.servicesWithSubCategory,
-    required this.servicesWithoutSubCategory,
-  });
-
-
-  factory  DataService.fromJson(Map<String, dynamic> json) =>  DataService(
-    servicesWithSubCategory: ServicesWithSubCategory.fromJson(json["servicesWithSubCategory"]),
-    servicesWithoutSubCategory: List<ServicesWithoutSubCategory>.from(json["servicesWithoutSubCategory"].map((x) => ServicesWithoutSubCategory.fromJson(x))),
-  );
-
-  Map<String, dynamic> toJson() => {
-    "servicesWithSubCategory": servicesWithSubCategory.toJson(),
-    "servicesWithoutSubCategory": List<dynamic>.from(servicesWithoutSubCategory.map((x) => x.toJson())),
-  };
-}
-class ServicesWithSubCategory {
-  List<ServicesWithSubCategory2> hairColor;
-
-  ServicesWithSubCategory({
-    required this.hairColor,
-  });
-
-  factory ServicesWithSubCategory.fromJson(Map<String, dynamic> json) {
-    List<ServicesWithSubCategory2> hairColorList = [];
-
-    if (json['hair color'] != null) {
-      hairColorList = List<ServicesWithSubCategory2>.from(
-        json['hair color'].map((x) => ServicesWithSubCategory2.fromJson(x)),
-      );
-    }
-
-    return ServicesWithSubCategory(hairColor: hairColorList);
-  }
-
-  Map<String, dynamic> toJson() => {
-    "hair color": List<dynamic>.from(hairColor.map((x) => x.toJson())),
-  };
-}
 class barberServices {
   final String serviceId;
   final int price;
   final String id;
+  List<PurpleVariable> variables;
+
 
   barberServices({
     required this.serviceId,
     required this.price,
     required this.id,
+    required this.variables,
   });
 
-  factory barberServices.fromJson(Map<String, dynamic> json) {
-    return barberServices(
-      serviceId: json['serviceId'] ?? '',
-      price: json['price'] ?? 0,
-      id: json['_id'] ?? '',
-    );
-  }
-}
+  factory barberServices.fromJson(Map<String, dynamic> json) => barberServices(
+    serviceId: json["serviceId"]??'',
+    price: json["price"]?? '',
+    id: json["_id"]?? '',
+    variables: List<PurpleVariable>.from(json["variables"].map((x) => PurpleVariable.fromJson(x))),
+  );
 
-class ServicesWithoutSubCategory {
+  Map<String, dynamic> toJson() => {
+    "serviceId": serviceId,
+    "price": price,
+    "_id": id,
+    "variables": List<dynamic>.from(variables.map((x) => x.toJson())),
+  };
+}
+class PurpleVariable {
+  String variableId;
+  int price;
+  String id;
+
+  PurpleVariable({
+    required this.variableId,
+    required this.price,
+    required this.id,
+  });
+
+  factory PurpleVariable.fromJson(Map<String, dynamic> json) => PurpleVariable(
+    variableId: json["variableId"]?? '',
+    price: json["price"]?? '',
+    id: json["_id"]?? '',
+  );
+
+  Map<String, dynamic> toJson() => {
+    "variableId": variableId,
+    "price": price,
+    "_id": id,
+  };
+}
+class DataService {
   String id;
   String salonId;
   String category;
-  String subCategory;
   String serviceTitle;
   String description;
   String targetGender;
@@ -434,135 +420,90 @@ class ServicesWithoutSubCategory {
   int cutPrice;
   DateTime createdAt;
   DateTime updatedAt;
-  String ?  _serviceSubCategory;
   int v;
+  List<FluffyVariable> variables;
 
-  ServicesWithoutSubCategory({
+  DataService({
     required this.id,
     required this.salonId,
     required this.category,
-    required this.subCategory,
     required this.serviceTitle,
     required this.description,
     required this.targetGender,
     required this.avgTime,
     required this.basePrice,
+    required this.cutPrice,
     required this.createdAt,
     required this.updatedAt,
-    required this.cutPrice,
     required this.v,
-    required String serviceSubCategory, // Modify the constructor to include this parameter
-  }) : _serviceSubCategory = serviceSubCategory;
-  String get serviceSubCategory => _serviceSubCategory ?? ''; // Add getter for serviceSubCategory
+    required this.variables,
+  });
 
-  set serviceSubCategory(String value) {
-    _serviceSubCategory = value; // Add setter for serviceSubCategory
-  }
-
-  factory ServicesWithoutSubCategory.fromJson(Map<String, dynamic> json) => ServicesWithoutSubCategory(
-    id: json["_id"],
-    salonId: json["salonId"],
-    category: json["category"],
-    subCategory: json["sub_category"],
-    serviceTitle: json["serviceTitle"],
-    description: json["description"],
-    targetGender: json["targetGender"],
-    avgTime: json["avgTime"],
-    basePrice: json["basePrice"],
-    cutPrice: json['cutPrice'],
-    serviceSubCategory: json['serviceSubCategory'] ?? '', // Assign value from JSON to serviceSubCategory
-    createdAt: DateTime.parse(json["createdAt"]),
-    updatedAt: DateTime.parse(json["updatedAt"]),
-    v: json["__v"],
+  factory DataService.fromJson(Map<String, dynamic> json) => DataService(
+    id: json["_id"] ?? '',
+    salonId: json["salonId"]?? '',
+    category: json["category"]?? '',
+    serviceTitle: json["serviceTitle"]?? '',
+    description: json["description"]?? '',
+    targetGender: json["targetGender"]?? '',
+    avgTime: json["avgTime"]?? '',
+    basePrice: json["basePrice"]?? '',
+    cutPrice: json["cutPrice"]?? '',
+    createdAt: DateTime.tryParse(json["createdAt"] ?? '') ?? DateTime.now(),
+    updatedAt: DateTime.tryParse(json["updatedAt"] ?? '') ?? DateTime.now(),
+    v: json["__v"]?? 0,
+    variables: List<FluffyVariable>.from(json["variables"].map((x) => FluffyVariable.fromJson(x))),
   );
 
   Map<String, dynamic> toJson() => {
     "_id": id,
     "salonId": salonId,
     "category": category,
-    "sub_category": subCategory,
     "serviceTitle": serviceTitle,
     "description": description,
     "targetGender": targetGender,
     "avgTime": avgTime,
     "basePrice": basePrice,
     "cutPrice": cutPrice,
-    'serviceSubCategory': serviceSubCategory, // Include serviceSubCategory in JSON output
     "createdAt": createdAt.toIso8601String(),
     "updatedAt": updatedAt.toIso8601String(),
     "__v": v,
+    "variables": List<dynamic>.from(variables.map((x) => x.toJson())),
   };
 }
 
-class ServicesWithSubCategory2 {
+class FluffyVariable {
+  String variableType;
+  String variableName;
+  int variablePrice;
+  int variableCutPrice;
+  int variableTime;
   String id;
-  String salonId;
-  String category;
-  String subCategory;
-  String serviceTitle;
-  String description;
-  String targetGender;
-  int avgTime;
-  int basePrice;
-  int cutPrice;
-  DateTime createdAt;
-  DateTime updatedAt;
-  String ?  _serviceSubCategory;
-  int v;
 
-  ServicesWithSubCategory2({
+  FluffyVariable({
+    required this.variableType,
+    required this.variableName,
+    required this.variablePrice,
+    required this.variableCutPrice,
+    required this.variableTime,
     required this.id,
-    required this.salonId,
-    required this.category,
-    required this.subCategory,
-    required this.serviceTitle,
-    required this.description,
-    required this.targetGender,
-    required this.avgTime,
-    required this.basePrice,
-    required this.createdAt,
-    required this.updatedAt,
-    required this.cutPrice,
-    required this.v,
-    required String serviceSubCategory, // Modify the constructor to include this parameter
-  }) : _serviceSubCategory = serviceSubCategory;
-  String get serviceSubCategory => _serviceSubCategory ?? ''; // Add getter for serviceSubCategory
+  });
 
-  set serviceSubCategory(String value) {
-    _serviceSubCategory = value; // Add setter for serviceSubCategory
-  }
-
-  factory ServicesWithSubCategory2.fromJson(Map<String, dynamic> json) => ServicesWithSubCategory2(
-    id: json["_id"],
-    salonId: json["salonId"],
-    category: json["category"],
-    subCategory: json["sub_category"],
-    serviceTitle: json["serviceTitle"],
-    description: json["description"],
-    targetGender: json["targetGender"],
-    avgTime: json["avgTime"],
-    basePrice: json["basePrice"],
-    cutPrice: json['cutPrice'],
-    serviceSubCategory: json['serviceSubCategory'] ?? '', // Assign value from JSON to serviceSubCategory
-    createdAt: DateTime.parse(json["createdAt"]),
-    updatedAt: DateTime.parse(json["updatedAt"]),
-    v: json["__v"],
+  factory FluffyVariable.fromJson(Map<String, dynamic> json) => FluffyVariable(
+    variableType: json["variableType"] ?? '',
+    variableName: json["variableName"] ?? '',
+    variablePrice: json["variablePrice"]?? '',
+    variableCutPrice: json["variableCutPrice"]?? '',
+    variableTime: json["variableTime"]?? '',
+    id: json["_id"]?? '',
   );
 
   Map<String, dynamic> toJson() => {
+    "variableType": variableType,
+    "variableName": variableName,
+    "variablePrice": variablePrice,
+    "variableCutPrice": variableCutPrice,
+    "variableTime": variableTime,
     "_id": id,
-    "salonId": salonId,
-    "category": category,
-    "sub_category": subCategory,
-    "serviceTitle": serviceTitle,
-    "description": description,
-    "targetGender": targetGender,
-    "avgTime": avgTime,
-    "basePrice": basePrice,
-    "cutPrice": cutPrice,
-    'serviceSubCategory': serviceSubCategory, // Include serviceSubCategory in JSON output
-    "createdAt": createdAt.toIso8601String(),
-    "updatedAt": updatedAt.toIso8601String(),
-    "__v": v,
   };
 }

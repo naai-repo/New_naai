@@ -29,14 +29,14 @@ import '../../../utils/access_token.dart';
 
 class SalonDetailsProvider with ChangeNotifier {
   Set<String> _selectedServiceCategories2 = {};
-  List<ServicesWithoutSubCategory> _filteredServices = [];
-  List<ServicesWithSubCategory2> _filteredServices2 = [];
+  List<DataService> _filteredServices = [];
+  List<DataService> _filteredServices2 = [];
   // Getter for selected service categories
   Set<String> get selectedServiceCategories2 => _selectedServiceCategories2;
 
   // Getter for filtered services
-  List<ServicesWithoutSubCategory> get filteredServices => _filteredServices;
-  List<ServicesWithSubCategory2> get filteredServices2 => _filteredServices2;
+  List<DataService> get filteredServices => _filteredServices;
+  List<DataService> get filteredServices2 => _filteredServices2;
 
 
   // Method to update selected service categories
@@ -50,12 +50,12 @@ class SalonDetailsProvider with ChangeNotifier {
   }
 
   // Method to set filtered services
-  void setFilteredServices(List<ServicesWithoutSubCategory> services ) {
+  void setFilteredServices(List<DataService> services ) {
     _filteredServices = services;
    // _filteredServices2 = services2;
     notifyListeners();
   }
-  void setFilteredServices2(List<ServicesWithSubCategory2> services2 ) {
+  void setFilteredServices2(List<DataService> services2 ) {
     _filteredServices2 = services2;
     // _filteredServices2 = services2;
     notifyListeners();
@@ -402,11 +402,11 @@ class SalonDetailsProvider with ChangeNotifier {
 
   String? Servicetitle;
 
-  Set<ServicesWithoutSubCategory> _selectedServices = Set<ServicesWithoutSubCategory>();
+  Set<DataService> _selectedServices = Set<DataService>();
   Set<Service2> _barberselectedServices = Set<Service2>();
-  Set<ServicesWithoutSubCategory> getSelectedServices() => _selectedServices;
-  Set<ServicesWithSubCategory2> getSelectedServices2() => _selectedServices2;
-  Set<ServicesWithSubCategory2> _selectedServices2 = Set<ServicesWithSubCategory2>();
+  Set<DataService> getSelectedServices() => _selectedServices;
+  Set<FluffyVariable> getSelectedServices2() => _selectedServices2;
+  Set<FluffyVariable> _selectedServices2 = Set<FluffyVariable>();
 
   Set<Service2> barbergetSelectedServices() => _barberselectedServices;
   Set<dynamic> getSelectedServicesCombined() {
@@ -430,15 +430,15 @@ class SalonDetailsProvider with ChangeNotifier {
 
   void toggleSelectedService(dynamic service) {
     if (_selectedServices.contains(service) || _selectedServices2.contains(service)) {
-      if (service is ServicesWithoutSubCategory) {
+      if (service is DataService) {
         _selectedServices.remove(service);
-      } else if (service is ServicesWithSubCategory2) {
+      } else if (service is FluffyVariable) {
         _selectedServices2.remove(service);
       }
     } else {
-      if (service is ServicesWithoutSubCategory) {
+      if (service is DataService) {
         _selectedServices.add(service);
-      } else if (service is ServicesWithSubCategory2) {
+      } else if (service is FluffyVariable) {
         _selectedServices2.add(service);
       }
     }
@@ -451,22 +451,29 @@ class SalonDetailsProvider with ChangeNotifier {
 
     notifyListeners();
   }
-
-
-  void toggleSelectedService2(ServicesWithSubCategory2 service) {
-    if (_selectedServices2.contains(service)) {
-      _selectedServices2.remove(service);
+  void toggleSelectedService2(dynamic service) {
+    if (_selectedServices.contains(service) || _selectedServices2.contains(service)) {
+      if (service is DataService) {
+        _selectedServices.remove(service);
+      } else if (service is FluffyVariable) {
+        _selectedServices2.remove(service);
+      }
     } else {
-      _selectedServices2.add(service);
+      if (service is DataService) {
+        _selectedServices.add(service);
+      } else if (service is FluffyVariable) {
+        _selectedServices2.add(service);
+      }
     }
-    _totalPrice = calculateTotalPrice2();
+
+    // Recalculate total price
+   // _totalPrice = calculateTotalPrice();
+
     // Recalculate show price if a discount is applied
-    setShowPrice(_totalPrice, _salonDetails?.data.data.discount ?? 0);
+ //   setShowPrice(_totalPrice, _salonDetails?.data.data.discount ?? 0);
 
     notifyListeners();
   }
-
-
   void toggleSelectedServicebarber(Service2 service) {
     if ( _barberselectedServices.contains(service)) {
       _barberselectedServices.remove(service);
@@ -505,11 +512,11 @@ class SalonDetailsProvider with ChangeNotifier {
     double totalPrice = 0.0;
 
     for (var service in _selectedServices) {
-      totalPrice += service.basePrice;
+      totalPrice += service.cutPrice;
     }
 
     for (var service in _selectedServices2) {
-      totalPrice += service.basePrice;
+      totalPrice += service.variableCutPrice;
     }
 
     return totalPrice;
@@ -517,7 +524,7 @@ class SalonDetailsProvider with ChangeNotifier {
 
   double calculateTotalPrice2() {
     // Calculate total price by summing up the base prices of selected services
-    return _selectedServices2.fold(0.0, (sum, service) => sum + service.basePrice);
+    return _selectedServices2.fold(0.0, (sum, service) => sum + service.variablePrice);
   }
 
   double calculateTotalbarberPrice() {
@@ -779,13 +786,13 @@ class SalonDetailsProvider with ChangeNotifier {
     _filteredServiceList.addAll(_serviceList);
   }
 
-  ServicesWithoutSubCategory? _selectedService;
+  DataService? _selectedService;
 
-  ServicesWithoutSubCategory? get selectedService => _selectedService;
+  DataService? get selectedService => _selectedService;
 
   void setSelectedService2(String serviceId) {
     // Find the service with the given id in salonDetails
-    ServicesWithoutSubCategory? selectedService = salonDetails?.data.services.servicesWithoutSubCategory.firstWhereOrNull(
+    DataService? selectedService = salonDetails?.data.services.firstWhereOrNull(
           (service) => service.id == serviceId,
     );
 

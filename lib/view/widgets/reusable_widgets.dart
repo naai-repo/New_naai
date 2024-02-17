@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -17,8 +18,9 @@ import 'package:naai/view_model/post_auth/salon_details/salon_details_provider.d
 import 'package:provider/provider.dart';
 import 'package:sizer/sizer.dart';
 import 'package:intl/intl.dart';
-
+import '../../../models/salon_model.dart';
 import '../../models/salon_detail.dart';
+import '../../view_model/post_auth/map/map_provider.dart';
 
 class ReusableWidgets {
   static Widget redFullWidthButton({
@@ -154,7 +156,7 @@ class ReusableWidgets {
   /// location on map.
   static Future<void> salonOverviewOnMapDialogue(
     BuildContext context, {
-    required SalonData clickedSalonData,
+    required SalonData2 clickedSalonData,
   }) async {
     await showDialog(
       barrierColor: Colors.transparent,
@@ -185,8 +187,12 @@ class ReusableWidgets {
                       child: Container(
                         width: 15.h,
                         height: 15.h,
-                        child: Image.asset(
-                          clickedSalonData.imagePath ?? "",
+                        child:  clickedSalonData.images != null &&  clickedSalonData.images.isNotEmpty
+                       ? Image.network(
+                          clickedSalonData.images[0].url ?? "",
+                          fit: BoxFit.cover,
+                        )  : Image.asset(
+                          'assets/images/salon_dummy_image.png',
                           fit: BoxFit.cover,
                         ),
                       ),
@@ -242,17 +248,40 @@ class ReusableWidgets {
                             ],
                           ),
                           GestureDetector(
-                            onTap: () {
-                              context
-                                  .read<ExploreProvider>()
-                                  .setSalonIndexByData(
-                                    context,
-                                    clickedSalonData,
-                                  );
-                              Navigator.pushNamed(
-                                context,
-                                NamedRoutes.salonDetailsRoute,
-                              );
+                            onTap: () async {
+                              try {
+                                Loader.showLoader(context);
+                                final response = await Dio().get(
+                                  'http://13.235.49.214:8800/partner/salon/single/${clickedSalonData.id}',
+                                );
+                                Loader.hideLoader(context);
+
+                                ApiResponse apiResponse = ApiResponse.fromJson(response.data);
+                                ApiResponse salonDetails = ApiResponse(
+                                  status: apiResponse.status,
+                                  message: apiResponse.message,
+                                  data: ApiResponseData(
+                                    data: apiResponse.data.data,
+                                    artists: apiResponse.data.artists,
+                                    services: apiResponse.data.services,
+                                  ),
+                                );
+
+                                // Pass the salonDetails to SalonDetailsProvider
+                                context.read<SalonDetailsProvider>().setSalonDetails(salonDetails);
+
+                                // If the API call is successful, navigate to the SalonDetailsScreen
+                                Navigator.pushNamed(
+                                  context,
+                                  NamedRoutes.salonDetailsRoute,
+                                );
+                              } catch (error) {
+                                Loader.hideLoader(context);
+                                // Handle the case where the API call was not successful
+                                // You can show an error message or take appropriate action
+                                Navigator.pushNamed(context, NamedRoutes.bottomNavigationRoute);
+                                print('Failed to fetch salon details: $error');
+                              }
                             },
                             child: Container(
                               padding: EdgeInsets.symmetric(
@@ -391,7 +420,7 @@ class ReusableWidgets {
             ),
           ),
           SizedBox(height: 1.h),
-          provider.salonDetails!.data.services.servicesWithoutSubCategory.length == 0
+          provider.salonDetails!.data.services.length == 0
               ? Container(
                   height: 10.h,
                   child: Center(
@@ -402,11 +431,11 @@ class ReusableWidgets {
                   padding: EdgeInsets.zero,
                   shrinkWrap: true,
                   physics: NeverScrollableScrollPhysics(),
-                  itemCount: provider.salonDetails!.data.services.servicesWithoutSubCategory.length,
+                  itemCount: provider.salonDetails!.data.services.length,
                   itemBuilder: (context, index) {
-                    ServicesWithoutSubCategory? serviceDetail =
-                        provider.salonDetails!.data.services.servicesWithoutSubCategory[index];
-                    bool isAdded = provider.salonDetails!.data.services.servicesWithoutSubCategory
+                    DataService? serviceDetail =
+                        provider.salonDetails!.data.services[index];
+                    bool isAdded = provider.salonDetails!.data.services
                             ?.contains(serviceDetail.id) ??
                         false;
                     return GestureDetector(
