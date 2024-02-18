@@ -1,14 +1,20 @@
+import 'package:naai/models/salon_detail.dart';
+
 class ArtistService {
   String artistId;
   String artist;
   List<Service>serviceList;
   double rating;
+  FluffyVariable? variable;
+
 
   ArtistService({
     required this.artistId,
     required this.artist,
     required this.serviceList,
     required this.rating,
+    this.variable
+
   });
 
   factory ArtistService.fromJson(Map<String, dynamic> json) {
@@ -19,6 +25,8 @@ class ArtistService {
       serviceList: (json['serviceList'] as List<dynamic>)
           .map((service) => Service.fromJson(service))
           .toList(),
+      variable: json['variable'] != null ? FluffyVariable.fromJson(json['variable']) : null,
+
 
     );
   }

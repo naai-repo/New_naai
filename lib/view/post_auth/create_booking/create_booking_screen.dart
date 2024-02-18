@@ -140,11 +140,13 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
                                       children: <Widget>[
                                         schedulingStatus(),
                                         SizedBox(height: 2.h),
-                                        if (provider.isOnSelectStaffType)
+                                      //  if (provider.isOnSelectStaffType)
+                                          /*
                                           Padding(
                                             padding: EdgeInsets.symmetric(horizontal:2.h),
                                             child: selectSingleStaffCard(),
                                           ),
+                                        *//*
                                         if (provider.isOnSelectStaffType  && !singleStaffListExpanded  )
                                             Padding(
                                               padding: EdgeInsets.symmetric(
@@ -173,6 +175,7 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
                                         SizedBox(height: 2.h),
                                         if (provider.isOnSelectStaffType)
                                         authenticationOptionsDivider(),
+                                        */
                                         if (provider.isOnSelectStaffType)
                                         Padding
                                           (
@@ -375,6 +378,7 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
                                         .map((ts) => ts.toJson())
                                         .toList(),
                                   };
+                                  String timeSlotsJson = json.encode(bookingRequestBody["timeSlots"]);
                                   Loader.showLoader(context);
                                   Dio dio = Dio();
                                   dio.interceptors.add(LogInterceptor(
@@ -396,6 +400,7 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
                                     data: bookingRequestBody,
                                   );
                                   print("data is :$bookingRequestBody");
+                                  print("Time Slots JSON: $timeSlotsJson");
                                   Loader.hideLoader(context);
 
                                   if (bookingResponse.statusCode == 200) {
@@ -1127,17 +1132,43 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
                                       await callApiAAndSchedule(provider, selectedServiceIds, formattedDate);
                                     } else {
                                       // For selectedArtistMap, collect service IDs and their corresponding artist IDs
-                                      List<Map<String, String>> requests = [];
+                                      List<Map<String, dynamic>> requests = [];
 
                                       for (String serviceId in selectedServiceIds) {
                                         String? selectedArtistId = provider.artistServiceList!.selectedArtistMap[serviceId]?.artistId;
+                                       /*
                                         if (selectedArtistId != null) {
                                           requests.add({
                                             "service": serviceId,
                                             "artist": selectedArtistId,
                                           });
                                         }
+                                        */
+                                        for (var service in provider.getSelectedServicesCombined()) {
+                                          Map<String, dynamic> request = {
+                                            "service": serviceId,
+                                            "artist": selectedArtistId,
+                                          };
+
+                                          // Check if the service has a variable associated with it
+                                          if (service.variables.isNotEmpty) {
+                                            // If yes, add the variable to the request
+                                            FluffyVariable variable = service.variables.first; // Assuming there's only one variable per service
+                                            request["variables"] = {
+                                              "variableType": variable.variableType,
+                                              "variableName": variable.variableName,
+                                              "variablePrice": variable.variablePrice,
+                                              "variableCutPrice": variable.variableCutPrice,
+                                              "variableTime": variable.variableTime,
+                                              "_id": variable.id,
+                                            };
+                                          }
+
+                                          requests.add(request);
+                                        }
+
                                       }
+
 
                                       if (requests.isNotEmpty) {
                                         // Schedule appointment with the collected service IDs and artist IDs
@@ -1290,7 +1321,7 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
         "date": formattedDate,
       };
 
-      print('Request Body: $requestBodyB');
+      print('Request Body of a: $requestBodyB');
 
       Response response = await dio.post(
         'http://13.235.49.214:8800/appointments/schedule',
@@ -1314,7 +1345,7 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
     }
   }
 
-  Future<void> scheduleWithArtistMap(SalonDetailsProvider provider, List<Map<String, String>> requests, String formattedDate) async {
+  Future<void> scheduleWithArtistMap(SalonDetailsProvider provider, List<Map<String, dynamic>> requests, String formattedDate) async {
     try {
       Loader.showLoader(context);
       Dio dio = Dio();
@@ -1336,7 +1367,7 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
         "date": formattedDate,
       };
 
-      print('Request Body: $requestBodyB');
+      print('Request Body of b: $requestBodyB');
 
       Response response = await dio.post(
         'http://13.235.49.214:8800/appointments/schedule',
@@ -1344,7 +1375,7 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
       );
 
       Loader.hideLoader(context);
-      print('Response Data: ${response.data}');
+      print('Response Data of b: ${response.data}');
 
       if (response.statusCode == 200) {
         TimeSlotResponse timeSlotResponse = TimeSlotResponse.fromJson(response.data);
@@ -1899,17 +1930,6 @@ print('request body :- $requestBody');
       Dio dio = Dio();
       dio.interceptors.add(LogInterceptor(requestBody: true, responseBody: true, logPrint: print));
 
-      // Retrieve the access token from local storage
-      String? authToken = await AccessTokenManager.getAccessToken();
-
-      if (authToken != null) {
-        dio.options.headers['Authorization'] = 'Bearer $authToken';
-      } else {
-        // Handle the case where the user is not authenticated
-        throw Exception('User is not authenticated');
-      }
-
-      // Create the request body for API A
       Map<String, dynamic> requestBody = {
         "services": selectedServiceIds,
         "artist": {
@@ -1925,7 +1945,7 @@ print('request body :- $requestBody');
           "rating": selectedArtist.rating,
         },
       };
-
+      print('response of api:-$requestBody');
       // Make the request to API A
       Response responseA = await dio.post(
         'http://13.235.49.214:8800/appointments/singleArtist/request',
@@ -1933,7 +1953,6 @@ print('request body :- $requestBody');
       );
 
       // Handle the response from API A
-      print(responseA.data);
 
       if (responseA.statusCode == 200) {
         ArtistRequest artistRequest = ArtistRequest.fromJson(responseA.data);
@@ -4805,6 +4824,7 @@ class _CreateBookingScreen3State extends State<CreateBookingScreen3> {
                                         'http://13.235.49.214:8800/appointments/schedule',
                                         data: requestBody,
                                       );
+                                      print('request is :- $requestBody');
                                       Loader.hideLoader(context);
                                       // Handle the response
                                       print(response.data);

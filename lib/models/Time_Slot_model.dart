@@ -82,35 +82,49 @@ class TimeSlotResponseTimeSlot {
   };
 }
 
-
 class Order {
   TimeService service;
-  FluffyVariable variable;
+  FluffyVariable? variable;
   String artist;
-  int time;
+  int? time;
 
   Order({
     required this.service,
     required this.artist,
-    required this.variable,
-    required this.time,
+    this.variable,
+    this.time,
   });
 
-  factory Order.fromJson(Map<String, dynamic> json) => Order(
-    service: TimeService.fromJson(json["service"]),
-    artist: json["artist"],
-    variable: FluffyVariable.fromJson(json['variable']
-    ),
-    time: json['time'],
-  );
+  factory Order.fromJson(Map<String, dynamic> json) {
+    List<FluffyVariable>? variables;
+    if (json['service']['variables'] != null && json['service']['variables'].isNotEmpty) {
+      variables = List<FluffyVariable>.from(json['service']['variables'].map((x) => FluffyVariable.fromJson(x)));
+    }
 
-  Map<String, dynamic> toJson() => {
-    "service": service.toJson(),
-    "artist": artist,
-    "variable": variable.toJson(),
-    "time": time
-  };
+    return Order(
+      service: TimeService.fromJson(json["service"]),
+      variable: variables != null ? variables[0] : null,
+      artist: json["artist"],
+      time: json['time'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    Map<String, dynamic> json = {
+      "service": service.toJson(),
+      "artist": artist,
+      "time": time,
+    };
+
+    if (variable != null) {
+      json["variable"] = variable!.toJson();
+    }
+
+    return json;
+  }
 }
+
+
 
 class TimeService {
   String id;
