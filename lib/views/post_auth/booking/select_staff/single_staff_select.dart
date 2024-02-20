@@ -26,8 +26,11 @@ class _SingleStaffSelectState extends State<SingleStaffSelect> {
 
 
     bool isSelected = (ref.selectedStaffIndex == 0);
-    String selectedArtistName = "Choose a Staff";
-   
+    String selectedArtistName =  "Choose a Staff";
+    // if(ref.singleStaffArtistSelected.id != "0000"){
+    //     selectedArtistName = ref.singleStaffArtistSelected.name ?? "Choose a Staff";
+    // }
+
     return SizedBox(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
@@ -107,9 +110,14 @@ class _SingleStaffSelectState extends State<SingleStaffSelect> {
                             itemBuilder: (contex,index){
                                   String artitstName = singleServices.artists?[index].name ?? "Artist Name";
                                   double rating = singleServices.artists?[index].rating ?? 0;
-                                          
+                                  bool isSelected = ref.isSingleSatffArtistSelected(singleServices.artists?[index].id ?? "");
+
                                   return InkWell(
-                                    onTap: () async {},
+                                    onTap: () async {
+                                        if(!isSelected){
+                                            ref.addFinalSingleStaffServices(singleServices.artists![index]);
+                                        }
+                                    },
                                     borderRadius: BorderRadius.circular(10.r),
                           
                                     child: Container(
@@ -132,7 +140,7 @@ class _SingleStaffSelectState extends State<SingleStaffSelect> {
                                                 WidgetSpan(
                                                   alignment: PlaceholderAlignment.middle,
                                                   child: Radio(
-                                                    value: 0, 
+                                                    value: isSelected ? 1 : 0, 
                                                     groupValue: 1, 
                                                     activeColor: ColorsConstant.appColor,
                                                     onChanged: (vv){}

@@ -933,6 +933,7 @@ class _CreateBookingScreenState extends State<BookingScreen> {
             ],
           ),
         );
+  
   }
   
   Widget schedulingStatus() {

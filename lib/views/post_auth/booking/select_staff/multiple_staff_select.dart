@@ -92,7 +92,7 @@ class _MultipleStaffSelectState extends State<MultipleStaffSelect> {
                               String serviceName = ref.selectedServices[index].service?.serviceTitle ?? "Service Name";
                               String targetGender = ref.selectedServices[index].service?.targetGender ?? "male";
                               int amount = ref.selectedServices[index].service?.basePrice ?? 99999;
-
+                              
                               return Container(
                                 padding: EdgeInsets.all(15.w),
                                 decoration: BoxDecoration(
@@ -119,7 +119,7 @@ class _MultipleStaffSelectState extends State<MultipleStaffSelect> {
                                                     )),
                                                     WidgetSpan(child: SizedBox(width: 10.w,)),
 
-                                                    TextSpan(text: "Service Name",
+                                                    TextSpan(text: serviceName.toUpperCase(),
                                                      style: TextStyle(
                                                       fontFamily: "Poppins",
                                                       fontSize: 16.sp,
@@ -169,18 +169,19 @@ class ChooseAStaff extends StatefulWidget {
 
 class _ChooseAStaffState extends State<ChooseAStaff> {
   bool isCollapse = true;
+  String selectedArtistName = "Choose a Staff";
+
   @override
   void initState() {
-    super.initState();
     isCollapse = true;
+    super.initState();
   }
 
   @override
   Widget build(BuildContext context){
     final ref = Provider.of<BookingServicesSalonProvider>(context,listen: false);
     final artists = ref.selectedServices[widget.index].artists ?? [];
-    String selectedArtistName = "Choose a Staff";
-
+    
     return SizedBox(
       child: Material(
          clipBehavior: Clip.hardEdge,
@@ -234,9 +235,19 @@ class _ChooseAStaffState extends State<ChooseAStaff> {
                        itemBuilder: (contex,idx){
                              String artitstName = artists[idx].name ?? "Artist Name";
                              double rating = artists[idx].rating ?? 0;
-                                     
+                             bool isSelected = ref.isMultiSatffArtistSelected(widget.index,artists[idx].id ?? "");
+
                              return InkWell(
-                               onTap: (){},
+                               onTap: () async {
+                                  if(!isSelected){
+                                       if(!isSelected){
+                                            setState(() {
+                                              selectedArtistName = artitstName;
+                                              ref.addFinalMultiStaffServices(widget.index, artists[idx]);
+                                            });
+                                        }
+                                  }
+                               },
                                borderRadius: BorderRadius.circular(10.r),
                      
                                child: Container(
@@ -259,10 +270,17 @@ class _ChooseAStaffState extends State<ChooseAStaff> {
                                            WidgetSpan(
                                              alignment: PlaceholderAlignment.middle,
                                              child: Radio(
-                                               value: 0, 
+                                               value: (isSelected) ? 1 : 0, 
                                                groupValue: 1, 
                                                activeColor: ColorsConstant.appColor,
-                                               onChanged: (vv){}
+                                               onChanged: (vv){
+                                                  if(!isSelected){
+                                                      setState(() {
+                                                        selectedArtistName = artitstName;
+                                                        ref.addFinalMultiStaffServices(widget.index, artists[idx]);
+                                                      });
+                                                  }
+                                               }
                                              )
                                            ),
                                            WidgetSpan(child: SizedBox(width: 0.w)),

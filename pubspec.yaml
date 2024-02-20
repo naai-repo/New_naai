@@ -49,6 +49,8 @@ dependencies:
   smooth_page_indicator: ^1.1.0
   flutter_typeahead: 4.0.0 # Note : use this version, latest version not wokring
   geocoding: ^2.1.1
+  syncfusion_flutter_datepicker: 23.1.40 #20.4.54
+  intl: ^0.18.0
   
 dev_dependencies:
   flutter_test:

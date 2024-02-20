@@ -73,9 +73,15 @@ class ServicesArtistItemModel {
   }
 
   Map<String, dynamic> toMap() {
+    if(variable == null){
+      return <String, dynamic>{
+        'service': service,
+        'artist': artist,
+      };
+    }
     return <String, dynamic>{
       'service': service,
-      'variable': variable?.toMap(),
+      'variable': variable?.toMap() ?? [],
       'artist': artist,
     };
   }

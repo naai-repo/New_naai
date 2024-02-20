@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:flutter/material.dart';
+
 class ScheduleResponseModel {
   String salonId;
   List<TimeSlotResponseTimeSlot>? timeSlots;
@@ -39,11 +41,34 @@ class ScheduleResponseModel {
   }
 
   factory ScheduleResponseModel.fromMap(Map<String, dynamic> map) {
+    Map<String,List<int>> artistTimeSlotsRes = {};
+    if(map['artistsTimeSlots'] != null){
+        final ats = map['artistsTimeSlots'] as Map<String,dynamic>;
+        ats.forEach((key, value) {
+          List<int> slots = [];
+          for(var e in (value as List<dynamic>)){
+              slots.add(e);
+          }
+          artistTimeSlotsRes[key] = slots;
+        });
+    }
+   
+    List<List<String>> timeSlotVisible = [];
+    if(map['timeSlotsVisible'] != null){
+        final tsv = map['timeSlotsVisible'] as List<dynamic>;
+        for(var e in tsv){
+             List<String> temp = [];
+             temp.add(e[0]);
+             temp.add(e[1]);
+             timeSlotVisible.add(temp);
+        }
+    }
+
     return ScheduleResponseModel(
       salonId: map['salonId'] as String,
       timeSlots: map['timeSlots'] != null ? List<TimeSlotResponseTimeSlot>.from((map['timeSlots'] as List<dynamic>).map<TimeSlotResponseTimeSlot?>((x) => TimeSlotResponseTimeSlot.fromMap(x as Map<String,dynamic>),),) : null,
-      artistsTimeSlots: map['artistsTimeSlots'] != null ? Map<String,List<int>>.from((map['artistsTimeSlots'] as Map<String,List<int>>)) : null,
-      timeSlotsVisible: map['timeSlotsVisible'] != null ? List<List<String>>.from((map['timeSlotsVisible'] as List<dynamic>).map<List<String>?>((x) => x,),) : null,
+      artistsTimeSlots: artistTimeSlotsRes,
+      timeSlotsVisible: timeSlotVisible,
     );
   }
 
@@ -100,8 +125,8 @@ class TimeSlotResponseTimeSlot {
     return TimeSlotResponseTimeSlot(
       key: map['key'] as int,
       possible: map['possible'] as bool,
-      timeSlot: List<TimeSlotTimeSlot>.from((map['timeSlot'] as List<int>).map<TimeSlotTimeSlot>((x) => TimeSlotTimeSlot.fromMap(x as Map<String,dynamic>),),),
-      order: List<Order>.from((map['order'] as List<int>).map<Order>((x) => Order.fromMap(x as Map<String,dynamic>),),),
+      timeSlot: List<TimeSlotTimeSlot>.from((map['timeSlot'] as List<dynamic>).map<TimeSlotTimeSlot>((x) => TimeSlotTimeSlot.fromMap(x as Map<String,dynamic>),),),
+      order: List<Order>.from((map['order'] as List<dynamic>).map<Order>((x) => Order.fromMap(x as Map<String,dynamic>),),),
     );
   }
 
@@ -233,8 +258,8 @@ class TimeService {
       salonIds: map['salonIds'] != null ? List<String>.from((map['salonIds'] as List<String>)) : null,
       avgTime: map['avgTime'] != null ? map['avgTime'] as int : null,
       basePrice: map['basePrice'] != null ? map['basePrice'] as int : null,
-      createdAt: map['createdAt'] != null ? DateTime.fromMillisecondsSinceEpoch(map['createdAt'] as int) : null,
-      updatedAt: map['updatedAt'] != null ? DateTime.fromMillisecondsSinceEpoch(map['updatedAt'] as int) : null,
+      createdAt: map['createdAt'] != null ? DateTime.fromMillisecondsSinceEpoch(0) : null,
+      updatedAt: map['updatedAt'] != null ? DateTime.fromMillisecondsSinceEpoch(0) : null,
     );
   }
 
@@ -276,7 +301,7 @@ class TimeSlotTimeSlot {
 
   factory TimeSlotTimeSlot.fromMap(Map<String, dynamic> map) {
     return TimeSlotTimeSlot(
-      slot: map['slot'] != null ? List<String>.from((map['slot'] as List<String>)) : null,
+      slot: map['slot'] != null ? List<String>.from((map['slot'] as List<dynamic>)) : null,
       key: map['key'] != null ? map['key'] as int : null,
     );
   }

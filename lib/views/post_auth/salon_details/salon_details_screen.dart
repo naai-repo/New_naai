@@ -836,8 +836,8 @@ class _ServiceFilterContainerState extends State<ServiceFilterContainer> {
               bool isAdded = refBooking.isServiceSelected(services[index]);
               String? title = services[index].serviceTitle ?? "No Title";
               String? discription = services[index].description ?? "Example Discription";
-              int? totalPrice =  services[index].basePrice ?? 99999;
-              int? discountPrice = services[index].cutPrice ?? 999999;
+              int? totalPrice =  services[index].cutPrice ?? 99999;
+              int? discountPrice = services[index].basePrice ?? 999999;
               String serviceType = services[index].targetGender ?? "male";
 
               return Container(
@@ -908,7 +908,11 @@ class _ServiceFilterContainerState extends State<ServiceFilterContainer> {
                     SizedBox(height: 15.h,),
                     TextButton(
                       onPressed: () async {
-                        
+                        if(refBooking.isServiceSelected(services[index])){
+                            refBooking.removeService(services[index]);
+                            refBooking.setVariableSelected(VariableService(id: "000",variableCutPrice: 0,variablePrice: 0));
+                            return;
+                        }
                         if(services[index].variables?.isNotEmpty ?? false){
                             showVariablesAddingSheet(context, services[index]);
                             return;
@@ -1127,8 +1131,6 @@ class _ServiceFilterContainerState extends State<ServiceFilterContainer> {
          uniqueVariables.add(value);
      });
 
-     bool isAdded = false;
-
      showModalBottomSheet(
        context: context, 
        useRootNavigator: true,
@@ -1197,172 +1199,220 @@ class _ServiceFilterContainerState extends State<ServiceFilterContainer> {
                       ),
                       Expanded(
                         flex: 4,
-                        child: SingleChildScrollView(
-                          child: Column(
-                            children: List.generate(uniqueVariables.length, (index){
-                                String subCategoryName = uniqueVariables[index].first.variableType ?? "SubCategory";
-                                
-                                return Container(
-                                    margin: EdgeInsets.all(15.w),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(10.r)
-                                    ),
-                                    child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.start,
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                          Padding(
-                                            padding: EdgeInsets.all(15.w),
-                                            child: Text(subCategoryName.toUpperCase(),
-                                                style: TextStyle(
-                                                  fontFamily: "Poppins",
-                                                  fontSize: 16.sp,
-                                                  color: Colors.black,
-                                                  fontWeight: FontWeight.w600
-                                                ),
-                                              ),
-                                          ),
-                                          SizedBox(height: 10.h),
-                                          SizedBox(
-                                            child: ListView.builder(
-                                              shrinkWrap: true,
-                                              physics: const NeverScrollableScrollPhysics(),
-                                              //itemCount: uniqueVariables[index].length,
-                                              itemCount: 15,
-                                              itemBuilder: (context,idx){
-                                                  // String serviceName = uniqueVariables[index][idx].variableName ?? "ServiceName";
-                                                  // //int totalPrice = uniqueVariables[index][idx].variablePrice ?? 99999;
-                                                  // int totalDiscountPrice = uniqueVariables[index][idx].variableCutPrice ?? 99999;
-                                                  String serviceName =  "ServiceName";
-                                                  //int totalPrice = uniqueVariables[index][idx].variablePrice ?? 99999;
-                                                  int totalDiscountPrice =  99999;
-                                                  
-                                                  return Material(
-                                                    color: Colors.white,
-                                                    child: InkWell(
-                                                      onTap: (){},
-                                                      child: Padding(
-                                                        padding:  EdgeInsets.symmetric(horizontal: 20.w),
-                                                        child: Row(
-                                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                                          crossAxisAlignment: CrossAxisAlignment.center,
-                                                          children: [
-                                                              Text(serviceName,
-                                                                  style: TextStyle(
-                                                                    fontFamily: "Poppins",
-                                                                    color: const Color(0xFF8C9AAC),
-                                                                    fontSize: 14.sp,
-                                                                    fontWeight: FontWeight.w700
-                                                                  ),
-                                                              ),
-                                                                                                    
-                                                              Text.rich(TextSpan(
-                                                                style: TextStyle(
-                                                                    fontFamily: "Poppins",
-                                                                    color: Colors.black,
-                                                                    fontSize: 15.sp,
-                                                                    fontWeight: FontWeight.w500
-                                                                ),
-                                                                children: [
-                                                                    WidgetSpan(
-                                                                      alignment: PlaceholderAlignment.middle,
-                                                                      child: Icon(Icons.add,color: Colors.black,size: 20.sp,)),
-                                                                    TextSpan(text: " Rs. $totalDiscountPrice"),
-                                                                    WidgetSpan(child: SizedBox(width: 1.w)),
-                                                                    WidgetSpan(
-                                                                      alignment: PlaceholderAlignment.middle,
-                                                                      child: Radio(
-                                                                      value: 1, 
-                                                                      groupValue: 1, 
-                                                                      activeColor: ColorsConstant.appColor,
-                                                                      onChanged: (v){}
-                                                                    ))
-                                                                ]
-                                                              ))
-                                                          ],
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  );
-                                            
-                                              },
-                                            ),
-                                          )
-                          
-                                      ],
-                                    ),
-                                );
-                            })
-                                                ,
-                          ),
-                        ) 
+                        child: VariableSelectionContainer(service: service,uniqueVariables: uniqueVariables)
                       ),
-                      Flexible(
+                       Flexible(
                        // flex: 1,
                         fit: FlexFit.loose,
-                        child: Align(
-                          alignment: Alignment.bottomCenter,
-                          child: Container(
-                            padding: EdgeInsets.all(20.w),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              border: Border(top: BorderSide(color: ColorsConstant.greyBorderColor,width: 0.5.w),bottom: BorderSide(color: ColorsConstant.greyBorderColor,width: 0.5.w))
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Text("Rs. ${29899}",
-                                        style: TextStyle(
-                                          fontFamily: "Poppins",
-                                          fontSize: 18.sp,
-                                          color: Colors.black,
-                                          fontWeight: FontWeight.w700
-                                        ),
-                                ),
-                                TextButton(
-                                  onPressed: () async {
-                                      
-                                  }, 
-                                  style: TextButton.styleFrom(
-                                    backgroundColor: (isAdded) ? ColorsConstant.appColor : Colors.white,
-                                    padding: EdgeInsets.symmetric(horizontal: 20.w,vertical: 8.w),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(10.r),
-                                        side: BorderSide(color: const Color(0xFFAA2F4C),width: 1.w)
-                                        )
-                                  ),
-                                  child: RichText(text: TextSpan(
-                                    style: TextStyle(
-                                      color: (isAdded) ? Colors.white : const Color(0xFFAA2F4C),
-                                      fontSize: 18.sp,
-                                      fontFamily: 'Poppins',
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                      children: [
-                                        WidgetSpan(
-                                          alignment: PlaceholderAlignment.middle,
-                                          child: Icon((!isAdded) ? Icons.add : Icons.remove,
-                                          size: 20.sp,color: (isAdded) ? Colors.white : const Color(0xFFAA2F4C),)),
-                                        WidgetSpan(child: SizedBox(width: 5.w,)),
-                                          TextSpan(
-                                            text: (!isAdded) ? "Add" : "Remove"
-                                        )
-                                      ]
-                                  ))
-                                ),
-                                            
-                              ],
-                            ),
-                          ),
-                        ))
+                        child: VariableAddServiceContainer(service: service)
+                        )
+                   
                    ],
                ),
             ),
           );
        }
      );
+  }
+}
+
+class VariableSelectionContainer extends StatefulWidget {
+  final ServiceDataModel service;
+  final List<List<VariableService>> uniqueVariables;
+  const VariableSelectionContainer({super.key, required this.service, required this.uniqueVariables});
+
+  @override
+  State<VariableSelectionContainer> createState() => _VariableSelectionContainerState();
+}
+
+class _VariableSelectionContainerState extends State<VariableSelectionContainer> {
+  late ServiceDataModel service;
+  late List<List<VariableService>> uniqueVariables;
+
+  @override
+  void initState() {
+    super.initState();
+    service = widget.service;
+    uniqueVariables = widget.uniqueVariables;
+  }
+
+  @override
+  Widget build(BuildContext context){
+    final ref = Provider.of<BookingServicesSalonProvider>(context,listen: true);
+    
+    return SingleChildScrollView(
+            child: Column(
+              children: List.generate(uniqueVariables.length, (index){
+                  String subCategoryName = uniqueVariables[index].first.variableType ?? "SubCategory";
+                  
+                  return Container(
+                    clipBehavior: Clip.hardEdge,
+                      margin: EdgeInsets.all(15.w),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(10.r)
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                            Padding(
+                              padding: EdgeInsets.all(15.w),
+                              child: Text(subCategoryName.toUpperCase(),
+                                  style: TextStyle(
+                                    fontFamily: "Poppins",
+                                    fontSize: 16.sp,
+                                    color: Colors.black,
+                                    fontWeight: FontWeight.w600
+                                  ),
+                                ),
+                            ),
+                            SizedBox(height: 10.h),
+                            SizedBox(
+                              child: ListView.builder(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: uniqueVariables[index].length,
+                                itemBuilder: (context,idx){
+                                    String serviceName = uniqueVariables[index][idx].variableName ?? "ServiceName";
+                                    //int totalPrice = uniqueVariables[index][idx].variablePrice ?? 99999;
+                                    int totalDiscountPrice = uniqueVariables[index][idx].variablePrice ?? 99999;
+                                    bool isAdded = (uniqueVariables[index][idx].id == ref.variableSelected.id);
+
+                                    return Material(
+                                      color: Colors.white,
+                                      child: InkWell(
+                                        onTap: () async {
+                                            ref.setVariableSelected(uniqueVariables[index][idx]);
+                                        },
+                                        child: Padding(
+                                          padding:  EdgeInsets.symmetric(horizontal: 20.w),
+                                          child: Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            crossAxisAlignment: CrossAxisAlignment.center,
+                                            children: [
+                                                Text(serviceName,
+                                                    style: TextStyle(
+                                                      fontFamily: "Poppins",
+                                                      color: const Color(0xFF8C9AAC),
+                                                      fontSize: 14.sp,
+                                                      fontWeight: FontWeight.w700
+                                                    ),
+                                                ),
+                                                                                      
+                                                Text.rich(TextSpan(
+                                                  style: TextStyle(
+                                                      fontFamily: "Poppins",
+                                                      color: Colors.black,
+                                                      fontSize: 15.sp,
+                                                      fontWeight: FontWeight.w500
+                                                  ),
+                                                  children: [
+                                                      WidgetSpan(
+                                                        alignment: PlaceholderAlignment.middle,
+                                                        child: Icon(Icons.add,color: Colors.black,size: 20.sp,)),
+                                                      TextSpan(text: " Rs. $totalDiscountPrice"),
+                                                      WidgetSpan(child: SizedBox(width: 1.w)),
+                                                      WidgetSpan(
+                                                        alignment: PlaceholderAlignment.middle,
+                                                        child: Radio(
+                                                        value: (isAdded) ? 1 : 0, 
+                                                        groupValue: 1, 
+                                                        activeColor: ColorsConstant.appColor,
+                                                        onChanged: (v){
+                                                          ref.setVariableSelected(uniqueVariables[index][idx]);
+                                                        }
+                                                      ))
+                                                  ]
+                                                ))
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                              
+                                },
+                              ),
+                            )
+            
+                        ],
+                      ),
+                  );
+              })
+                                  ,
+            ),
+        );
+  }
+}
+
+
+class VariableAddServiceContainer extends StatelessWidget {
+  final ServiceDataModel service;
+  const VariableAddServiceContainer({super.key, required this.service});
+
+  @override
+  Widget build(BuildContext context) {
+    final ref = Provider.of<BookingServicesSalonProvider>(context,listen: true);
+    final variable = ref.variableSelected;
+    
+    return Align(
+            alignment: Alignment.bottomCenter,
+            child: Container(
+              padding: EdgeInsets.all(20.w),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border(top: BorderSide(color: ColorsConstant.greyBorderColor,width: 0.5.w),bottom: BorderSide(color: ColorsConstant.greyBorderColor,width: 0.5.w))
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text("Rs. ${variable.variablePrice}",
+                          style: TextStyle(
+                            fontFamily: "Poppins",
+                            fontSize: 18.sp,
+                            color: Colors.black,
+                            fontWeight: FontWeight.w700
+                          ),
+                  ),
+                  TextButton(
+                    onPressed: () async {
+                        ref.addService(service.copyWith(variables: [variable]));
+                        Navigator.pop(context);
+                    }, 
+                    style: TextButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      padding: EdgeInsets.symmetric(horizontal: 20.w,vertical: 8.w),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10.r),
+                          side: BorderSide(color: const Color(0xFFAA2F4C),width: 1.w)
+                        )
+                    ),
+                    child: RichText(text: TextSpan(
+                      style: TextStyle(
+                        color: const Color(0xFFAA2F4C),
+                        fontSize: 18.sp,
+                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w600,
+                      ),
+                        children: [
+                          WidgetSpan(
+                            alignment: PlaceholderAlignment.middle,
+                            child: Icon(Icons.add,
+                            size: 20.sp,
+                            color: const Color(0xFFAA2F4C),)),
+                          WidgetSpan(child: SizedBox(width: 5.w,)),
+                          const TextSpan(
+                              text: "Add"
+                          )
+                        ]
+                    ))
+                  ),
+                              
+                ],
+              ),
+            ),
+          );
   }
 }
 

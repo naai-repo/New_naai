@@ -1,14 +1,18 @@
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:naai/providers/bottom_change_index_provider.dart';
+import 'package:naai/providers/post_auth/booking_screen_change_provider.dart';
 import 'package:naai/providers/post_auth/booking_services_salon_provider.dart';
+import 'package:naai/utils/buttons/buttons.dart';
 import 'package:naai/utils/cards/custom_cards.dart';
 import 'package:naai/utils/common_widgets/common_widgets.dart';
 import 'package:naai/utils/constants/colors_constant.dart';
 import 'package:naai/utils/constants/image_path_constant.dart';
 import 'package:naai/utils/constants/string_constant.dart';
 import 'package:naai/utils/constants/style_constant.dart';
+import 'package:naai/views/post_auth/booking/order_summary/order_summarry.dart';
+import 'package:naai/views/post_auth/booking/select_slot/select_slot.dart';
 import 'package:naai/views/post_auth/booking/select_staff/route_staff_select.dart';
 import 'package:provider/provider.dart';
 
@@ -25,15 +29,23 @@ class _CreateBookingScreenState extends State<BookingScreen> {
   @override
   void initState() {
     super.initState();
+    final ref = context.read<BookingServicesSalonProvider>();
+    ref.resetAll();
+    ref.resetFinalMultiStaffServices();
+    ref.resetFinalSingleStaffArtist();
+    context.read<BookingScreenChangeProvider>().setScreenIndex(0);
   }
 
   @override
   Widget build(BuildContext context) {
+    final ref = Provider.of<BookingScreenChangeProvider>(context,listen: true);
 
     List<Widget> screens = [
-      const SelectStaff()
+      const SelectStaff(),
+      const SelectSlot(),
+      const OrderSummary()
     ];
-
+    
     return PopScope(
         canPop: true,
         child: SafeArea(
@@ -93,7 +105,7 @@ class _CreateBookingScreenState extends State<BookingScreen> {
                         delegate: SliverChildListDelegate(
                           [
                             Container(
-                             // constraints: BoxConstraints(minHeight: MediaQuery.of(context).size.height,),
+                              constraints: BoxConstraints(minHeight: MediaQuery.of(context).size.height),
                               //height: double.maxFinite,
                               padding: EdgeInsets.symmetric(
                                 horizontal: 20.w,
@@ -103,57 +115,71 @@ class _CreateBookingScreenState extends State<BookingScreen> {
                                 children: [
                                   _salonOverviewCard(),
                                   SizedBox(height: 20.h),
+
+                                  if(ref.screenIndex < 2)
                                   Builder(
-                                    builder: (context) {
-                                       final ctx = DefaultTabController.of(context);
-                                      return TabBar(
-                                         onTap: (index) {
-                                              if (ctx.indexIsChanging) { 
-                                                if(index != 0) ctx.index = ctx.previousIndex; 
-                                              } else { 
-                                                return; 
-                                              }
-                                          },
-                                          tabs: [
-                                            const Text("Select Staff"),
-                                      
-                                             SvgPicture.asset(
-                                                ImagePathConstant.rightArrowIcon,
-                                                height: 15.h,
-                                                width: 15.w,
-                                                color: ColorsConstant.dropShadowColor,
-                                             ),
+                                      builder: (context) {
+                                        final ctx = DefaultTabController.of(context);
+                                        ctx.index = (ref.screenIndex  == 1) ? 2 : 0;
 
-                                            const Text("Select Slot"),
-                                      
-                                             SvgPicture.asset(
-                                                ImagePathConstant.rightArrowIcon,
-                                                height: 15.h,
-                                                width: 15.w,
-                                                color: ColorsConstant.dropShadowColor,
-                                             ),
-                                            
-                                            const Text("Payment"),
-                                          ],
-                                          automaticIndicatorColorAdjustment: false,
-                                          dividerColor: Colors.transparent,
-                                          indicatorColor: ColorsConstant.appColor,
-                                          padding: const EdgeInsets.all(0),
-                                          labelColor: ColorsConstant.appColor,
-                                          labelPadding: EdgeInsets.all(10.w),
-                                          labelStyle: TextStyle(
-                                                fontFamily: "Poppins",
-                                                fontWeight: FontWeight.w600,
-                                                fontSize: 14.sp
-                                          ),
-                                          isScrollable: true,
-                                          tabAlignment: TabAlignment.center,
-                                        );
-                                    }
+                                        return TabBar(
+                                          onTap: (index) {
+                                                //extra code is implemented to prevent tabs from auto swicthing 
+                                                if (ctx.indexIsChanging) { 
+                                                  if(index >= ref.screenIndex){
+                                                    ctx.index = ctx.previousIndex; 
+                                                  }else{
+                                                    ref.setScreenIndex(index);
+                                                  }
+                                                } else { 
+                                                  return; 
+                                                }
+                                            },
+                                            tabs: [
+                                              Text(
+                                                "Select Staff",
+                                                style: TextStyle(
+                                                  color: (ref.screenIndex >= 0) ? ColorsConstant.appColor : Colors.transparent
+                                                ),
+                                              ),
+                                        
+                                              SvgPicture.asset(
+                                                  ImagePathConstant.rightArrowIcon,
+                                                  height: 15.h,
+                                                  width: 15.w,
+                                                  color: ColorsConstant.dropShadowColor,
+                                              ),
+
+                                              const Text("Select Slot"),
+                                        
+                                              SvgPicture.asset(
+                                                  ImagePathConstant.rightArrowIcon,
+                                                  height: 15.h,
+                                                  width: 15.w,
+                                                  color: ColorsConstant.dropShadowColor,
+                                              ),
+                                              
+                                              const Text("Payment"),
+                                            ],
+                                            automaticIndicatorColorAdjustment: false,
+                                            dividerColor: Colors.transparent,
+                                            indicatorColor: ColorsConstant.appColor,
+                                            padding: const EdgeInsets.all(0),
+                                            labelColor: ColorsConstant.appColor,
+                                            labelPadding: EdgeInsets.all(10.w),
+                                            labelStyle: TextStyle(
+                                                  fontFamily: "Poppins",
+                                                  fontWeight: FontWeight.w600,
+                                                  fontSize: 14.sp
+                                            ),
+                                            isScrollable: true,
+                                            tabAlignment: TabAlignment.center,
+                                          );
+                                      }
                                   ),
-
-                                  SizedBox(height: 40.h),
-                                  screens[0]
+                                  
+                                  if(ref.screenIndex < 2) SizedBox(height: 40.h),
+                                  screens[ref.screenIndex]
                                 ],
                               ),
                             ),
@@ -166,10 +192,27 @@ class _CreateBookingScreenState extends State<BookingScreen> {
               ),
               bottomNavigationBar: Container(
               color: Colors.white,
-              child: Consumer<BookingServicesSalonProvider>(builder: (context, ref, child) {
-                  double totalPrice = ref.totalPrice;
+              child: Consumer2<BookingServicesSalonProvider,BottomChangeScreenIndexProvider>(builder: (context, ref,refScreenChange, child) {
                   double discountPrice = ref.totalDiscountPrice;
+                  bool isActive = false;
 
+                  if(ref.selectedStaffIndex == 0){
+                       isActive = ref.checkIsSingleStaffSelected();
+                  }else{
+                       isActive = ref.checkIsMultiStaffSelected();
+                  }
+                  
+                  if(refScreenChange.screenIndex == 2){
+                     return CustomButtons.redFullWidthButton(
+                          buttonText: "Confirm", 
+                          fillColor: ColorsConstant.appColor,
+                          onTap: () async {
+                              
+                          }, 
+                          isActive: true
+                      );
+                  }
+                  
                   if(ref.selectedServices.isNotEmpty){
                     return Container(
                           margin: EdgeInsets.only(
@@ -218,30 +261,15 @@ class _CreateBookingScreenState extends State<BookingScreen> {
                                 ],
                               ),
               
-                              // discount
-                               (1 != 1) ? const SizedBox() : 
-                               Column(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  SizedBox(
-                                    height: 25.h,
-                                  ),
-                                  Text(totalPrice.toString(),
-                                      style: TextStyle(
-                                        fontSize: 22.sp,
-                                        color: ColorsConstant.textDark,
-                                        fontWeight: FontWeight.w500,
-                                          decoration: TextDecoration.lineThrough
-                                      )),
-                                ],
-                              ),
+                             
                               VariableWidthCta(
                                 onTap: () async {
-                                   // Navigator.of(context).push(MaterialPageRoute(builder: (_)=> const BookingScreen()));
+                                   print(ref.finalSingleStaffSelectedServices);
+                                   refScreenChange.setScreenIndex(1);
                                 },
-                                isActive: true,
-                                buttonText: StringConstant.confirmBooking,
+                                horizontalPadding: 40.w,
+                                isActive: isActive,
+                                buttonText: "Next",
                               )
                             ],
                           ),
@@ -259,14 +287,11 @@ class _CreateBookingScreenState extends State<BookingScreen> {
   }
 
   Widget _salonOverviewCard() {
-    //final ref = context.read<BookingServicesSalonProvider>();
-    //String salonName = ref.salonDetails.data?.data?.name ?? "Salon Name";
-    //String salonAddress = ref.salonDetails.data?.data?.address ?? "Salon Address Here Salon Address Here Salon Address Here Salon Address Here";
-    //String salonImage = ref.salonDetails.data?.data?.images?.first.url ?? "";
-    
-    String salonName = "Salon Name";
-    String salonAddress =  "Salon Address Here Salon Address Here Salon Address Here Salon Address Here";
-    String salonImage =  "";
+    final ref = context.read<BookingServicesSalonProvider>();
+    String salonName = ref.salonDetails.data?.data?.name ?? "Salon Name";
+    String salonAddress = ref.salonDetails.data?.data?.address ?? "Salon Address Here Salon Address Here Salon Address Here Salon Address Here";
+    String salonImage = ref.salonDetails.data?.data?.images?.length.toString() ?? "";
+
 
     return Container(
           padding: EdgeInsets.all(15.w),
@@ -284,13 +309,13 @@ class _CreateBookingScreenState extends State<BookingScreen> {
                 child: (1 != 1)
                     ? Image.network(
                   salonImage,
-                  height: 120.h,
+                  height: 150.h,
                   width: 120.w,
                   fit: BoxFit.fill,
                 )
                     : Container(
                       color: Colors.lightBlue,
-                      height: 120.h,
+                      height: 150.h,
                       width: 120.w,
                     ),
               ),
@@ -309,6 +334,8 @@ class _CreateBookingScreenState extends State<BookingScreen> {
                     ),
                     Text(
                       salonName,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: ColorsConstant.textDark,
                         fontWeight: FontWeight.w700,

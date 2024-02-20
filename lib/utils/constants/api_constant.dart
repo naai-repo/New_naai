@@ -31,6 +31,10 @@ class UrlConstants{
   static const getArtistsByCategory = '${baseUrl}partner/service/search/artist';
   static const getUser = '${baseUrl}customer/user';
   static const addReview = '${baseUrl}partner/review/add';
+  static const scheduleAppointment = '${baseUrl}appointments/schedule';
+  static const bookingSingleArtistList = '${baseUrl}appointments/singleArtist/list';
+  static const bookingMakeAppointment = '${baseUrl}appointments/book';
+
   static const mapboxPlace = 'https://api.mapbox.com/geocoding/v5/mapbox.places/';
 
 }
