@@ -491,53 +491,58 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                SizedBox(
-                  //width: 50.w,
-                  child: Text(
-                    salonName,
-                    style: TextStyle(
-                      color: ColorsConstant.textDark,
-                      fontSize: 25.sp,
-                      fontWeight: FontWeight.w600,
+              children: [
+                Flexible(
+                  child: SizedBox(
+                   // width: 250.w,
+                    child: Text(
+                      salonName,
+                      softWrap: true,
+                      style: TextStyle(
+                        color: ColorsConstant.textDark,
+                        fontSize: 25.sp,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
-                Container(
-                  constraints: BoxConstraints(minWidth: 15.w),
-                  padding: EdgeInsets.symmetric(
-                    vertical: 8.h,
-                    horizontal: 15.h,
-                  ),
-                  decoration: BoxDecoration(
-                    color: ColorsConstant.greenRating,
-                    borderRadius: BorderRadius.circular(5.h),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF000000).withOpacity(0.14),
-                        blurRadius: 10,
-                        spreadRadius: 2,
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: <Widget>[
-                      SvgPicture.asset(
-                        ImagePathConstant.starIcon,
-                        color: Colors.white,
-                        height: 15.h,
-                      ),
-                      SizedBox(width: 5.w),
-                      Text(
-                        salonRating.toStringAsFixed(1),
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16.sp,
-                          fontWeight: FontWeight.w600,
+                Flexible(
+                  child: Container(
+                    constraints: BoxConstraints(maxWidth: 80.w),
+                    padding: EdgeInsets.symmetric(
+                      vertical: 8.h,
+                      horizontal: 15.h,
+                    ),
+                    decoration: BoxDecoration(
+                      color: ColorsConstant.greenRating,
+                      borderRadius: BorderRadius.circular(5.h),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF000000).withOpacity(0.14),
+                          blurRadius: 10,
+                          spreadRadius: 2,
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: <Widget>[
+                        SvgPicture.asset(
+                          ImagePathConstant.starIcon,
+                          color: Colors.white,
+                          height: 15.h,
+                        ),
+                        SizedBox(width: 5.w),
+                        Text(
+                          salonRating.toStringAsFixed(1),
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16.sp,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -836,8 +841,8 @@ class _ServiceFilterContainerState extends State<ServiceFilterContainer> {
               bool isAdded = refBooking.isServiceSelected(services[index]);
               String? title = services[index].serviceTitle ?? "No Title";
               String? discription = services[index].description ?? "Example Discription";
-              int? totalPrice =  services[index].cutPrice ?? 99999;
-              int? discountPrice = services[index].basePrice ?? 999999;
+              double? totalPrice =  services[index].cutPrice ?? 99999;
+              double? discountPrice = services[index].basePrice ?? 999999;
               String serviceType = services[index].targetGender ?? "male";
 
               return Container(
@@ -855,6 +860,7 @@ class _ServiceFilterContainerState extends State<ServiceFilterContainer> {
                       children: [
                           Text(
                           title,
+                          softWrap: true,
                           style: TextStyle(
                             color: const Color(0xFF2B2F34),
                             fontSize: 20.sp,
@@ -1276,7 +1282,7 @@ class _VariableSelectionContainerState extends State<VariableSelectionContainer>
                                 itemBuilder: (context,idx){
                                     String serviceName = uniqueVariables[index][idx].variableName ?? "ServiceName";
                                     //int totalPrice = uniqueVariables[index][idx].variablePrice ?? 99999;
-                                    int totalDiscountPrice = uniqueVariables[index][idx].variablePrice ?? 99999;
+                                    double totalDiscountPrice = uniqueVariables[index][idx].variablePrice ?? 99999;
                                     bool isAdded = (uniqueVariables[index][idx].id == ref.variableSelected.id);
 
                                     return Material(
@@ -1344,7 +1350,6 @@ class _VariableSelectionContainerState extends State<VariableSelectionContainer>
         );
   }
 }
-
 
 class VariableAddServiceContainer extends StatelessWidget {
   final ServiceDataModel service;
@@ -1432,7 +1437,7 @@ class ReviewContainer extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                AddReviewComponent(reviewForSalon: false,salonId: salonId),
+                AddReviewComponent(reviewForSalon: true,salonId: salonId),
                 Padding(
                   padding: EdgeInsets.only(top: 20.h),
                   child: Text(

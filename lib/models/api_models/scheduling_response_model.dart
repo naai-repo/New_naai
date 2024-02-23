@@ -1,6 +1,7 @@
+// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:convert';
 
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 
 class ScheduleResponseModel {
   String salonId;
@@ -143,20 +144,25 @@ class TimeSlotResponseTimeSlot {
 class Order {
   TimeService? service;
   String? artist;
+  int? time;
 
   Order({
     this.service,
     this.artist,
+    this.time
   });
+
 
 
   Order copyWith({
     TimeService? service,
     String? artist,
+    int? time,
   }) {
     return Order(
       service: service ?? this.service,
       artist: artist ?? this.artist,
+      time: time ?? this.time,
     );
   }
 
@@ -164,6 +170,7 @@ class Order {
     return <String, dynamic>{
       'service': service?.toMap(),
       'artist': artist,
+      'time': time,
     };
   }
 
@@ -171,6 +178,7 @@ class Order {
     return Order(
       service: map['service'] != null ? TimeService.fromMap(map['service'] as Map<String,dynamic>) : null,
       artist: map['artist'] != null ? map['artist'] as String : null,
+      time: map['time'] != null ? map['time'] as int : null,
     );
   }
 
@@ -179,55 +187,64 @@ class Order {
   factory Order.fromJson(String source) => Order.fromMap(json.decode(source) as Map<String, dynamic>);
 
   @override
-  String toString() => 'Order(service: $service, artist: $artist)';
+  String toString() => 'Order(service: $service, artist: $artist, time: $time)';
 }
 
 class TimeService {
-  String? id;
-  String? category;
-  String? serviceTitle;
-  String? description;
-  String? targetGender;
-  List<String>? salonIds;
-  int? avgTime;
-  int? basePrice;
-  DateTime? createdAt;
-  DateTime? updatedAt;
+
+  final String? id;
+  final String? salonId;
+  final String? category;
+  final String? serviceTitle;
+  final String? description;
+  final String? targetGender;
+  final int? avgTime;
+  final List<VariableSchedule>? variables;
+  final int? basePrice;
+  final int? cutPrice;
+  final String? createdAt;
+  final String? updatedAt;
 
   TimeService({
     this.id,
+    this.salonId,
     this.category,
     this.serviceTitle,
     this.description,
     this.targetGender,
-    this.salonIds,
     this.avgTime,
+    this.variables,
     this.basePrice,
+    this.cutPrice,
     this.createdAt,
     this.updatedAt,
   });
 
   TimeService copyWith({
     String? id,
+    String? salonId,
     String? category,
     String? serviceTitle,
     String? description,
     String? targetGender,
-    List<String>? salonIds,
     int? avgTime,
+    List<VariableSchedule>? variables,
     int? basePrice,
-    DateTime? createdAt,
-    DateTime? updatedAt,
+    int? cutPrice,
+    String? createdAt,
+    String? updatedAt,
   }) {
     return TimeService(
       id: id ?? this.id,
+      salonId: salonId ?? this.salonId,
       category: category ?? this.category,
       serviceTitle: serviceTitle ?? this.serviceTitle,
       description: description ?? this.description,
       targetGender: targetGender ?? this.targetGender,
-      salonIds: salonIds ?? this.salonIds,
       avgTime: avgTime ?? this.avgTime,
+      variables: variables ?? this.variables,
       basePrice: basePrice ?? this.basePrice,
+      cutPrice: cutPrice ?? this.cutPrice,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -235,31 +252,35 @@ class TimeService {
 
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
-      'id': id,
+      '_id': id,
+      'salonId': salonId,
       'category': category,
       'serviceTitle': serviceTitle,
       'description': description,
       'targetGender': targetGender,
-      'salonIds': salonIds,
       'avgTime': avgTime,
+      'variables': variables?.map((x) => x.toMap()).toList() ?? [],
       'basePrice': basePrice,
-      'createdAt': createdAt?.millisecondsSinceEpoch,
-      'updatedAt': updatedAt?.millisecondsSinceEpoch,
+      'cutPrice': cutPrice,
+      'createdAt': createdAt,
+      'updatedAt': updatedAt,
     };
   }
 
   factory TimeService.fromMap(Map<String, dynamic> map) {
     return TimeService(
       id: map['id'] != null ? map['id'] as String : null,
+      salonId: map['salonId'] != null ? map['salonId'] as String : null,
       category: map['category'] != null ? map['category'] as String : null,
       serviceTitle: map['serviceTitle'] != null ? map['serviceTitle'] as String : null,
       description: map['description'] != null ? map['description'] as String : null,
       targetGender: map['targetGender'] != null ? map['targetGender'] as String : null,
-      salonIds: map['salonIds'] != null ? List<String>.from((map['salonIds'] as List<String>)) : null,
       avgTime: map['avgTime'] != null ? map['avgTime'] as int : null,
+      variables: map['variables'] != null ? List<VariableSchedule>.from((map['variables'] as List<dynamic>).map<VariableSchedule?>((x) => VariableSchedule.fromMap(x as Map<String,dynamic>),),) : null,
       basePrice: map['basePrice'] != null ? map['basePrice'] as int : null,
-      createdAt: map['createdAt'] != null ? DateTime.fromMillisecondsSinceEpoch(0) : null,
-      updatedAt: map['updatedAt'] != null ? DateTime.fromMillisecondsSinceEpoch(0) : null,
+      cutPrice: map['cutPrice'] != null ? map['cutPrice'] as int : null,
+      createdAt: map['createdAt'] != null ? map['createdAt'] as String : null,
+      updatedAt: map['updatedAt'] != null ? map['updatedAt'] as String : null,
     );
   }
 
@@ -269,7 +290,7 @@ class TimeService {
 
   @override
   String toString() {
-    return 'TimeService(id: $id, category: $category, serviceTitle: $serviceTitle, description: $description, targetGender: $targetGender, salonIds: $salonIds, avgTime: $avgTime, basePrice: $basePrice, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'TimeService(id: $id, salonId: $salonId, category: $category, serviceTitle: $serviceTitle, description: $description, targetGender: $targetGender, avgTime: $avgTime, variables: $variables, basePrice: $basePrice, cutPrice: $cutPrice, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 }
 
@@ -314,3 +335,70 @@ class TimeSlotTimeSlot {
   String toString() => 'TimeSlotTimeSlot(slot: $slot, key: $key)';
 }
 
+class VariableSchedule {
+  final String? variableType;
+  final String? variableName;
+  final int? variablePrice;
+  final int? variableCutPrice;
+  final int? variableTime;
+  final String? id;
+  
+  VariableSchedule({
+    this.variableType,
+    this.variableName,
+    this.variablePrice,
+    this.variableCutPrice,
+    this.variableTime,
+    this.id,
+  });
+
+
+  VariableSchedule copyWith({
+    String? variableType,
+    String? variableName,
+    int? variablePrice,
+    int? variableCutPrice,
+    int? variableTime,
+    String? id,
+  }) {
+    return VariableSchedule(
+      variableType: variableType ?? this.variableType,
+      variableName: variableName ?? this.variableName,
+      variablePrice: variablePrice ?? this.variablePrice,
+      variableCutPrice: variableCutPrice ?? this.variableCutPrice,
+      variableTime: variableTime ?? this.variableTime,
+      id: id ?? this.id,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return <String, dynamic>{
+      'variableType': variableType,
+      'variableName': variableName,
+      'variablePrice': variablePrice,
+      'variableCutPrice': variableCutPrice,
+      'variableTime': variableTime,
+      '_id': id,
+    };
+  }
+
+  factory VariableSchedule.fromMap(Map<String, dynamic> map) {
+    return VariableSchedule(
+      variableType: map['variableType'] != null ? map['variableType'] as String : null,
+      variableName: map['variableName'] != null ? map['variableName'] as String : null,
+      variablePrice: map['variablePrice'] != null ? map['variablePrice'] as int : null,
+      variableCutPrice: map['variableCutPrice'] != null ? map['variableCutPrice'] as int : null,
+      variableTime: map['variableTime'] != null ? map['variableTime'] as int : null,
+      id: map['id'] != null ? map['id'] as String : null,
+    );
+  }
+
+  String toJson() => json.encode(toMap());
+
+  factory VariableSchedule.fromJson(String source) => VariableSchedule.fromMap(json.decode(source) as Map<String, dynamic>);
+
+  @override
+  String toString() {
+    return 'VariableSchedule(variableType: $variableType, variableName: $variableName, variablePrice: $variablePrice, variableCutPrice: $variableCutPrice, variableTime: $variableTime, id: $id)';
+  }
+}

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:naai/providers/bottom_change_index_provider.dart';
+import 'package:naai/providers/post_auth/artist_service_filter_provider.dart';
 import 'package:naai/providers/post_auth/booking_screen_change_provider.dart';
 import 'package:naai/providers/post_auth/booking_services_salon_provider.dart';
 import 'package:naai/providers/post_auth/filter_artist_provider.dart';
@@ -42,6 +43,7 @@ class MyApp extends StatelessWidget {
           ChangeNotifierProvider(create: (_) => BottomChangeScreenIndexProvider()),
           ChangeNotifierProvider(create: (_) => ReviewsProvider()),
           ChangeNotifierProvider(create: (_) => SalonsServiceFilterProvider()),
+          ChangeNotifierProvider(create: (_) => ArtistServicesFilterProvider()),
           ChangeNotifierProvider(create: (_) => BookingServicesSalonProvider()),
           ChangeNotifierProvider(create: (_) => BookingScreenChangeProvider()),
       ],

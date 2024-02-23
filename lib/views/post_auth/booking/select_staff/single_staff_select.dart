@@ -24,7 +24,7 @@ class _SingleStaffSelectState extends State<SingleStaffSelect> {
     final ref = Provider.of<BookingServicesSalonProvider>(context,listen: true);
     SingleStaffServicesModel singleServices = ref.getSingleStaffServicesAndArtists();
 
-
+    print(ref.selectedStaffIndex);
     bool isSelected = (ref.selectedStaffIndex == 0);
     String selectedArtistName =  "Choose a Staff";
     // if(ref.singleStaffArtistSelected.id != "0000"){
@@ -111,62 +111,66 @@ class _SingleStaffSelectState extends State<SingleStaffSelect> {
                                   String artitstName = singleServices.artists?[index].name ?? "Artist Name";
                                   double rating = singleServices.artists?[index].rating ?? 0;
                                   bool isSelected = ref.isSingleSatffArtistSelected(singleServices.artists?[index].id ?? "");
+                                  bool isFromArtistScreen = ref.isFromArtistScreen;
 
-                                  return InkWell(
-                                    onTap: () async {
-                                        if(!isSelected){
-                                            ref.addFinalSingleStaffServices(singleServices.artists![index]);
-                                        }
-                                    },
-                                    borderRadius: BorderRadius.circular(10.r),
-                          
-                                    child: Container(
-                                      padding: EdgeInsets.symmetric(horizontal: 10.w,vertical: 5.w),
-                                      decoration: BoxDecoration(
-                                        border: Border(bottom: BorderSide(color: ColorsConstant.greyBorderColor,width: 0.5.w))
-                                      ),
-                                      child: Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                        crossAxisAlignment: CrossAxisAlignment.center,
-                                        children: [
-                                          Text.rich(TextSpan(
-                                              style: TextStyle(
-                                                fontFamily: "Poppins",
-                                                fontSize: 14.sp,
-                                                color: const Color(0xFF727272),
-                                                fontWeight: FontWeight.w500
-                                              ),
-                                              children: [
-                                                WidgetSpan(
-                                                  alignment: PlaceholderAlignment.middle,
-                                                  child: Radio(
-                                                    value: isSelected ? 1 : 0, 
-                                                    groupValue: 1, 
-                                                    activeColor: ColorsConstant.appColor,
-                                                    onChanged: (vv){}
-                                                  )
+                                  return Opacity(
+                                    opacity: (isFromArtistScreen && !isSelected) ? 0.5 : 1,
+                                    child: InkWell(
+                                      onTap: () async {
+                                          if(!isSelected && !isFromArtistScreen){
+                                              ref.addFinalSingleStaffServices(singleServices.artists![index]);
+                                          }
+                                      },
+                                      borderRadius: BorderRadius.circular(10.r),
+                                                              
+                                      child: Container(
+                                        padding: EdgeInsets.symmetric(horizontal: 10.w,vertical: 5.w),
+                                        decoration: BoxDecoration(
+                                          border: Border(bottom: BorderSide(color: ColorsConstant.greyBorderColor,width: 0.5.w))
+                                        ),
+                                        child: Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          crossAxisAlignment: CrossAxisAlignment.center,
+                                          children: [
+                                            Text.rich(TextSpan(
+                                                style: TextStyle(
+                                                  fontFamily: "Poppins",
+                                                  fontSize: 14.sp,
+                                                  color: const Color(0xFF727272),
+                                                  fontWeight: FontWeight.w500
                                                 ),
-                                                WidgetSpan(child: SizedBox(width: 0.w)),
-                                                TextSpan(text: artitstName)
-                                              ]
-                                          )),
-                                                  
-                                          Text.rich(TextSpan(
-                                              style: TextStyle(
-                                                fontFamily: "Poppins",
-                                                fontSize: 14.sp,
-                                                color: Colors.black,
-                                                fontWeight: FontWeight.w600
-                                              ),
-                                              children: [
-                                                TextSpan(text: rating.toStringAsFixed(1)),
-                                                WidgetSpan(child: SizedBox(width: 5.w)),
-                                                WidgetSpan(
-                                                  child: Icon(Icons.star,color: Colors.amber,size: 22.sp)
+                                                children: [
+                                                  WidgetSpan(
+                                                    alignment: PlaceholderAlignment.middle,
+                                                    child: Radio(
+                                                      value: isSelected ? 1 : 0, 
+                                                      groupValue: 1, 
+                                                      activeColor: ColorsConstant.appColor,
+                                                      onChanged: (vv){}
+                                                    )
+                                                  ),
+                                                  WidgetSpan(child: SizedBox(width: 0.w)),
+                                                  TextSpan(text: artitstName)
+                                                ]
+                                            )),
+                                                    
+                                            Text.rich(TextSpan(
+                                                style: TextStyle(
+                                                  fontFamily: "Poppins",
+                                                  fontSize: 14.sp,
+                                                  color: Colors.black,
+                                                  fontWeight: FontWeight.w600
                                                 ),
-                                              ]
-                                          ))
-                                        ],
+                                                children: [
+                                                  TextSpan(text: rating.toStringAsFixed(1)),
+                                                  WidgetSpan(child: SizedBox(width: 5.w)),
+                                                  WidgetSpan(
+                                                    child: Icon(Icons.star,color: Colors.amber,size: 22.sp)
+                                                  ),
+                                                ]
+                                            ))
+                                          ],
+                                        ),
                                       ),
                                     ),
                                   );

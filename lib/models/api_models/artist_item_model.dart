@@ -1,6 +1,9 @@
+// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:convert';
-import 'package:naai/models/api_models/location_item_model.dart';
 
+import 'package:flutter/foundation.dart';
+
+import 'package:naai/models/api_models/location_item_model.dart';
 
 class ArtistDataModel {
   final String? id;
@@ -137,7 +140,7 @@ class ArtistDataModel {
 
 class Service {
   final String? serviceId;
-  final int? price;
+  final dynamic? price;
   final String? id;
   final List<Variables>? variables;
 
@@ -148,9 +151,11 @@ class Service {
     required this.variables,
   });
 
+
+
   Service copyWith({
     String? serviceId,
-    int? price,
+    dynamic? price,
     String? id,
     List<Variables>? variables,
   }) {
@@ -174,7 +179,7 @@ class Service {
   factory Service.fromMap(Map<String, dynamic> map) {
     return Service(
       serviceId: map['serviceId'] != null ? map['serviceId'] as String : null,
-      price: map['price'] != null ? map['price'] as int : null,
+      price: map['price'] != null ? map['price'] as dynamic : null,
       id: map['id'] != null ? map['id'] as String : null,
       variables: map['variables'] != null ? List<Variables>.from((map['variables'] as List<dynamic>).map<Variables?>((x) => Variables.fromMap(x as Map<String,dynamic>),),) : null,
     );
@@ -188,12 +193,14 @@ class Service {
   String toString() {
     return 'Service(serviceId: $serviceId, price: $price, id: $id, variables: $variables)';
   }
+
+
 }
 
 class Variables {
   final String? id;
   final String? variableId;
-  final int? price;
+  final dynamic? price;
 
   Variables({
     this.id,
@@ -201,10 +208,11 @@ class Variables {
     this.price,
   });
 
+
   Variables copyWith({
     String? id,
     String? variableId,
-    int? price,
+    dynamic? price,
   }) {
     return Variables(
       id: id ?? this.id,
@@ -225,7 +233,7 @@ class Variables {
     return Variables(
       id: map['id'] != null ? map['id'] as String : null,
       variableId: map['variableId'] != null ? map['variableId'] as String : null,
-      price: map['price'] != null ? map['price'] as int : null,
+      price: map['price'] != null ? map['price'] as dynamic : null,
     );
   }
 
@@ -233,7 +241,5 @@ class Variables {
 
   factory Variables.fromJson(String source) => Variables.fromMap(json.decode(source) as Map<String, dynamic>);
 
-  @override
-  String toString() => 'Variables(id: $id, variableId: $variableId, price: $price)';
-
+ 
 }

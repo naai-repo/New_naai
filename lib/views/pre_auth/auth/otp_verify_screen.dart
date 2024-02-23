@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:naai/controllers/auth/auth_controller.dart';
 import 'package:naai/providers/pre_auth/auth_provider.dart';
 import 'package:naai/services/auth/otp_service.dart';
 import 'package:naai/utils/buttons/buttons.dart';
@@ -109,16 +110,14 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
                         String enteredOtp = otpDigitOneController.text + otpDigitTwoController.text + otpDigitThreeController.text + otpDigitFourController.text +
                                            otpDigitFiveController.text +
                                            otpDigitSixController.text;
+
                         if(enteredOtp.isEmpty) return;
-                        print('EnteredOTP$enteredOtp');
                         
                         Loading.showLoding(context);
 
                         final response = await LoginController.verifyOtp(userId, otp);
 
                         if (response.status == 'success') {
-                          print('OTP verification successful');
-                          print('Otp is :$otp');
 
                           await ref.setAccessToken(response.data.accessToken ?? "");
                           await ref.setIsGuest(false);
@@ -130,8 +129,12 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
                           if(!context.mounted) return;
 
                           if (isNewUser) {
-                            Navigator.pushReplacementNamed(context,NamedRoutes.bottomNavigationRoute);
+                            Navigator.pushReplacementNamed(context,NamedRoutes.addUserNameRoute);
+
                           } else {
+                            await AuthenticationConroller.setUserDetails(context, userId);
+                            if(!context.mounted) return;
+                            
                             Navigator.pushReplacementNamed(context,NamedRoutes.bottomNavigationRoute);
                           }
                         } else {

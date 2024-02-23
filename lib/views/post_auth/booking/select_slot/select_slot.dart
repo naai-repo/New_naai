@@ -90,7 +90,6 @@ class _SelectSlotState extends State<SelectSlot> {
                                           salonId: ref.salonDetails.data?.data?.id ?? "",
                                           requests: ref.getSelectedServiceData()
                                        ), accessToken: token);
-                                       
                                       
                                        ref.setBookingSelectedDateAndScheduleResponse(selectedDate,res);
 

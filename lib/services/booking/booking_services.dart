@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:naai/models/api_models/booking_appointment_model.dart';
 import 'package:naai/models/api_models/booking_single_artist_list_model.dart';
+import 'package:naai/models/api_models/confirm_booking_model.dart';
 import 'package:naai/models/api_models/scheduling_response_model.dart';
 import 'package:naai/models/utility/selected_service_artists.dart';
 import 'package:naai/utils/constants/api_constant.dart';
@@ -14,7 +15,7 @@ class BookingServices {
   static Future<ScheduleResponseModel> scheduleAppointment({required SelectedServicesArtistModel data,required String accessToken}) async {
     const apiUrl = UrlConstants.scheduleAppointment;
     final Map<String, dynamic> requestData = data.toMap();
-  
+    
 
     try {
       dio.options.connectTimeout = const Duration(seconds: 10);
@@ -85,6 +86,10 @@ class BookingServices {
     for(var e in timeSlots){
         requestData["timeSlots"].add(e.toMap());
     }
+
+    // print(json.encode(requestData["timeSlots"][0]["order"]));
+    // print(json.encode(requestData["timeSlot"]));
+     // print(json.encode(requestData));
   
 
     try {
@@ -99,6 +104,7 @@ class BookingServices {
      
       
       if (response.statusCode == 200) {
+      //  print(response.data);
         final res = BookingAppointmentResponseModel.fromJson(jsonEncode(response.data).replaceAll("_id", "id"));
         return res;
       } else {
@@ -108,6 +114,42 @@ class BookingServices {
        print(stacktrace.toString());
        print("Error Booking MakeAppointMent : ${e.toString()}");
        return BookingAppointmentResponseModel();
+    }
+  }
+
+  
+  static Future<ConfirmBookingModel> confirmBooking({required String salonId,required BookingAppointmentResponseModel confirmBookingPaylaod,required String accessToken}) async {
+    const apiUrl = UrlConstants.bookingConfirm;
+
+    final Map<String, dynamic> requestData = confirmBookingPaylaod.toMap();
+
+    // print(json.encode(requestData["timeSlots"][0]["order"]));
+    // print(json.encode(requestData["timeSlot"]));
+    //print(json.encode(requestData));
+  
+
+    try {
+      dio.options.connectTimeout = const Duration(seconds: 10);
+      dio.options.headers['Authorization'] = 'Bearer $accessToken';
+
+      final response = await dio.post(
+          apiUrl,
+          options: Options(headers: {"Content-Type": "application/json"}),
+          data: json.encode(requestData),
+      );
+     
+      
+      if (response.statusCode == 200) {
+      //  print(response.data);
+        final res = ConfirmBookingModel.fromJson(jsonEncode(response.data).replaceAll("_id", "id"));
+        return res;
+      } else {
+        throw ErrorDescription(response.data['message']);
+      }
+    } catch (e,stacktrace) {
+       print(stacktrace.toString());
+       print("Error Confirm Booking : ${e.toString()}");
+       return ConfirmBookingModel();
     }
   }
   

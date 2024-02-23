@@ -4,6 +4,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:naai/providers/bottom_change_index_provider.dart';
 import 'package:naai/providers/post_auth/booking_screen_change_provider.dart';
 import 'package:naai/providers/post_auth/booking_services_salon_provider.dart';
+import 'package:naai/providers/pre_auth/auth_provider.dart';
+import 'package:naai/services/booking/booking_services.dart';
 import 'package:naai/utils/buttons/buttons.dart';
 import 'package:naai/utils/cards/custom_cards.dart';
 import 'package:naai/utils/common_widgets/common_widgets.dart';
@@ -11,6 +13,8 @@ import 'package:naai/utils/constants/colors_constant.dart';
 import 'package:naai/utils/constants/image_path_constant.dart';
 import 'package:naai/utils/constants/string_constant.dart';
 import 'package:naai/utils/constants/style_constant.dart';
+import 'package:naai/utils/progress/loading.dart';
+import 'package:naai/utils/utility_functions.dart';
 import 'package:naai/views/post_auth/booking/order_summary/order_summarry.dart';
 import 'package:naai/views/post_auth/booking/select_slot/select_slot.dart';
 import 'package:naai/views/post_auth/booking/select_staff/route_staff_select.dart';
@@ -29,11 +33,8 @@ class _CreateBookingScreenState extends State<BookingScreen> {
   @override
   void initState() {
     super.initState();
-    final ref = context.read<BookingServicesSalonProvider>();
-    ref.resetAll();
-    ref.resetFinalMultiStaffServices();
-    ref.resetFinalSingleStaffArtist();
-    context.read<BookingScreenChangeProvider>().setScreenIndex(0);
+    //final ref = context.read<BookingServicesSalonProvider>();
+    //context.read<BookingScreenChangeProvider>().setScreenIndex(0);
   }
 
   @override
@@ -42,8 +43,7 @@ class _CreateBookingScreenState extends State<BookingScreen> {
 
     List<Widget> screens = [
       const SelectStaff(),
-      const SelectSlot(),
-      const OrderSummary()
+      const SelectSlot()
     ];
     
     return PopScope(
@@ -56,7 +56,7 @@ class _CreateBookingScreenState extends State<BookingScreen> {
                 children: [
                   CommonWidget.appScreenCommonBackground(),
                   CustomScrollView(
-                   physics: const BouncingScrollPhysics(),
+                    //physics: const NeverScrollableScrollPhysics(),
                     slivers: [
                       CommonWidget.transparentFlexibleSpace(),
                       SliverAppBar(
@@ -192,26 +192,18 @@ class _CreateBookingScreenState extends State<BookingScreen> {
               ),
               bottomNavigationBar: Container(
               color: Colors.white,
-              child: Consumer2<BookingServicesSalonProvider,BottomChangeScreenIndexProvider>(builder: (context, ref,refScreenChange, child) {
+              child: Consumer2<BookingServicesSalonProvider,BookingScreenChangeProvider>(builder: (context, ref,refScreenChange, child) {
                   double discountPrice = ref.totalDiscountPrice;
                   bool isActive = false;
 
-                  if(ref.selectedStaffIndex == 0){
+                  if(ref.selectedStaffIndex == 0 && refScreenChange.screenIndex == 0){
                        isActive = ref.checkIsSingleStaffSelected();
-                  }else{
+                  }else if(ref.selectedStaffIndex == 1 && refScreenChange.screenIndex == 0){
                        isActive = ref.checkIsMultiStaffSelected();
+                  }else if(refScreenChange.screenIndex == 1){
+                       isActive = (ref.selectedArtistTimeSlot[0] != "00");
                   }
                   
-                  if(refScreenChange.screenIndex == 2){
-                     return CustomButtons.redFullWidthButton(
-                          buttonText: "Confirm", 
-                          fillColor: ColorsConstant.appColor,
-                          onTap: () async {
-                              
-                          }, 
-                          isActive: true
-                      );
-                  }
                   
                   if(ref.selectedServices.isNotEmpty){
                     return Container(
@@ -264,8 +256,49 @@ class _CreateBookingScreenState extends State<BookingScreen> {
                              
                               VariableWidthCta(
                                 onTap: () async {
-                                   print(ref.finalSingleStaffSelectedServices);
-                                   refScreenChange.setScreenIndex(1);
+                                   if(refScreenChange.screenIndex == 0){
+                                        print(ref.getSelectedServiceData());
+                                        refScreenChange.setScreenIndex(1);
+                                   }else if(refScreenChange.screenIndex ==  1){
+                                        try {
+                                          Loading.showLoding(context);
+
+                                          final selectedDate = ref.bookingSelectedDate;
+                                          String dateString = "${selectedDate.month}-${selectedDate.day}-${selectedDate.year}";
+
+                                          final res = await BookingServices.makeAppointment(
+                                            salonId: ref.salonDetails.data?.data?.id ?? "", 
+                                            bookingDate: dateString, 
+                                            selectedTimeSlot: ref.selectedArtistTimeSlot, 
+                                            timeSlots: ref.scheduleResponseData.timeSlots ?? [], 
+                                            accessToken: await context.read<AuthenticationProvider>().getAccessToken()
+                                          );
+                                          
+                                         // print(res);
+                                          
+                                          ref.setMakeAppointmentData(res);
+
+                                          Future.delayed(Durations.medium1,() async {
+                                            await Navigator.of(context).push(MaterialPageRoute(builder: (_) => const OrderSummary()));
+                                            if(!context.mounted) return;
+
+                                            if(ref.confirmBookingModel.status != "false"){
+                                               Navigator.pop(context);
+                                            }
+                                          });
+
+                                          
+
+                                        } catch (e) {
+                                          if(context.mounted){
+                                            showErrorSnackBar(context, "Something Wrent Wrong");
+                                          }
+                                        }finally{
+                                          if(context.mounted){
+                                            Loading.closeLoading(context);
+                                          }
+                                        }
+                                   }
                                 },
                                 horizontalPadding: 40.w,
                                 isActive: isActive,

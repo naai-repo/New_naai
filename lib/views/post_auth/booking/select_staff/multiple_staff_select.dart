@@ -91,7 +91,7 @@ class _MultipleStaffSelectState extends State<MultipleStaffSelect> {
                           children: List.generate(ref.selectedServices.length, (index){
                               String serviceName = ref.selectedServices[index].service?.serviceTitle ?? "Service Name";
                               String targetGender = ref.selectedServices[index].service?.targetGender ?? "male";
-                              int amount = ref.selectedServices[index].service?.basePrice ?? 99999;
+                              double amount = ref.selectedServices[index].service?.basePrice ?? 99999;
                               
                               return Container(
                                 padding: EdgeInsets.all(15.w),

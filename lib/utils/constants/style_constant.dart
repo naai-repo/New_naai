@@ -68,13 +68,6 @@ class StyleConstant {
     fontSize: 10.sp,
     fontWeight: FontWeight.w500,
   );
-
-  static TextStyle userProfileOptionsStyle = TextStyle(
-    color: ColorsConstant.textDark,
-    fontSize: 11.sp,
-    fontWeight: FontWeight.w500,
-  );
-
   static InputDecoration searchBoxInputDecoration(
     BuildContext context, {
     required String hintText,

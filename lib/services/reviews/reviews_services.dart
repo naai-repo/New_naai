@@ -12,16 +12,22 @@ class ReviewsServices {
 
   static Future<List<ReviewsModel>> getReviewsBySalonId({required String salonId,required String accessToken}) async {
     final apiUrl = "${UrlConstants.getSalonReview}/$salonId";
+
     try {
       dio.options.connectTimeout = const Duration(seconds: 10);
       
       final response = await dio.get(
         apiUrl,
-        options: Options(headers: {"Content-Type": "application/json","Authorization": "Bearer $accessToken"})
+        options: Options(headers: {"Content-Type": "application/json","Authorization": "Bearer $accessToken"},
+        validateStatus: (status){
+            return true;
+        }
+        ),
       );
       List<ReviewsModel> ans = [];
 
       if (response.statusCode == 200) {
+        
         final reviews = ReviewResponseModel.fromJson(jsonEncode(response.data).replaceAll("_id", "id"));
         List<ReviewItem> list = reviews.data ?? [];
         for(var e in list){
@@ -32,13 +38,15 @@ class ReviewsServices {
             ));
         }
         return ans;
-      } else {
+      } else if(response.statusCode == 404){
+        return [];
+      }else{
         throw ErrorDescription(response.data['message']);
       }
     } catch (e,stacktrace) {
        print(stacktrace.toString());
-       print("Error nnn: ${e.toString()}");
-       return [ReviewsModel()];
+       print("Error Reviews: ${e.toString()}");
+       return [];
     }
   }
   

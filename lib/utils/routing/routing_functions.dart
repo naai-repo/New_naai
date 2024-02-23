@@ -6,6 +6,7 @@ import 'package:naai/views/post_auth/map/map_screen.dart';
 import 'package:naai/views/post_auth/set_location/set_location_screen.dart';
 import 'package:naai/views/pre_auth/auth/auth_screen.dart';
 import 'package:naai/views/pre_auth/auth/otp_verify_screen.dart';
+import 'package:naai/views/pre_auth/auth/user_details_screen.dart';
 import 'package:naai/views/splash_screen.dart';
 
 class ScreenArguments {
@@ -42,6 +43,9 @@ class RoutingFunctions {
         break;
       case NamedRoutes.mapRoute:
         target = const MapScreen();
+        break;
+      case NamedRoutes.addUserNameRoute:
+        target = const UserDetailsEnterScreen();
         break;
     }
 

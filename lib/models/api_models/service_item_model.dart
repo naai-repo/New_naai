@@ -1,3 +1,4 @@
+// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:convert';
 
 class ServiceDataModel {
@@ -9,8 +10,8 @@ class ServiceDataModel {
     final String? description;
     final String? targetGender;
     final int? avgTime;
-    final int? basePrice;
-    final int? cutPrice;
+    final double? basePrice;
+    final double? cutPrice;
     final String? createdAt;
     final String? updatedAt;
     final List<VariableService>? variables;
@@ -32,6 +33,8 @@ class ServiceDataModel {
   });
 
 
+
+
   ServiceDataModel copyWith({
     String? id,
     String? salonId,
@@ -41,8 +44,8 @@ class ServiceDataModel {
     String? description,
     String? targetGender,
     int? avgTime,
-    int? basePrice,
-    int? cutPrice,
+    double? basePrice,
+    double? cutPrice,
     String? createdAt,
     String? updatedAt,
     List<VariableService>? variables,
@@ -92,8 +95,8 @@ class ServiceDataModel {
       description: map['description'] != null ? map['description'] as String : null,
       targetGender: map['targetGender'] != null ? map['targetGender'] as String : null,
       avgTime: map['avgTime'] != null ? map['avgTime'] as int : null,
-      basePrice: map['basePrice'] != null ? map['basePrice'] as int : null,
-      cutPrice: map['cutPrice'] != null ? map['cutPrice'] as int : null,
+      basePrice: map['basePrice'] != null ? double.tryParse(map['basePrice'].toString()) : null,
+      cutPrice: map['cutPrice'] != null ? double.tryParse(map['cutPrice'].toString()) : null,
       createdAt: map['createdAt'] != null ? map['createdAt'] as String : null,
       updatedAt: map['updatedAt'] != null ? map['updatedAt'] as String : null,
       variables: map['variables'] != null ? List<VariableService>.from((map['variables'] as List<dynamic>).map<VariableService?>((x) => VariableService.fromMap(x as Map<String,dynamic>),),) : null,
@@ -108,13 +111,14 @@ class ServiceDataModel {
   String toString() {
     return 'ServiceDataModel(id: $id, salonId: $salonId, category: $category, sub_category: $sub_category, serviceTitle: $serviceTitle, description: $description, targetGender: $targetGender, avgTime: $avgTime, basePrice: $basePrice, cutPrice: $cutPrice, createdAt: $createdAt, updatedAt: $updatedAt, variables: $variables)';
   }
+
 }
 
 class VariableService {
   final String? variableType;
   final String? variableName;
-  final int? variablePrice;
-  final int? variableCutPrice;
+  final double? variablePrice;
+  final double? variableCutPrice;
   final int? variableTime;
   final String? id;
 
@@ -127,11 +131,13 @@ class VariableService {
     this.id,
   });
 
+
+
   VariableService copyWith({
     String? variableType,
     String? variableName,
-    int? variablePrice,
-    int? variableCutPrice,
+    double? variablePrice,
+    double? variableCutPrice,
     int? variableTime,
     String? id,
   }) {
@@ -160,8 +166,8 @@ class VariableService {
     return VariableService(
       variableType: map['variableType'] != null ? map['variableType'] as String : null,
       variableName: map['variableName'] != null ? map['variableName'] as String : null,
-      variablePrice: map['variablePrice'] != null ? map['variablePrice'] as int : null,
-      variableCutPrice: map['variableCutPrice'] != null ? map['variableCutPrice'] as int : null,
+      variablePrice: map['variablePrice'] != null ? double.tryParse(map['variablePrice'].toString()) : null,
+      variableCutPrice: map['variableCutPrice'] != null ? double.tryParse(map['variableCutPrice'].toString()) : null,
       variableTime: map['variableTime'] != null ? map['variableTime'] as int : null,
       id: map['id'] != null ? map['id'] as String : null,
     );
@@ -175,4 +181,6 @@ class VariableService {
   String toString() {
     return 'VariableService(variableType: $variableType, variableName: $variableName, variablePrice: $variablePrice, variableCutPrice: $variableCutPrice, variableTime: $variableTime, id: $id)';
   }
+
+
 }

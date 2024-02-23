@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:naai/models/api_models/artist_item_model.dart';
+import 'package:naai/models/api_models/booking_appointment_model.dart';
+import 'package:naai/models/api_models/confirm_booking_model.dart';
 import 'package:naai/models/api_models/scheduling_response_model.dart';
 import 'package:naai/models/api_models/service_item_model.dart';
 import 'package:naai/models/api_models/single_salon_model.dart';
@@ -20,13 +22,22 @@ class BookingServicesSalonProvider with ChangeNotifier {
   double _totalDiscountPrice = 0;
   double get totalDiscountPrice => _totalDiscountPrice;
 
+  bool _isFromArtistScreen = false;
+  bool get isFromArtistScreen => _isFromArtistScreen;
+
   int _selectedStaffIndex = -1;
   int get selectedStaffIndex => _selectedStaffIndex;
+  
+  BookingAppointmentResponseModel _appointmentResponseModel = BookingAppointmentResponseModel(totalTime: 0);
+  BookingAppointmentResponseModel get appointmentResponseModel => _appointmentResponseModel;
+  
+  ConfirmBookingModel _confirmBookingModel = ConfirmBookingModel(status: "false");
+  ConfirmBookingModel get confirmBookingModel => _confirmBookingModel;
 
   VariableService _variableSelected = VariableService(id: "0000",variableCutPrice: 0,variablePrice: 0);
   VariableService get variableSelected => _variableSelected;
 
-  final List<ServicesArtistItemModel> _finalSingleStaffSelectedServices = [];
+  List<ServicesArtistItemModel> _finalSingleStaffSelectedServices = [];
   List<ServicesArtistItemModel> get finalSingleStaffSelectedServices => _finalSingleStaffSelectedServices;
   
   ArtistDataModel _singleStaffArtistSelected = ArtistDataModel(id: "0000");
@@ -73,14 +84,17 @@ class BookingServicesSalonProvider with ChangeNotifier {
       notifyListeners();
   }
 
-  void resetAll(){
+  void resetAll({bool notify = false}){
     resetFinalMultiStaffServices();
     resetFinalSingleStaffArtist();
     _selectedArtistTimeSlot = ["00","00"];
     _bookingSelectedDate = DateTime(1999);
     _selectedStaffIndex = -1;
-    //_finalMultiStaffSelectedServices.clear();
-    ///_finalSingleStaffSelectedServices.clear();
+    _isFromArtistScreen = false;
+    _confirmBookingModel = ConfirmBookingModel(status: "false");
+    _scheduleResponseData = ScheduleResponseModel(salonId: "0000");
+    _selectedServices.clear();
+    if(notify) notifyListeners();
   }
   
   List<ServicesArtistItemModel> getSelectedServiceData(){
@@ -91,17 +105,27 @@ class BookingServicesSalonProvider with ChangeNotifier {
   }
 
   void addFinalSingleStaffServices(ArtistDataModel value){
+      resetFinalSingleStaffArtist();
       _singleStaffArtistSelected = value;
-      _finalSingleStaffSelectedServices.clear();
 
-      for(var e in _selectedServices){
-         for(var s in value.services!){
-             if(e.service!.id == s.serviceId){
-                 _finalSingleStaffSelectedServices.add(ServicesArtistItemModel(
+      //print("${selectedServices.length} - ${_finalSingleStaffSelectedServices.length}");
+      for(int i = 0;i < _selectedServices.length;i++){
+           final currentService = _selectedServices[i];
+          
+           for(var s in value.services!){
+             if(currentService.service!.id == s.serviceId){
+                _finalSingleStaffSelectedServices[i] = ServicesArtistItemModel(
                   artist: value.id,
-                  service: (e.service?.variables?.isEmpty ?? false) ? s.serviceId : null,
-                  variable: (e.service?.variables?.isNotEmpty ?? false) ? e.service!.variables!.first : null
-                ));
+                  service: currentService.service!.id,
+                  variable: (currentService.service?.variables?.isNotEmpty ?? false) ? currentService.service!.variables!.first : null
+                );
+                break;
+             }else {
+                _finalSingleStaffSelectedServices[i] = ServicesArtistItemModel(
+                  artist: "000000000000000000000000",
+                  service: currentService.service!.id,
+                  variable: (currentService.service?.variables?.isNotEmpty ?? false) ? currentService.service!.variables!.first : null
+                );
              }
          }
       }
@@ -113,7 +137,7 @@ class BookingServicesSalonProvider with ChangeNotifier {
            final service = _selectedServices[serviceIndex].service;
            _finalMultiStaffSelectedServices[serviceIndex] = ServicesArtistItemModel(
                   artist: value.id,
-                  service: (service?.variables?.isEmpty ?? false) ? (service?.id ?? "0000") : null,
+                  service: (service?.id ?? "0000"),
                   variable: (service?.variables?.isNotEmpty ?? false) ? service!.variables!.first : null
             );
       }
@@ -135,6 +159,11 @@ class BookingServicesSalonProvider with ChangeNotifier {
 
   void resetFinalSingleStaffArtist(){
       _singleStaffArtistSelected = ArtistDataModel(id: "0000");
+      _finalSingleStaffSelectedServices = List.filled(_selectedServices.length, ServicesArtistItemModel(
+          artist: "0000",
+          service: "0000",
+          variable: VariableService()
+      ));
   }
 
   bool checkIsMultiStaffSelected(){
@@ -161,6 +190,8 @@ class BookingServicesSalonProvider with ChangeNotifier {
 
   void setSalonDetails(SingleSalonResponseModel value){
       _salonDetails = value;
+      resetFinalSingleStaffArtist();
+      resetFinalMultiStaffServices();
   }
 
   void setStaffIndex(int idx){
@@ -168,7 +199,12 @@ class BookingServicesSalonProvider with ChangeNotifier {
      notifyListeners();
   }
   
-  void addService(ServiceDataModel value){
+  void addService(ServiceDataModel value,{bool isFromArtistScreen = false}){
+    if(isFromArtistScreen){
+       _isFromArtistScreen = isFromArtistScreen;
+       _selectedStaffIndex = 0;
+    }
+
     for(var e in _selectedServices){
       if(e.service!.id == value.id){
           if(e.service?.variables?.isNotEmpty ?? false){
@@ -200,7 +236,7 @@ class BookingServicesSalonProvider with ChangeNotifier {
       artists: eligibleArtists,
       service: value
     ));
-    
+
     if(value.variables?.isNotEmpty ?? false){
       _totalPrice += value.variables?.first.variableCutPrice ?? 0;
       _totalDiscountPrice += value.variables?.first.variablePrice ?? 0;
@@ -259,6 +295,63 @@ class BookingServicesSalonProvider with ChangeNotifier {
       artists: artists,
       selectedServices: _selectedServices
      );
+  }
+  
+  String getSelectedServiceNameById(String serviceId){
+     for(var e in _selectedServices){
+        if(e.service!.id == serviceId) return e.service?.serviceTitle ?? "";
+     }
+     return "";
+  }
+  
+  double getSelectedServiceAmountById(String serviceId){
+     for(var e in _selectedServices){
+        if(e.service!.id == serviceId) return e.service?.cutPrice ?? 0;
+     }
+    // final services = _appointmentResponseModel.booking?.artistServiceMap ?? [];
+    // for(var s in services){
+    //     if(s.serviceId == serviceId) return s.servicePrice ?? 0;
+    // }
+     return 0;
+  }
+
+  String getSelectedServiceArtistNameById(String artistId){
+     for(var e in _selectedServices){
+        for(var a in e.artists!){
+            if(a.id == artistId) return a.name ?? "Random Artist";
+        }
+     }
+     return "Random Artist";
+  }
+
+  void setMakeAppointmentData(BookingAppointmentResponseModel value){
+    _appointmentResponseModel = value;
+    final finalServices = getSelectedServiceData();
+
+    for(int i = 0;i < finalServices.length;i++){
+        final e = finalServices[i];
+        if(e.artist == "000000000000000000000000"){
+            final services = value.booking?.artistServiceMap ?? [];
+            for(var s in services){
+               if(s.serviceId == e.service){
+                  finalServices[i] = finalServices[i].copyWith(artist: s.artistId);
+               }
+            }
+        }
+     }
+    
+    if(_selectedStaffIndex == 0){
+      _finalSingleStaffSelectedServices = finalServices;
+    }else{
+      _finalMultiStaffSelectedServices = finalServices;
+    }
+
+    notifyListeners();
+  }
+
+  void setConfirmBookingModel(ConfirmBookingModel value){
+     _confirmBookingModel = value;
+     notifyListeners();
   }
   
 }

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:naai/models/api_models/user_model.dart';
 import 'package:naai/models/auth/mobile_otp_model.dart';
 
 class AuthData {
@@ -65,7 +66,15 @@ class AuthenticationProvider with ChangeNotifier {
     
     AuthData get authData => _authData;
     int get mobileNumber => _mobileNumber ?? 0;
-    
+
+    UserItemModel _userData = UserItemModel(name: "Unknown User",id: "0000");
+    UserItemModel get userData => _userData;
+
+    void setUserData(UserItemModel value){
+        _userData = value;
+        notifyListeners();
+    }
+
     void setMobileNumber(int value){
       _mobileNumber = value;
       notifyListeners();
@@ -90,6 +99,12 @@ class AuthenticationProvider with ChangeNotifier {
     Future<void> setUserId(String value) async {
         var box = Hive.box('userBox');
         box.put('userId',value);
+    }
+
+    Future<String> getUserId() async {
+        var box = Hive.box('userBox');
+        final res = box.get('userId', defaultValue: "") ?? "";
+        return res;
     }
 
     Future<void> setIsGuest(bool value) async {
@@ -117,6 +132,13 @@ class AuthenticationProvider with ChangeNotifier {
         if(token.isNotEmpty) setAccessToken(token);
 
         return token;
+    }
+
+    Future<void> logout() async {
+      final box = await Hive.openBox('userBox');
+      box.delete('accesstoken');
+      box.delete('isGuest');
+      box.delete('userId');
     }
 
 }
