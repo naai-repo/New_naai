@@ -17,8 +17,21 @@ import 'package:naai/utils/constants/image_path_constant.dart';
 import 'package:naai/utils/constants/string_constant.dart';
 import 'package:naai/views/post_auth/booking/booking_screen.dart';
 import 'package:naai/views/post_auth/salon_details/contact_and_interaction_widget.dart';
+import 'package:naai/views/post_auth/salon_details/salon_details_screen.dart';
 import 'package:naai/views/post_auth/utility/add_review_component.dart';
 import 'package:provider/provider.dart';
+
+Future<int> artistDetailsScreenFuture(BuildContext context,String artistId) async {
+    final value = await ArtistsServices.getArtistByID(artistId: artistId);
+    if(!context.mounted) return 400;
+
+    context.read<SingleArtistProvider>().setArtistDetails(value);
+    context.read<BookingServicesSalonProvider>().setSalonDetails(value.salonDetails!);
+    context.read<ArtistServicesFilterProvider>().setArtistDetails(value);
+    context.read<BookingServicesSalonProvider>().resetAll();
+
+    return 200;
+}
 
 class ArtistDetailScreen extends StatefulWidget {
   final String artistId;
@@ -30,24 +43,16 @@ class ArtistDetailScreen extends StatefulWidget {
 
 class _BarberProfileScreenState extends State<ArtistDetailScreen> {
   int selectedTab = 0;
-  //num myShowPrice = 0;
   late SingleArtistScreenModel artistDetails;
 
   @override
   void initState() {
     super.initState();
-    ArtistsServices.getArtistByID(artistId: widget.artistId).then((value) {
-       context.read<SingleArtistProvider>().setArtistDetails(value);
-       context.read<BookingServicesSalonProvider>().setSalonDetails(value.salonDetails!);
-       context.read<ArtistServicesFilterProvider>().setArtistDetails(value);
-    });
-
-    context.read<BookingServicesSalonProvider>().resetAll();
   }
 
   @override
   Widget build(BuildContext context) {
-    final ref = Provider.of<SingleArtistProvider>(context,listen: true);
+    final ref = Provider.of<SingleArtistProvider>(context,listen: false);
     artistDetails = ref.artistDetails;
 
     return SafeArea(
@@ -112,32 +117,47 @@ class _BarberProfileScreenState extends State<ArtistDetailScreen> {
                           [
                             Container(
                               color: Colors.white,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Container(
-                                    margin: EdgeInsets.only(
-                                        top: 10.h, right: 14.w, left: 14.w),
-                                    padding: EdgeInsets.all(10.h),
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(
-                                          20.h),
-                                    ),
-                                    child: barberOverview(),
-                                  ),
-                                  SizedBox(height: 20.h),
-                                  const Divider(
-                                    thickness: 2,
-                                    height: 0,
-                                    color: ColorsConstant.graphicFillDark,
-                                  ),
-                                  servicesAndReviewTabBar(),
-                                  selectedTab == 0
-                                      ? const ServiceFilterContainer()
-                                      : ReviewContainer(artistDetails: artistDetails),
-                                ],
+                              child: FutureBuilder(
+                                future: artistDetailsScreenFuture(context, widget.artistId), 
+                                builder: (context,snapshot){
+                                  if(snapshot.hasData){
+                                     return Column(
+                                       crossAxisAlignment: CrossAxisAlignment.start,
+                                       children: [
+                                         Container(
+                                           margin: EdgeInsets.only(
+                                               top: 10.h, right: 14.w, left: 14.w),
+                                           padding: EdgeInsets.all(10.h),
+                                           decoration: BoxDecoration(
+                                             borderRadius: BorderRadius.circular(
+                                                 20.h),
+                                           ),
+                                           child: barberOverview(),
+                                         ),
+                                         SizedBox(height: 20.h),
+                                         const Divider(
+                                           thickness: 2,
+                                           height: 0,
+                                           color: ColorsConstant.graphicFillDark,
+                                         ),
+                                         servicesAndReviewTabBar(),
+                                         selectedTab == 0
+                                             ? const ServiceFilterContainer()
+                                             : ReviewContainer(artistDetails: artistDetails),
+                                       ],
+                                     );
+                                                        
+                                  }
+                                  return SizedBox(
+                                          height:  MediaQuery.of(context).size.height,
+                                            child: Center(
+                                            child: CircularProgressIndicator(color: ColorsConstant.appColor,strokeWidth: 4.w),
+                                            ),
+                                    );
+                                }
                               ),
-                            ),
+                            )
+                            
                           ],
                         ),
                       ),
@@ -145,6 +165,7 @@ class _BarberProfileScreenState extends State<ArtistDetailScreen> {
                   ),
                 ],
               ),
+              
               bottomNavigationBar: Container(
                 color: Colors.white,
                 child: Consumer<BookingServicesSalonProvider>(builder: (context, ref, child) {
@@ -396,7 +417,7 @@ class _BarberProfileScreenState extends State<ArtistDetailScreen> {
                 //width: 38.w,
                 child: GestureDetector(
                   onTap: () async {
-                   
+                     Navigator.of(context).push(MaterialPageRoute(builder: (_) => SalonDetailsScreen(salonDetails: artistDetails.salonDetails!.data!.data!)));
                   },
                   child: Container(
                     padding: EdgeInsets.symmetric(

@@ -3,7 +3,7 @@ import 'package:naai/models/utility/single_artist_screen_model.dart';
 
 
 class SingleArtistProvider with ChangeNotifier{
-  late SingleArtistScreenModel _artistDetails;
+  SingleArtistScreenModel _artistDetails = SingleArtistScreenModel();
   SingleArtistScreenModel get artistDetails => _artistDetails;
 
   void setArtistDetails(SingleArtistScreenModel value){

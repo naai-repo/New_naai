@@ -24,6 +24,21 @@ import 'package:provider/provider.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
 
+Future<int> salonDetailFeature(BuildContext context,String salonId)async {
+    final value = await SalonsServices.getSalonByID(salonId: salonId);
+    if(!context.mounted) return 400;
+
+    context.read<SingleSalonProvider>().setSalonDetails(value);
+    context.read<SalonsServiceFilterProvider>().setSalonDetails(value);
+    context.read<BookingServicesSalonProvider>().setSalonDetails(value);
+    
+    final String token = await context.read<AuthenticationProvider>().getAccessToken();
+    final reviews = await ReviewsServices.getReviewsBySalonId(salonId: salonId,accessToken: token);
+    if(!context.mounted) return 400;
+    context.read<ReviewsProvider>().setReviews(reviews);
+
+    return 200;
+}
 
 class SalonDetailsScreen extends StatefulWidget{
   final SalonResponseData salonDetails;
@@ -49,18 +64,6 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
   @override
   void initState() {
     super.initState();
-    SalonsServices.getSalonByID(salonId: widget.salonDetails.id ?? "").then((value){
-        context.read<SingleSalonProvider>().setSalonDetails(value);
-        context.read<SalonsServiceFilterProvider>().setSalonDetails(value);
-        context.read<BookingServicesSalonProvider>().setSalonDetails(value);
-    });
-    
-    context.read<AuthenticationProvider>().getAccessToken().then((value) {
-      ReviewsServices.getReviewsBySalonId(salonId: widget.salonDetails.id ?? "",accessToken: value).then((value) {
-        context.read<ReviewsProvider>().setReviews(value);
-      });
-    });
-
 
     salonName = widget.salonDetails.name ?? "Salon Name";
     salonType = widget.salonDetails.salonType ?? "Salon Type";
@@ -73,9 +76,10 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final ref = Provider.of<SingleSalonProvider>(context,listen: true);
+    final ref = Provider.of<SingleSalonProvider>(context,listen: false);
     salonDetails = ref.salonDetials;
-    
+    print("Builded");
+
     return SafeArea(
       child: Scaffold(
             body: Stack(
@@ -133,25 +137,39 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
                           imageCarousel(),
                           Container(
                             decoration: const BoxDecoration(
-                              color: Colors.white,
+                                        color: Colors.white,
                             ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                              salonDetailOverview(),
-                              const Divider(
-                                thickness: 5,
-                                height: 0,
-                                color: ColorsConstant.graphicFillDark,
-                              ),
-                              servicesAndReviewTabBar(),
-                              // here add review container
-                              selectedTab == 0
-                                  ? const ServiceFilterContainer()
-                                  : ReviewContainer(salonDetails: salonDetails),
-                              ],
+                            child: FutureBuilder(
+                              future: salonDetailFeature(context, widget.salonDetails.id ?? ""), 
+                              builder: (context, snapshot) {
+                                if(snapshot.hasData){
+                                   return Column(
+                                     crossAxisAlignment: CrossAxisAlignment.start,
+                                     children: [
+                                     salonDetailOverview(),
+                                     const Divider(
+                                       thickness: 5,
+                                       height: 0,
+                                       color: ColorsConstant.graphicFillDark,
+                                     ),
+                                     servicesAndReviewTabBar(),
+                                     // here add review container
+                                     selectedTab == 0
+                                         ? const ServiceFilterContainer()
+                                         : ReviewContainer(salonDetails: salonDetails),
+                                     ],
+                                   );
+                                } 
+                                return SizedBox(
+                                        height: MediaQuery.of(context).size.height,
+                                          child: Center(
+                                          child: CircularProgressIndicator(color: ColorsConstant.appColor,strokeWidth: 4.w),
+                                          ),
+                                 );
+                              }
                             ),
-                          ),
+                          )
+                          
                         ],
                       ),
                     ),

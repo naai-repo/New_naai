@@ -148,9 +148,9 @@ class _BottomNavigationScreenState extends State<BottomNavigationScreen>  with W
   Future<void> locationPopUp(BuildContext context) async {
     final ref = Provider.of<LocationProvider>(context,listen: false);
     bool isGoingtoBeShown = await ref.getIsPopUpShown();
-    print(isGoingtoBeShown);
 
-    if(isGoingtoBeShown && context.mounted){
+
+    if(!isGoingtoBeShown && context.mounted){
       await showModalBottomSheet(
         isScrollControlled: true,
         isDismissible: false,

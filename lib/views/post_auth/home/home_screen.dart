@@ -21,6 +21,8 @@ import 'package:naai/utils/constants/string_constant.dart';
 import 'package:naai/utils/progress/loading.dart';
 import 'package:naai/utils/routing/named_routes.dart';
 import 'package:naai/utils/utility_functions.dart';
+import 'package:naai/views/post_auth/artist_details/artist_details_screen.dart';
+import 'package:naai/views/post_auth/salon_details/salon_details_screen.dart';
 import 'package:provider/provider.dart';
 
 
@@ -64,24 +66,24 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-  //  final ref = Provider.of<HomeProvider>(context,listen: false);
-    scrollController.addListener(()async { 
-      if(scrollController.position.pixels == scrollController.position.maxScrollExtent){
-          try {
-              Loading.showLoding(context);
-              final res = await ArtistsServices.getTopArtists(coords: [77.077451, 28.676784], page: 2, limit: 10, type: type);
-              if(context.mounted) Provider.of<TopArtistsProvider>(context,listen: false).setTopArtists(res);
-          } catch (e) {
-            if(context.mounted){
-               showErrorSnackBar(context, "Something went wrong");
-            }
-          }finally{
-            if(context.mounted){
-               Loading.closeLoading(context);
-            }
-          }
-      }
-    });
+
+    // scrollController.addListener(()async { 
+    //   if(scrollController.position.pixels == scrollController.position.maxScrollExtent){
+    //       try {
+    //           Loading.showLoding(context);
+    //           final res = await ArtistsServices.getTopArtists(coords: [77.077451, 28.676784], page: 2, limit: 10, type: type);
+    //           if(context.mounted) Provider.of<TopArtistsProvider>(context,listen: false).setTopArtists(res);
+    //       } catch (e) {
+    //         if(context.mounted){
+    //            showErrorSnackBar(context, "Something went wrong");
+    //         }
+    //       }finally{
+    //         if(context.mounted){
+    //            Loading.closeLoading(context);
+    //         }
+    //       }
+    //   }
+    // });
     
     return DefaultTabController(
       length: 2,
@@ -524,7 +526,7 @@ class SalonNearMe extends StatelessWidget {
 
                     return GestureDetector(
                       onTap: () async {
-                             
+                          Navigator.of(context).push(MaterialPageRoute(builder: (_) => SalonDetailsScreen(salonDetails: salons[index])));
                       },
                       child: Container(
                         width: 320.w,
@@ -761,8 +763,8 @@ class Stylist extends StatelessWidget {
                              Material(
                               color: Colors.transparent,
                                child: InkWell(
-                                onTap: (){
-                                   
+                                onTap: () async {
+                                   Navigator.of(context).push(MaterialPageRoute(builder: (_) => ArtistDetailScreen(artistId: artists[index].artistDetails?.id ?? "")));
                                 },
                                  child: Container(
                                    width: double.maxFinite,
