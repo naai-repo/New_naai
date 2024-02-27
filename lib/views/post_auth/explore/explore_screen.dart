@@ -9,6 +9,7 @@ import 'package:naai/providers/post_auth/filter_salon_provider.dart';
 import 'package:naai/providers/post_auth/location_provider.dart';
 import 'package:naai/providers/post_auth/top_artists_provider.dart';
 import 'package:naai/providers/post_auth/top_salons_provider.dart';
+import 'package:naai/providers/pre_auth/auth_provider.dart';
 import 'package:naai/services/salons/salons_service.dart';
 import 'package:naai/utils/buttons/buttons.dart';
 import 'package:naai/utils/cards/custom_cards.dart';
@@ -117,9 +118,9 @@ class _ExploreScreenState extends State<ExploreScreen>{
                                               onTap: () {
                                                    Navigator.pushNamed(context, NamedRoutes.exploreStylistRoute);
                                               },
-                                              icon: Icon(Icons.more_vert_outlined,color: ColorsConstant.appColor,size: 15.w,),
+                                              //icon: Icon(Icons.more_vert_outlined,color: ColorsConstant.appColor,size: 15.w,),
                                               shouldShowBoxShadow: false,
-                                              isIconSuffix: true,
+                                             // isIconSuffix: true,
                                               padding: EdgeInsets.symmetric(
                                                 vertical: 5.w,
                                                 horizontal: 15.w,
@@ -216,7 +217,8 @@ class _ExploreScreenState extends State<ExploreScreen>{
                                           ],
                                         ),
                                         SizedBox(height: 20.h),
-                                        const SalonsContainer()
+                                        const SalonsContainer(),
+                                        SizedBox(height: 40.h),
                                       ],
                                     ),
                                   ),
@@ -456,7 +458,12 @@ class FilterBarberSheet extends StatelessWidget {
                             
                             try {
                                 Loading.showLoding(context);
-                                final response = await SalonsServices.getTopSalons(coords: [-1.0987, 1.8865], page: 1, limit: 10, type: "male");
+                                final refLocation = await context.read<LocationProvider>().getLatLng();
+                                final coords = [refLocation.longitude,refLocation.latitude];
+                                if(!context.mounted) return;
+                                final genderType =  context.read<AuthenticationProvider>().userData.gender ?? "male";
+
+                                final response = await SalonsServices.getTopSalons(coords: coords, page: 1, limit: 10, type: genderType);
                                 await refTopSalons.setTopSalons(response.data,clear: true);
                                 ref.setDiscountIndex(-1);
                                 ref.setRatingIndex(-1);
@@ -653,7 +660,11 @@ class _DiscountsButtonsState extends State<DiscountsButtons> {
               Loading.showLoding(context);
 
               if(i != selectedDiscountIndex){
-                final response = await SalonsServices.getSalonsByDiscount(coords: [-1.0987, 1.8865], page: 1, limit: 10, type: "male", min: int.parse(discounts[i]), max: 100);
+                final refLocation = await context.read<LocationProvider>().getLatLng();
+                final coords = [refLocation.longitude,refLocation.latitude];
+                if(!context.mounted) return;
+                final genderType =  context.read<AuthenticationProvider>().userData.gender ?? "male";
+                final response = await SalonsServices.getSalonsByDiscount(coords: coords, page: 1, limit: 10, type: genderType, min: int.parse(discounts[i]), max: 100);
                 await refTopSalons.setTopSalons(response.data,clear: true);
                 ref.setDiscountIndex(i);
               }
@@ -711,7 +722,12 @@ class RatingButtions extends StatelessWidget {
               Loading.showLoding(context);
 
               if(i != selectedRatingIndex){
-                final response = await SalonsServices.getSalonsByRating(coords: [-1.0987, 1.8865], page: 1, limit: 10, type: "male", min: 0);
+                final refLocation = await context.read<LocationProvider>().getLatLng();
+                final coords = [refLocation.longitude,refLocation.latitude];
+                if(!context.mounted) return;
+                final genderType =  context.read<AuthenticationProvider>().userData.gender ?? "male";
+                final response = await SalonsServices.getSalonsByRating(coords: coords, page: 1, limit: 10, type: genderType, min: 0);
+                
                 if(i == 0) response.data.sort((a, b) => a.rating!.toInt() - b.rating!.toInt());
                 if(i == 1) response.data.sort((a, b) => b.rating!.toInt() - a.rating!.toInt());
                 await refTopSalons.setTopSalons(response.data,clear: true);
@@ -746,7 +762,6 @@ class RatingButtions extends StatelessWidget {
     );
   }
 }
-
 
 class SalonsContainer extends StatefulWidget {
   const SalonsContainer({super.key});
@@ -784,9 +799,11 @@ class SalonCard extends StatelessWidget {
     double distance = salon.distance ?? 0;
     double rating = salon.rating ?? 5;
     int discount = salon.discount ?? 5;
+    List<ImageData> salonImages = salon.images ?? [];
 
     return Container(
           color: Colors.white,
+          margin: EdgeInsets.only(bottom: 20.h),
           child: GestureDetector(
             onTap: () async {
                  Navigator.push(context, MaterialPageRoute(builder: (_) => SalonDetailsScreen(salonDetails: salon)));
@@ -799,7 +816,7 @@ class SalonCard extends StatelessWidget {
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
+                children: [
                   CarouselSlider(
                     options: CarouselOptions(
                         viewportFraction: 1.0,
@@ -807,18 +824,19 @@ class SalonCard extends StatelessWidget {
                         autoPlayInterval: const Duration(seconds: 3),
                         autoPlayAnimationDuration: const Duration(milliseconds: 800),
                         autoPlayCurve: Curves.fastOutSlowIn),
-                    items: (<ImageData>[]) // Use an empty list if images is null
+                    items: (salonImages) // Use an empty list if images is null
                         .map((ImageData imageUrl) {
                       return Builder(
                         builder: (BuildContext context) {
                           return Stack(
-                            children: <Widget>[
+                            children: [
                               ClipRRect(
                                 borderRadius: BorderRadius.circular(5),
                                 child: Image.network(
                                   imageUrl.url as String, // Cast imageUrl to String
-                                  height: 35.h,
-                                  width: 100.w,
+                                  height: 350.h,
+                                  width: double.maxFinite,
+
                                   fit: BoxFit.fill,
                                   // When image is loading from the server it takes some time
                                   // So we will show progress indicator while loading
@@ -867,6 +885,7 @@ class SalonCard extends StatelessWidget {
                       );
                     }).toList(),
                   ),
+                  SizedBox(height: 10.h),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[

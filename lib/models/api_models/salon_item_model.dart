@@ -131,6 +131,21 @@ class SalonResponseData {
   }
 
   factory SalonResponseData.fromMap(Map<String, dynamic> map) {
+    List<ImageData> images = [];
+    bool isImage = false;
+
+    if(map['images'] == null || (map['images'] as List<dynamic>).isEmpty){
+        isImage = true;
+        List<String> demoImages = [
+        "https://images.pexels.com/photos/705255/pexels-photo-705255.jpeg?auto=compress&cs=tinysrgb&w=600",
+        "https://images.pexels.com/photos/1654834/pexels-photo-1654834.jpeg?auto=compress&cs=tinysrgb&w=600",
+        "https://images.pexels.com/photos/1813272/pexels-photo-1813272.jpeg?auto=compress&cs=tinysrgb&w=600",
+        "https://content.jdmagicbox.com/comp/delhi/v2/011pxx11.xx11.190710173752.m6v2/catalogue/slam-salon-model-town-2-delhi-beauty-parlours-317mvghz7k.jpg"
+      ];
+
+      images = List.generate(demoImages.length, (index) => ImageData(key: "", url: demoImages[index], id: "id"));
+    }
+
     return SalonResponseData(
       id: map['id'] != null ? map['id'] as String : null,
       address: map['address'] != null ? map['address'] as String : null,
@@ -151,7 +166,8 @@ class SalonResponseData {
       gst: map['gst'] != null ? map['gst'] as String : null,
       pan: map['pan'] != null ? map['pan'] as String : null,
       links: map['links'] != null ? Map<String, String>.from((map['links'] as Map<String, dynamic>)) : null,
-      images: map['images'] != null ? List<ImageData>.from((map['images'] as List<dynamic>).map<ImageData?>((x) => ImageData.fromMap(x as Map<String,dynamic>),),) : null,
+     // images: map['images'] != null ? List<ImageData>.from((map['images'] as List<dynamic>).map<ImageData?>((x) => ImageData.fromMap(x as Map<String,dynamic>),),) : null,
+      images: (isImage) ? images :  map['images'] != null ? List<ImageData>.from((map['images'] as List<dynamic>).map<ImageData?>((x) => ImageData.fromMap(x as Map<String,dynamic>),),) : null,
       distance: map['distance'] != null ? map['distance'] as double : null,
       score: map['score'] != null ? map['score'] as double : null,
     );

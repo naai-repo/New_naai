@@ -67,6 +67,37 @@ class BookingServicesSalonProvider with ChangeNotifier {
 
   void setBookingSelectedDateAndScheduleResponse(DateTime value,ScheduleResponseModel res){
         _bookingSelectedDate = value;
+        
+        final services = getSelectedServiceData();
+        for(var e in services){
+           if(e.variable != null){
+               for(var s in res.timeSlots!){
+                  for(int i = 0;i < s.order.length;i++){
+                     if(s.order[i].service!.id == e.service){
+                          final slots = res.timeSlots!;
+                          res = res.copyWith(timeSlots: List.generate(slots.length, (index) {
+                              return TimeSlotResponseTimeSlot(key: slots[index].key, possible: slots[index].possible, timeSlot: slots[index].timeSlot, order: List.generate(slots[index].order.length, (idx) {
+                                return Order(
+                                     artist: slots[index].order[idx].artist,
+                                     time: slots[index].order[idx].time,
+                                     service: slots[index].order[idx].service,
+                                     variable: VariableSchedule(
+                                        id: e.variable!.id,
+                                        variableCutPrice: e.variable!.variableCutPrice,
+                                        variableName: e.variable!.variableName,
+                                        variablePrice: e.variable!.variablePrice,
+                                        variableTime: e.variable!.variableTime!.toDouble(),
+                                        variableType: e.variable!.variableType
+                                     )
+                                );
+                              }));
+                          }));
+                          break;
+                     }
+                  }
+               }
+           }
+        }
         _scheduleResponseData = res;
         _selectedArtistTimeSlot = ["00","00"];
         notifyListeners();
@@ -87,14 +118,24 @@ class BookingServicesSalonProvider with ChangeNotifier {
   void resetAll({bool notify = false}){
     resetFinalMultiStaffServices();
     resetFinalSingleStaffArtist();
+
     _selectedArtistTimeSlot = ["00","00"];
     _bookingSelectedDate = DateTime(1999);
     _selectedStaffIndex = -1;
     _isFromArtistScreen = false;
     _confirmBookingModel = ConfirmBookingModel(status: "false");
     _scheduleResponseData = ScheduleResponseModel(salonId: "0000");
+
     _selectedServices.clear();
+    _totalPrice = 0;
+    _totalDiscountPrice = 0;
     if(notify) notifyListeners();
+  }
+
+  void resetSelectSlotAndSlot(){
+    _selectedArtistTimeSlot = ["00","00"];
+    _bookingSelectedDate = DateTime(1999);
+    notifyListeners();
   }
   
   List<ServicesArtistItemModel> getSelectedServiceData(){
@@ -111,8 +152,9 @@ class BookingServicesSalonProvider with ChangeNotifier {
       //print("${selectedServices.length} - ${_finalSingleStaffSelectedServices.length}");
       for(int i = 0;i < _selectedServices.length;i++){
            final currentService = _selectedServices[i];
-          
-           for(var s in value.services!){
+    
+
+           for(var s in (value.services ?? [])){
              if(currentService.service!.id == s.serviceId){
                 _finalSingleStaffSelectedServices[i] = ServicesArtistItemModel(
                   artist: value.id,
@@ -179,6 +221,7 @@ class BookingServicesSalonProvider with ChangeNotifier {
   }
 
   bool isMultiSatffArtistSelected(int serviceIndex,String value){
+    if(_finalMultiStaffSelectedServices.length != _selectedServices.length) resetFinalMultiStaffServices();
     if(_finalMultiStaffSelectedServices[serviceIndex].artist == value) return true;
     return false;
   }
@@ -200,10 +243,8 @@ class BookingServicesSalonProvider with ChangeNotifier {
   }
   
   void addService(ServiceDataModel value,{bool isFromArtistScreen = false}){
-    if(isFromArtistScreen){
-       _isFromArtistScreen = isFromArtistScreen;
-       _selectedStaffIndex = 0;
-    }
+    if(isFromArtistScreen) _selectedStaffIndex = 0;
+    _isFromArtistScreen = isFromArtistScreen;
 
     for(var e in _selectedServices){
       if(e.service!.id == value.id){
@@ -331,12 +372,16 @@ class BookingServicesSalonProvider with ChangeNotifier {
     for(int i = 0;i < finalServices.length;i++){
         final e = finalServices[i];
         if(e.artist == "000000000000000000000000"){
+           //print("${e.artist} - ${e.service}");
+
             final services = value.booking?.artistServiceMap ?? [];
             for(var s in services){
                if(s.serviceId == e.service){
                   finalServices[i] = finalServices[i].copyWith(artist: s.artistId);
+                  //print(finalServices[i]);
                }
             }
+          
         }
      }
     

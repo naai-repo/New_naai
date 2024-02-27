@@ -29,9 +29,15 @@ class Location {
   }
 
   factory Location.fromMap(Map<String, dynamic> map) {
+    List<double> coords = [0,0];
+    if(map["coordinates"] != null){
+      List<dynamic> t = map["coordinates"] as List<dynamic>;
+      coords[0] = double.tryParse(t[0].toString())!;
+      coords[1] = double.tryParse(t[1].toString())!;
+    }
     return Location(
       type: map['type'] != null ? map['type'] as String : null,
-      coordinates: map['coordinates'] != null ? List<double>.from((map['coordinates'] as List<dynamic>)) : null,
+      coordinates: map['coordinates'] != null ? coords : null,
     );
   }
 

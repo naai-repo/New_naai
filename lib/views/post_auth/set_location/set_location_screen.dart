@@ -7,6 +7,7 @@ import 'package:mapbox_gl/mapbox_gl.dart';
 import 'package:naai/models/location/location_model.dart';
 import 'package:naai/providers/post_auth/location_provider.dart';
 import 'package:naai/services/location/location_services.dart';
+import 'package:naai/utils/buttons/buttons.dart';
 import 'package:naai/utils/constants/colors_constant.dart';
 import 'package:naai/utils/constants/image_path_constant.dart';
 import 'package:naai/utils/constants/string_constant.dart';
@@ -38,19 +39,9 @@ class _SetHomeLocationScreenState extends State<SetLocationScreen> {
 
   @override
   Widget build(BuildContext context) {
-         return PopScope(
+      return PopScope(
         onPopInvoked: (_){
-        //     if (provider.userData.homeLocation?.geoLocation == null) {
-        //     ReusableWidgets.showFlutterToast(
-        //       context,
-        //       'Please set your home location before moving forward! to find nearby salons😊',
-        //     );
-        //     return false;
-        // }else {
-        //     provider.clearMapSearchText();
-        //     // Allow popping the screen
-        //     return Future.value(true);
-        //   }
+
         },
         child: SafeArea(
           child: Scaffold(
@@ -64,10 +55,9 @@ class _SetHomeLocationScreenState extends State<SetLocationScreen> {
               titleSpacing: 0,
               title: Row(
                 mainAxisAlignment: MainAxisAlignment.start,
-                children: <Widget>[
+                children: [
                   IconButton(
                     onPressed: () {
-                        //provider.clearMapSearchText();
                         Navigator.pop(context);
                     },
                     splashRadius: 0.1,
@@ -85,7 +75,7 @@ class _SetHomeLocationScreenState extends State<SetLocationScreen> {
             ),
             body: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
+              children: [
                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: 10.w),
                   child: Column(
@@ -151,8 +141,8 @@ class _SetHomeLocationScreenState extends State<SetLocationScreen> {
                                       iconImage: ImagePathConstant.currentLocationPointer,
                                       iconSize: 0.2,
                                     ));
-
-                                    ref.setLatLng(selectedLatLng);
+                                    
+                                    if(context.mounted) await setLocationModal(context, selectedLatLng);
 
                                     FocusManager.instance.primaryFocus?.unfocus();
                                   },
@@ -229,17 +219,25 @@ class _SetHomeLocationScreenState extends State<SetLocationScreen> {
                 iconSize: 0.2,
               ));
             },
-            onMapClick: (Point<double> point, LatLng coordinates) {
+            onMapClick: (Point<double> point, LatLng coordinates) async {
               FocusManager.instance.primaryFocus?.unfocus();
               //provider.onMapClick(coordinates: coordinates, context: context);
               _mapTextController.clear();
               print("Coordinates ===> $coordinates");
+
+               await _mapBoxController.removeSymbol(_symbol);
 
                _mapBoxController.animateCamera(
                 CameraUpdate.newCameraPosition(
                   CameraPosition(target: coordinates, zoom: 16),
                 ),
               );
+              await _mapBoxController.addSymbol(SymbolOptions(
+                geometry: coordinates,
+                iconImage: ImagePathConstant.currentLocationPointer,
+                iconSize: 0.2,
+              ));
+              if(context.mounted) await setLocationModal(context, coordinates);
             },
           ),
          // ReusableWidgets.recenterWidget(context, provider: provider),
@@ -247,5 +245,46 @@ class _SetHomeLocationScreenState extends State<SetLocationScreen> {
       );
   }
 
+  Future<void> setLocationModal(BuildContext context,LatLng latLng)async {
+    final ref = context.read<LocationProvider>();
+    final place = await ref.getAddress(latLng.latitude,latLng.longitude);
+    String address = "${place.subLocality}, ${place.locality}";
+    if(!context.mounted) return;
+
+    showModalBottomSheet(
+      context: context, 
+      constraints: BoxConstraints(maxHeight: 150.h),
+      backgroundColor: Colors.white,
+      builder: (context){
+         return Container(
+          color: Colors.white,
+          padding: EdgeInsets.all(20.w),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+               Text(address,
+                style: TextStyle(
+                  fontFamily: "Poppins",
+                  fontSize: 18.sp,
+                  fontWeight: FontWeight.w500
+                )),
+                SizedBox(height: 20.h),
+                CustomButtons.redFullWidthButton(
+                  buttonText: "Set Location",
+                  fillColor: ColorsConstant.appColor, 
+                  onTap: () async{
+                     ref.setLatLng(latLng);
+                     Navigator.pop(context);
+                     Navigator.pop(context);
+                  }, 
+                  isActive: true
+                )
+            ],
+          ),
+         );
+      }
+    );
+  }
 }
 

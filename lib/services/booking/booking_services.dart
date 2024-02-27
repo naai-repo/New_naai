@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:naai/models/api_models/booking_appointment_model.dart';
 import 'package:naai/models/api_models/booking_single_artist_list_model.dart';
 import 'package:naai/models/api_models/confirm_booking_model.dart';
+import 'package:naai/models/api_models/get_user_bookings_model.dart';
 import 'package:naai/models/api_models/scheduling_response_model.dart';
 import 'package:naai/models/utility/selected_service_artists.dart';
 import 'package:naai/utils/constants/api_constant.dart';
@@ -104,7 +105,8 @@ class BookingServices {
      
       
       if (response.statusCode == 200) {
-      //  print(response.data);
+        //print(response.data);
+
         final res = BookingAppointmentResponseModel.fromJson(jsonEncode(response.data).replaceAll("_id", "id"));
         return res;
       } else {
@@ -117,7 +119,6 @@ class BookingServices {
     }
   }
 
-  
   static Future<ConfirmBookingModel> confirmBooking({required String salonId,required BookingAppointmentResponseModel confirmBookingPaylaod,required String accessToken}) async {
     const apiUrl = UrlConstants.bookingConfirm;
 
@@ -150,6 +151,38 @@ class BookingServices {
        print(stacktrace.toString());
        print("Error Confirm Booking : ${e.toString()}");
        return ConfirmBookingModel();
+    }
+  }
+  
+  static Future<GetUserBookingResponseModel> getBookings({required String userId,required String accessToken,required int page,required int limit}) async {
+    final apiUrl = "${UrlConstants.getBookings}?page=${page.toString()}&limit=${limit.toString()}";
+
+    
+    // print(json.encode(requestData["timeSlots"][0]["order"]));
+    // print(json.encode(requestData["timeSlot"]));
+    //print(json.encode(requestData));
+  
+
+    try {
+      dio.options.connectTimeout = const Duration(seconds: 10);
+      dio.options.headers['Authorization'] = 'Bearer $accessToken';
+
+      final response = await dio.get(
+          apiUrl,
+          options: Options(headers: {"Content-Type": "application/json"}),
+      );
+     
+      
+      if (response.statusCode == 200) {
+        final res = GetUserBookingResponseModel.fromJson(jsonEncode(response.data).replaceAll("_id", "id"));
+        return res;
+      } else {
+        throw ErrorDescription(response.data['message']);
+      }
+    } catch (e,stacktrace) {
+       print(stacktrace.toString());
+       print("Error Get Booking : ${e.toString()}");
+       return GetUserBookingResponseModel();
     }
   }
   

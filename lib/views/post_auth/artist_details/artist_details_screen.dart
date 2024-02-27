@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:naai/controllers/auth/auth_controller.dart';
 import 'package:naai/models/api_models/artist_item_model.dart';
 import 'package:naai/models/api_models/service_item_model.dart';
 import 'package:naai/models/utility/single_artist_screen_model.dart';
@@ -9,7 +10,10 @@ import 'package:naai/providers/post_auth/booking_screen_change_provider.dart';
 import 'package:naai/providers/post_auth/booking_services_salon_provider.dart';
 import 'package:naai/providers/post_auth/reviews_provider.dart';
 import 'package:naai/providers/post_auth/single_artist_provider.dart';
+import 'package:naai/providers/pre_auth/auth_provider.dart';
 import 'package:naai/services/artists/artist_services.dart';
+import 'package:naai/services/reviews/reviews_services.dart';
+import 'package:naai/utils/buttons/buttons.dart';
 import 'package:naai/utils/cards/custom_cards.dart';
 import 'package:naai/utils/common_widgets/common_widgets.dart';
 import 'package:naai/utils/constants/colors_constant.dart';
@@ -18,18 +22,24 @@ import 'package:naai/utils/constants/string_constant.dart';
 import 'package:naai/views/post_auth/booking/booking_screen.dart';
 import 'package:naai/views/post_auth/salon_details/contact_and_interaction_widget.dart';
 import 'package:naai/views/post_auth/salon_details/salon_details_screen.dart';
-import 'package:naai/views/post_auth/utility/add_review_component.dart';
+import 'package:naai/views/post_auth/utility/review_box_compnent.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 Future<int> artistDetailsScreenFuture(BuildContext context,String artistId) async {
     final value = await ArtistsServices.getArtistByID(artistId: artistId);
     if(!context.mounted) return 400;
-
+     
     context.read<SingleArtistProvider>().setArtistDetails(value);
     context.read<BookingServicesSalonProvider>().setSalonDetails(value.salonDetails!);
     context.read<ArtistServicesFilterProvider>().setArtistDetails(value);
-    context.read<BookingServicesSalonProvider>().resetAll();
 
+    final String token = await context.read<AuthenticationProvider>().getAccessToken();
+    final reviews = await ReviewsServices.getReviewsByArtistId(artistId: artistId,accessToken: token);
+    if(!context.mounted) return 400;
+    context.read<ReviewsProvider>().setReviews(reviews);
+    context.read<ArtistServicesFilterProvider>().resetAllFilter();
+  
     return 200;
 }
 
@@ -48,13 +58,12 @@ class _BarberProfileScreenState extends State<ArtistDetailScreen> {
   @override
   void initState() {
     super.initState();
+    context.read<BookingServicesSalonProvider>().resetAll(notify: false);
   }
 
   @override
   Widget build(BuildContext context) {
-    final ref = Provider.of<SingleArtistProvider>(context,listen: false);
-    artistDetails = ref.artistDetails;
-
+    
     return SafeArea(
       child: Scaffold(
            //   resizeToAvoidBottomInset: true,
@@ -120,6 +129,8 @@ class _BarberProfileScreenState extends State<ArtistDetailScreen> {
                               child: FutureBuilder(
                                 future: artistDetailsScreenFuture(context, widget.artistId), 
                                 builder: (context,snapshot){
+                                  artistDetails = Provider.of<SingleArtistProvider>(context,listen: false).artistDetails;
+
                                   if(snapshot.hasData){
                                      return Column(
                                        crossAxisAlignment: CrossAxisAlignment.start,
@@ -143,7 +154,7 @@ class _BarberProfileScreenState extends State<ArtistDetailScreen> {
                                          servicesAndReviewTabBar(),
                                          selectedTab == 0
                                              ? const ServiceFilterContainer()
-                                             : ReviewContainer(artistDetails: artistDetails),
+                                             : ReviewContainer(isForSalon: false,artistDetails: artistDetails,salonDetails: artistDetails.salonDetails),
                                        ],
                                      );
                                                         
@@ -171,6 +182,8 @@ class _BarberProfileScreenState extends State<ArtistDetailScreen> {
                 child: Consumer<BookingServicesSalonProvider>(builder: (context, ref, child) {
                     double totalPrice = ref.totalPrice;
                     double discountPrice = ref.totalDiscountPrice;
+                    final refAuth = context.read<AuthenticationProvider>();
+                    bool isGuest = refAuth.authData.isGuest ?? false;
       
                     if(ref.selectedServices.isNotEmpty){
                       return Container(
@@ -238,14 +251,15 @@ class _BarberProfileScreenState extends State<ArtistDetailScreen> {
                                         )),
                                   ],
                                 ),
+                                (!isGuest) ?
                                 VariableWidthCta(
                                   onTap: () async {
                                      context.read<BookingScreenChangeProvider>().setScreenIndex(1);
                                      ref.addFinalSingleStaffServices(artistDetails.artistDetails?.data ?? ArtistDataModel(id: "0000"));
-                                     Future.delayed(Durations.medium1,()async {
+                                     Future.delayed(Durations.medium1,() async {
                                         await Navigator.of(context).push(MaterialPageRoute(builder: (_)=> const BookingScreen()));
                                         if(!context.mounted) return;
-
+                                        
                                         if(ref.confirmBookingModel.status != "false"){
                                            ref.resetAll(notify: true);
                                         }
@@ -253,6 +267,15 @@ class _BarberProfileScreenState extends State<ArtistDetailScreen> {
                                   },
                                   isActive: true,
                                   buttonText: StringConstant.confirmBooking,
+                                ) :
+                                VariableWidthCta(
+                                    onTap: () async {
+                                        await AuthenticationConroller.logout(context);
+                                    },
+                                    isActive: true,
+                                    fillColor: Colors.black,
+                                    horizontalPadding: 50.w,
+                                    buttonText: "SIGN IN",
                                 )
                               ],
                             ),
@@ -304,6 +327,7 @@ class _BarberProfileScreenState extends State<ArtistDetailScreen> {
 
   Widget barberOverview() {
     final String artistName = artistDetails.artistDetails?.data?.name ?? "Artist Name";
+    final String image = artistDetails.artistDetails?.data?.imageUrl ?? "";
     final String salonName = artistDetails.salonDetails?.data?.data?.name ?? "Salon Name";
     final double rating = artistDetails.artistDetails?.data?.rating ?? 5;
 
@@ -326,12 +350,10 @@ class _BarberProfileScreenState extends State<ArtistDetailScreen> {
                       ),
                     ],
                   ),
-                  child: CircleAvatar(
+                  child: (image.isNotEmpty) ? CircleAvatar(
                     radius: 50.h,
-                    // backgroundImage:
-                    //     NetworkImage(barberProvider.artistDetails!.imageUrl)
-                    //         as ImageProvider,
-                  ),
+                    backgroundImage: NetworkImage(image),
+                  ) : CircleAvatar(radius: 50.h),
 
                 ),
               ),
@@ -340,7 +362,7 @@ class _BarberProfileScreenState extends State<ArtistDetailScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: <Widget>[
+                  children: [
                     Text(
                       artistName,
                       style: TextStyle(
@@ -417,7 +439,7 @@ class _BarberProfileScreenState extends State<ArtistDetailScreen> {
                 //width: 38.w,
                 child: GestureDetector(
                   onTap: () async {
-                     Navigator.of(context).push(MaterialPageRoute(builder: (_) => SalonDetailsScreen(salonDetails: artistDetails.salonDetails!.data!.data!)));
+                     Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => SalonDetailsScreen(salonDetails: artistDetails.salonDetails!.data!.data!)));
                   },
                   child: Container(
                     padding: EdgeInsets.symmetric(
@@ -466,26 +488,25 @@ class _BarberProfileScreenState extends State<ArtistDetailScreen> {
             iconThreePath: ImagePathConstant.saveIcon,
             iconFourPath: ImagePathConstant.instagramIcon,
             onTapIconOne: () {
-            //   launchUrl(
-            //   Uri(
-            //     scheme: 'tel',
-            //     path: StringConstant.generalContantNumber,
-            //   ),
-            // )
+              launchUrl(
+                Uri(
+                  scheme: 'tel',
+                  path: StringConstant.generalContantNumber,
+                ),
+              );
             },
             onTapIconTwo: () {
-            //   launchUrl(
-            //   Uri.parse(barberProvider.artistDetails!.links.instagram ??
-            //       'https://www.instagram.com/naaiindia'),
-            // )
+              launchUrl(
+                Uri.parse('https://www.instagram.com/naaiindia'),
+              );
             },
             onTapIconThree: () {
                
             },
             onTapIconFour: () {
-            //   launchUrl(
-            //   Uri.parse('https://www.instagram.com/naaiindia'),
-            // )
+              launchUrl(
+                Uri.parse('https://www.instagram.com/naaiindia'),
+              );
             },
           ),
           SizedBox(height: 1.h),
@@ -1151,145 +1172,6 @@ class VariableAddServiceContainer extends StatelessWidget {
               ),
             ),
           );
-  }
-}
-
-class ReviewContainer extends StatelessWidget {
-  final SingleArtistScreenModel artistDetails;
-  const ReviewContainer({super.key,required this.artistDetails});
-
-  @override
-  Widget build(BuildContext context) {
-    final ref = Provider.of<ReviewsProvider>(context,listen: true);
-    String salonId = artistDetails.salonDetails?.data?.data?.id ?? "";
-   
-    return GestureDetector(
-          onTap: () => FocusManager.instance.primaryFocus!.unfocus(),
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 20.h),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                AddReviewComponent(reviewForSalon: false,salonId: salonId),
-                Padding(
-                  padding: EdgeInsets.only(top: 20.h),
-                  child: Text(
-                    StringConstant.userReviews,
-                    style: TextStyle(
-                      fontSize: 18.sp,
-                      color: ColorsConstant.blackAvailableStaff,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-                SizedBox(height: 20.h),
-                (ref.reviews.isNotEmpty)
-                    ? SizedBox(
-                      child: ListView.builder(
-                      itemCount: ref.reviews.length,
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemBuilder: (context, index) {
-                       final String storeName = artistDetails.salonDetails?.data?.data?.name ?? 'No Title';
-                       final String title = ref.reviews[index].user?.data?.name ?? 'No Title';
-                       final String date = ref.reviews[index].reviews?.review.createdAt ?? 'No Date';
-                       final String discription = ref.reviews[index].reviews?.review.description ?? 'No Discription';
-                      
-                       return Container(
-                          padding: EdgeInsets.all(12.w),
-                          margin: EdgeInsets.only(bottom: 14.w),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: ColorsConstant.divider),
-                          borderRadius: BorderRadius.circular(10.sp)
-                          ),
-                          child: Column(
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                   Text(
-                                       "For : $storeName",
-                                       style: TextStyle(
-                                        fontFamily: "Poppins",
-                                        color: const Color(0xFF8C9AAC),
-                                        fontSize: 16.sp,
-                                        fontWeight: FontWeight.w500
-                                       ),
-                                   ),
-                                   SizedBox(height: 10.h),
-                                   Row(
-                                    mainAxisAlignment: MainAxisAlignment.start,
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      CircleAvatar(backgroundColor: Colors.grey,radius: 25.r),
-                                      SizedBox(width: 15.h),
-                                      Column(
-                                        mainAxisAlignment: MainAxisAlignment.start,
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                              title,
-                                              style: TextStyle(
-                                                fontFamily: "Poppins",
-                                                color: const Color(0xFF373737),
-                                                fontSize: 18.sp,
-                                                fontWeight: FontWeight.w600
-                                              ),
-                                          ),
-                                          Text(
-                                              date,
-                                              style: TextStyle(
-                                                fontFamily: "Poppins",
-                                                color: const Color(0xFF8C9AAC),
-                                                fontSize: 14.sp,
-                                                fontWeight: FontWeight.w400
-                                              ),
-                                          ),
-                                        ],
-                                      )
-                                    ],
-                                   ),
-                                   SizedBox(height: 20.h),
-                                   SizedBox(
-                                    //height: 10.h,
-                                    child: Text(
-                                              discription,
-                                              softWrap: true,
-                                              overflow: TextOverflow.ellipsis,
-                                              maxLines: 2,
-                                              style: TextStyle(
-                                                fontFamily: "Poppins",
-                                                color: const Color(0xFF8C9AAC),
-                                                fontSize: 14.sp,
-                                                fontWeight: FontWeight.w400
-                                              ),
-                                          ),
-                                   ),
-                                  SizedBox(height: 2.h,),
-                                  // Material(
-                                  //   child: InkWell(
-                                  //     onTap: (){},
-                                  //     child: Text(
-                                  //             "View More",
-                                  //             style: TextStyle(
-                                  //               fontFamily: "Poppins",
-                                  //               color: ColorsConstant.appColor,
-                                  //               fontSize: 14.sp,
-                                  //               fontWeight: FontWeight.w500
-                                  //             ),
-                                  //         ),
-                                  //   ),
-                                  // )
-
-                              ],
-                          ),
-                       );
-                    }),)
-                    : const SizedBox(),
-              ],
-            ),
-          ),
-        );
-
   }
 }
 

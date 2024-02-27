@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
+import 'package:naai/providers/bottom_change_index_provider.dart';
 import 'package:naai/providers/post_auth/booking_services_salon_provider.dart';
 import 'package:naai/utils/constants/colors_constant.dart';
 import 'package:naai/utils/constants/image_path_constant.dart';
 import 'package:naai/utils/constants/string_constant.dart';
+import 'package:naai/utils/routing/named_routes.dart';
 import 'package:provider/provider.dart';
 
 class BookingConfirmedScreen extends StatefulWidget {
@@ -26,119 +28,131 @@ class _BookingConfirmedScreenState extends State<BookingConfirmedScreen> {
     
 
      return SafeArea(
-       child: Scaffold(
-            backgroundColor: Colors.white,
-            body: Center(
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    //SizedBox(height: 10.h),
-                    Image.asset(
-                      width: 350.w,
-                      ImagePathConstant.bookingConfirmationImage,
-                    ),
-                    Text(
-                      StringConstant.bookingConfirmed,
-                      style: TextStyle(
-                        fontSize: 20.sp,
-                        fontWeight: FontWeight.w600,
-                        color: ColorsConstant.textDark,
+       child: PopScope(
+         canPop: false,
+         onPopInvoked: (vc){
+             context.read<BottomChangeScreenIndexProvider>().setScreenIndex(0);
+            Future.delayed(Durations.medium1,(){
+              Navigator.pushNamedAndRemoveUntil(context, NamedRoutes.bottomNavigationRoute, (route) => false);
+            });
+         },
+         child: Scaffold(
+              backgroundColor: Colors.white,
+              body: Center(
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      //SizedBox(height: 10.h),
+                      Image.asset(
+                        width: 350.w,
+                        ImagePathConstant.bookingConfirmationImage,
                       ),
-                    ),
-                    SizedBox(height: 10.h),
-                    Text(
-                      StringConstant.bookingConfirmedSubtext,
-                      style: TextStyle(
-                        fontSize: 16.sp,
-                        color: ColorsConstant.textLight,
-                      ),
-                    ),
-                    SizedBox(height: 80.h),
-                    Text(salonName,
-                      style: TextStyle(
-                        fontSize: 20.sp,
-                        fontWeight: FontWeight.w600,
-                        color: ColorsConstant.textDark,
-                      ),
-                    ),
-                    SizedBox(height: 10.h),
-                    SizedBox(
-                      width: 300.w,
-                      child: Text(
-                        salonaddress,
-                        maxLines: 6,
-                        overflow: TextOverflow.ellipsis,
+                      Text(
+                        StringConstant.bookingConfirmed,
                         style: TextStyle(
-                          fontSize: 14.sp,
+                          fontSize: 20.sp,
+                          fontWeight: FontWeight.w600,
+                          color: ColorsConstant.textDark,
+                        ),
+                      ),
+                      SizedBox(height: 10.h),
+                      Text(
+                        StringConstant.bookingConfirmedSubtext,
+                        style: TextStyle(
+                          fontSize: 16.sp,
                           color: ColorsConstant.textLight,
                         ),
-                        textAlign: TextAlign.center,
                       ),
-                    ),
-                    SizedBox(height: 40.h),
-                    Text(
-                      "Time Slot",
-                      style: TextStyle(
-                        fontSize: 16.sp,
-                        fontWeight: FontWeight.w600,
-                        color: ColorsConstant.blackAvailableStaff,
-                      ),
-                    ),
-                    SizedBox(height: 10.h),
-                    Text(
-                      timeSlot,
-                      style: TextStyle(
-                        fontSize: 24.sp,
-                        fontWeight: FontWeight.w700,
-                        color: ColorsConstant.textDark,
-                      ),
-                    ),
-                    SizedBox(height: 40.h),
-                    GestureDetector(
-                      onTap: () {
-                         Navigator.pop(context);
-                      },
-                      child: Container(
-                        padding: EdgeInsets.all(20.w),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10.r),
-                          boxShadow: const [
-                            BoxShadow(
-                              blurRadius: 5,
-                              spreadRadius: 1,
-                              color: ColorsConstant.dropShadowColor,
-                            ),
-                          ],
-                          color: ColorsConstant.appColor,
+                      SizedBox(height: 80.h),
+                      Text(salonName,
+                        style: TextStyle(
+                          fontSize: 20.sp,
+                          fontWeight: FontWeight.w600,
+                          color: ColorsConstant.textDark,
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            SvgPicture.asset(
-                              height: 20.h,
-                              ImagePathConstant.backArrowIos,
-                              color: Colors.white,
-                            ),
-                            SizedBox(width: 10.w),
-                            Text(
-                              'Back to salon page',
-                              style: TextStyle(
-                                fontSize: 16.sp,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.white,
+                      ),
+                      SizedBox(height: 10.h),
+                      SizedBox(
+                        width: 300.w,
+                        child: Text(
+                          salonaddress,
+                          maxLines: 6,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 14.sp,
+                            color: ColorsConstant.textLight,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                      SizedBox(height: 40.h),
+                      Text(
+                        "Time Slot",
+                        style: TextStyle(
+                          fontSize: 16.sp,
+                          fontWeight: FontWeight.w600,
+                          color: ColorsConstant.blackAvailableStaff,
+                        ),
+                      ),
+                      SizedBox(height: 10.h),
+                      Text(
+                        timeSlot,
+                        style: TextStyle(
+                          fontSize: 24.sp,
+                          fontWeight: FontWeight.w700,
+                          color: ColorsConstant.textDark,
+                        ),
+                      ),
+                      SizedBox(height: 40.h),
+                      GestureDetector(
+                        onTap: () {
+                           context.read<BottomChangeScreenIndexProvider>().setScreenIndex(0);
+                           Future.delayed(Durations.medium1,(){
+                              Navigator.pushNamedAndRemoveUntil(context, NamedRoutes.bottomNavigationRoute, (route) => false);
+                            });
+                        },
+                        child: Container(
+                          padding: EdgeInsets.symmetric(vertical: 20.w,horizontal: 40.w),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(10.r),
+                            boxShadow: const [
+                              BoxShadow(
+                                blurRadius: 5,
+                                spreadRadius: 1,
+                                color: ColorsConstant.dropShadowColor,
                               ),
-                            ),
-                          ],
+                            ],
+                            color: ColorsConstant.appColor,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              // SvgPicture.asset(
+                              //   height: 20.h,
+                              //   ImagePathConstant.backArrowIos,
+                              //   color: Colors.white,
+                              // ),
+                              // SizedBox(width: 10.w),
+                              Text(
+                                'Close',
+                                style: TextStyle(
+                                  fontSize: 16.sp,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
+       ),
      );
       
   }

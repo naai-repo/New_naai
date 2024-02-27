@@ -116,7 +116,7 @@ class _MapScreenState extends State<MapScreen> {
                                                           iconImage: ImagePathConstant.currentLocationPointer,
                                                           iconSize: 0.2,
                                                         ));
-                                                        ref.setLatLng(selectedLatLng);          
+                                                        //ref.setLatLng(selectedLatLng);          
                                                         FocusManager.instance.primaryFocus?.unfocus();
                                                       },
                                                       textFieldConfiguration: TextFieldConfiguration(
@@ -171,6 +171,7 @@ class _MapScreenState extends State<MapScreen> {
              // await provider.onMapCreated(mapController, context);
               _mapBoxController = mapController;
               LatLng dummyLocation = ref.latLng; // Set your desired dummy location
+              print(dummyLocation);
               await mapController.animateCamera(
                 CameraUpdate.newCameraPosition(
                   CameraPosition(

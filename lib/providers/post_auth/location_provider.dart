@@ -83,4 +83,14 @@ class LocationProvider with ChangeNotifier {
     notifyListeners();
   }
 
+
+  Future<void> resetAll() async {
+    final box = await Hive.openBox('userBox');
+    _isLocationPopUpShown = false;
+    _isDeniedLocationForever = false;
+    box.delete('locationPopUp');
+    box.delete('lat');
+    box.delete('lng');
+    box.delete('isDeniedForever');
+  }
 }

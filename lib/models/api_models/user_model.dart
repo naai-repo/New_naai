@@ -130,6 +130,14 @@ class UserItemModel {
   }
 
   factory UserItemModel.fromMap(Map<String, dynamic> map) {
+    String imgUrl = "";
+    bool isImage = false;
+
+    if(map["imageUrl"] == null || (map["imageUrl"].toString()).isEmpty){
+      imgUrl = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
+      isImage = true;
+    }
+    
     return UserItemModel(
       location: map['location'] != null ? Location.fromMap(map['location'] as Map<String,dynamic>) : null,
       favourite: map['favourite'] != null ? FavouriteModel.fromMap(map['favourite'] as Map<String,dynamic>) : null,
@@ -141,7 +149,7 @@ class UserItemModel {
       verified: map['verified'] != null ? map['verified'] as bool : null,
       status: map['status'] != null ? map['status'] as String : null,
       imageKey: map['imageKey'] != null ? map['imageKey'] as String : null,
-      imageUrl: map['imageUrl'] != null ? map['imageUrl'] as String : null,
+      imageUrl: map['imageUrl'] != null ? (isImage) ? imgUrl : ['imageUrl'] as String : null,
       createdAt: map['createdAt'] != null ? map['createdAt'] as String : null,
       updatedAt: map['updatedAt'] != null ? map['updatedAt'] as String : null,
     );

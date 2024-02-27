@@ -145,32 +145,43 @@ class Order {
   TimeService? service;
   String? artist;
   int? time;
+  VariableSchedule? variable;
 
   Order({
     this.service,
     this.artist,
-    this.time
+    this.time,
+    this.variable
   });
-
 
 
   Order copyWith({
     TimeService? service,
     String? artist,
     int? time,
+    VariableSchedule? variable,
   }) {
     return Order(
       service: service ?? this.service,
       artist: artist ?? this.artist,
       time: time ?? this.time,
+      variable: variable ?? this.variable,
     );
   }
 
   Map<String, dynamic> toMap() {
+    if(variable == null){
+      return <String, dynamic>{
+        'service': service?.toMap(),
+        'artist': artist,
+        'time': time,
+      };
+    }
     return <String, dynamic>{
       'service': service?.toMap(),
       'artist': artist,
       'time': time,
+      'variable': variable?.toMap(),
     };
   }
 
@@ -179,6 +190,7 @@ class Order {
       service: map['service'] != null ? TimeService.fromMap(map['service'] as Map<String,dynamic>) : null,
       artist: map['artist'] != null ? map['artist'] as String : null,
       time: map['time'] != null ? map['time'] as int : null,
+      variable: map['variable'] != null ? VariableSchedule.fromMap(map['variable'] as Map<String,dynamic>) : null,
     );
   }
 
@@ -187,7 +199,10 @@ class Order {
   factory Order.fromJson(String source) => Order.fromMap(json.decode(source) as Map<String, dynamic>);
 
   @override
-  String toString() => 'Order(service: $service, artist: $artist, time: $time)';
+  String toString() {
+    return 'Order(service: $service, artist: $artist, time: $time, variable: $variable)';
+  }
+
 }
 
 class TimeService {
@@ -200,8 +215,8 @@ class TimeService {
   final String? targetGender;
   final int? avgTime;
   final List<VariableSchedule>? variables;
-  final int? basePrice;
-  final int? cutPrice;
+  final double? basePrice;
+  final double? cutPrice;
   final String? createdAt;
   final String? updatedAt;
 
@@ -220,6 +235,7 @@ class TimeService {
     this.updatedAt,
   });
 
+
   TimeService copyWith({
     String? id,
     String? salonId,
@@ -229,8 +245,8 @@ class TimeService {
     String? targetGender,
     int? avgTime,
     List<VariableSchedule>? variables,
-    int? basePrice,
-    int? cutPrice,
+    double? basePrice,
+    double? cutPrice,
     String? createdAt,
     String? updatedAt,
   }) {
@@ -277,8 +293,8 @@ class TimeService {
       targetGender: map['targetGender'] != null ? map['targetGender'] as String : null,
       avgTime: map['avgTime'] != null ? map['avgTime'] as int : null,
       variables: map['variables'] != null ? List<VariableSchedule>.from((map['variables'] as List<dynamic>).map<VariableSchedule?>((x) => VariableSchedule.fromMap(x as Map<String,dynamic>),),) : null,
-      basePrice: map['basePrice'] != null ? map['basePrice'] as int : null,
-      cutPrice: map['cutPrice'] != null ? map['cutPrice'] as int : null,
+      basePrice: map['basePrice'] != null ? double.tryParse(map['basePrice'].toString()) : null,
+      cutPrice: map['cutPrice'] != null ? double.tryParse(map['cutPrice'].toString()) : null,
       createdAt: map['createdAt'] != null ? map['createdAt'] as String : null,
       updatedAt: map['updatedAt'] != null ? map['updatedAt'] as String : null,
     );
@@ -292,6 +308,7 @@ class TimeService {
   String toString() {
     return 'TimeService(id: $id, salonId: $salonId, category: $category, serviceTitle: $serviceTitle, description: $description, targetGender: $targetGender, avgTime: $avgTime, variables: $variables, basePrice: $basePrice, cutPrice: $cutPrice, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
+
 }
 
 class TimeSlotTimeSlot {
@@ -338,9 +355,9 @@ class TimeSlotTimeSlot {
 class VariableSchedule {
   final String? variableType;
   final String? variableName;
-  final int? variablePrice;
-  final int? variableCutPrice;
-  final int? variableTime;
+  final double? variablePrice;
+  final double? variableCutPrice;
+  final double? variableTime;
   final String? id;
   
   VariableSchedule({
@@ -353,12 +370,13 @@ class VariableSchedule {
   });
 
 
+
   VariableSchedule copyWith({
     String? variableType,
     String? variableName,
-    int? variablePrice,
-    int? variableCutPrice,
-    int? variableTime,
+    double? variablePrice,
+    double? variableCutPrice,
+    double? variableTime,
     String? id,
   }) {
     return VariableSchedule(
@@ -386,9 +404,9 @@ class VariableSchedule {
     return VariableSchedule(
       variableType: map['variableType'] != null ? map['variableType'] as String : null,
       variableName: map['variableName'] != null ? map['variableName'] as String : null,
-      variablePrice: map['variablePrice'] != null ? map['variablePrice'] as int : null,
-      variableCutPrice: map['variableCutPrice'] != null ? map['variableCutPrice'] as int : null,
-      variableTime: map['variableTime'] != null ? map['variableTime'] as int : null,
+      variablePrice: map['variablePrice'] != null ? double.tryParse(map['variablePrice'].toString()): null,
+      variableCutPrice: map['variableCutPrice'] != null ? double.tryParse(map['variableCutPrice'].toString())  : null,
+      variableTime: map['variableTime'] != null ? double.tryParse(map['variableTime'].toString()): null,
       id: map['id'] != null ? map['id'] as String : null,
     );
   }
@@ -401,4 +419,6 @@ class VariableSchedule {
   String toString() {
     return 'VariableSchedule(variableType: $variableType, variableName: $variableName, variablePrice: $variablePrice, variableCutPrice: $variableCutPrice, variableTime: $variableTime, id: $id)';
   }
+
+
 }

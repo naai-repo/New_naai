@@ -33,7 +33,8 @@ class UserServices {
             message: response.data["message"],
             data: UserItemModel(
               name: "Unknown User",
-              id: "0000"
+              id: "0000",
+              gender: "male"
             )
           );
       }else{
@@ -188,14 +189,13 @@ class UserServices {
     }
   }
 
-  static Future<DeleteUserResponseModel> deleteUser({required String userId,required String accessToken}) async {
+  static Future<DeleteUserResponseModel> deleteUser({required String accessToken}) async {
     const apiUrl = UrlConstants.deleteUser;
 
     try {
       dio.options.connectTimeout = const Duration(seconds: 10);
       dio.options.headers['Authorization'] = 'Bearer $accessToken';
       final response = await dio.get(apiUrl);
-     
       
       if (response.statusCode == 200) {
         final res = DeleteUserResponseModel.fromJson(jsonEncode(response.data).replaceAll("_id", "id"));

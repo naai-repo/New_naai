@@ -15,6 +15,7 @@ import 'package:naai/providers/post_auth/single_salon_provider.dart';
 import 'package:naai/providers/post_auth/top_artists_provider.dart';
 import 'package:naai/providers/post_auth/top_salons_provider.dart';
 import 'package:naai/providers/pre_auth/auth_provider.dart';
+import 'package:naai/utils/constants/colors_constant.dart';
 import 'package:naai/utils/routing/named_routes.dart';
 import 'package:naai/utils/routing/routing_functions.dart';
 import 'package:provider/provider.dart';
@@ -55,7 +56,12 @@ class MyApp extends StatelessWidget {
         builder: (context, child) => MaterialApp(
                 debugShowCheckedModeBanner: false,
                 title: 'Naai',
-                theme: ThemeData(fontFamily: 'Poppins'),
+                theme: ThemeData(
+                  fontFamily: 'Poppins',
+                  textSelectionTheme: const TextSelectionThemeData(
+                    cursorColor: ColorsConstant.appColor
+                  ),
+                ),
                 onGenerateRoute: RoutingFunctions.generateRoutes,
                 initialRoute: NamedRoutes.splashRoute,
               ),

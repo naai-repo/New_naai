@@ -9,6 +9,9 @@ class SalonsServiceFilterProvider with ChangeNotifier {
    List<ServiceDataModel> _services = [];
    List<ServiceDataModel> get services => _services;
 
+   int _currentFilterActive = 0;
+   int get currentFilterActive => _currentFilterActive;
+
    final List<String> _categories = [];
    List<String> get categories => _categories;
 
@@ -32,43 +35,52 @@ class SalonsServiceFilterProvider with ChangeNotifier {
    void filterByGender(String type,{bool usePre = false}){
       if(_genderType == type) return;
 
-      _genderType = type;
-      final orgServices = (usePre) ? _services : _salonDetials.data?.services ?? [];
+      
+      final orgServices = (_currentFilterActive > 0 && _genderType == "none") ? _services : _salonDetials.data?.services ?? [];
       _services = [];
       for(var e in orgServices){
             if(e.targetGender == type) _services.add(e);
       }
+
+      if(!usePre && _genderType == "none") _currentFilterActive++;
+      _genderType = type;
       globelFilter();
    }
 
    void filterByCategory(int i,{bool usePre = false}){
       if(_selectedCategoryIndex.contains(i)) return;
 
-      final orgServices = (usePre) ? _services : _salonDetials.data?.services ?? [];
+      final orgServices = (_currentFilterActive > 0) ? _services : _salonDetials.data?.services ?? [];
       _services = [];
       _selectedCategoryIndex.add(i);
 
       for(var e in orgServices){
             if(e.category == _categories[i]) _services.add(e);
       }
-
+      if(!usePre) _currentFilterActive++;
       globelFilter();
    }
 
    void filterBySearch(String value,{bool usePre = false}){
-      final orgServices = (usePre) ? _services : _salonDetials.data?.services ?? [];
+      final orgServices = (_currentFilterActive > 0) ? _services : _salonDetials.data?.services ?? [];
       _services = [];
       for(var e in orgServices){
             if(e.serviceTitle?.contains(value) ?? false) _services.add(e);
       }
+      if(!usePre) _currentFilterActive++;
       globelFilter();
       notifyListeners();
    }
 
    void globelFilter(){
       if(_selectedCategoryIndex.isNotEmpty){
-          for(var e in _selectedCategoryIndex){
-             filterByCategory(e,usePre: true);
+          for(var i in _selectedCategoryIndex){
+            final orgServices = (_currentFilterActive > 0) ? _services : _salonDetials.data?.services ?? [];
+            _services = [];
+
+            for(var e in orgServices){
+                  if(e.category == _categories[i]) _services.add(e);
+            }
           }
       }
 
@@ -80,6 +92,7 @@ class SalonsServiceFilterProvider with ChangeNotifier {
    }
 
    void resetAllFilter(){
+       _currentFilterActive = 0;
       _selectedCategoryIndex.clear();
       _genderType = "none";
       _services = _salonDetials.data?.services ?? [];
@@ -89,6 +102,7 @@ class SalonsServiceFilterProvider with ChangeNotifier {
    void resetCategoryFilter(){
       _selectedCategoryIndex.clear();
       _services = _salonDetials.data?.services ?? [];
+      _currentFilterActive--;
       globelFilter();
       notifyListeners();
    }
@@ -96,6 +110,7 @@ class SalonsServiceFilterProvider with ChangeNotifier {
    void resetCategoryFilterByIndex(int idx){
       _selectedCategoryIndex.remove(idx);
       _services = _salonDetials.data?.services ?? [];
+      _currentFilterActive--;
       globelFilter();
       notifyListeners();
    }
@@ -103,6 +118,7 @@ class SalonsServiceFilterProvider with ChangeNotifier {
    void resetGenderFilter(){
       _genderType = "none";
       _services = _salonDetials.data?.services ?? [];
+      _currentFilterActive--;
       globelFilter();
       notifyListeners();
    }

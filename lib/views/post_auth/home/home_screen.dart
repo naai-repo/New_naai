@@ -10,6 +10,7 @@ import 'package:naai/providers/post_auth/filter_artist_provider.dart';
 import 'package:naai/providers/post_auth/location_provider.dart';
 import 'package:naai/providers/post_auth/top_artists_provider.dart';
 import 'package:naai/providers/post_auth/top_salons_provider.dart';
+import 'package:naai/providers/pre_auth/auth_provider.dart';
 import 'package:naai/services/artists/artist_services.dart';
 import 'package:naai/services/salons/salons_service.dart';
 import 'package:naai/utils/cards/custom_cards.dart';
@@ -22,15 +23,21 @@ import 'package:naai/utils/progress/loading.dart';
 import 'package:naai/utils/routing/named_routes.dart';
 import 'package:naai/utils/utility_functions.dart';
 import 'package:naai/views/post_auth/artist_details/artist_details_screen.dart';
+import 'package:naai/views/post_auth/booking/booking_history/booking_history_screen.dart';
 import 'package:naai/views/post_auth/salon_details/salon_details_screen.dart';
 import 'package:provider/provider.dart';
 
 
 Future<int> homeFuture(BuildContext context,String type) async {
-    final res = await SalonsServices.getTopSalons(coords: [77.077451, 28.676784], page: 1, limit: 10, type: type);
-    if(context.mounted) context.read<TopSalonsProvider>().setTopSalons(res.data);
-    final ress = await ArtistsServices.getTopArtists(coords: [77.077451, 28.676784], page: 1, limit: 10, type: type);
-    if(context.mounted) context.read<TopArtistsProvider>().setTopArtists(ress);
+    final ref = await context.read<LocationProvider>().getLatLng();
+    final coords = [ref.longitude,ref.latitude];
+
+    final res = await SalonsServices.getTopSalons(coords: coords, page: 1, limit: 10, type: type);
+    if(context.mounted) context.read<TopSalonsProvider>().setTopSalons(res.data,clear: true);
+    final ress = await ArtistsServices.getTopArtists(coords: coords, page: 1, limit: 10, type: type);
+    if(context.mounted) context.read<TopArtistsProvider>().setTopArtists(ress,clear: true);
+    print("Builded $type");
+
     return 200;
 }
 
@@ -55,6 +62,8 @@ class _HomeScreenState extends State<HomeScreen> {
           statusBarIconBrightness: Brightness.light,
           systemNavigationBarColor: Colors.white),
     );
+
+    type = context.read<AuthenticationProvider>().userData.gender ?? "male";
     
   }
 
@@ -66,7 +75,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-
+    final ref = Provider.of<LocationProvider>(context,listen: true);
+    
     // scrollController.addListener(()async { 
     //   if(scrollController.position.pixels == scrollController.position.maxScrollExtent){
     //       try {
@@ -141,22 +151,25 @@ class _HomeScreenState extends State<HomeScreen> {
                                               ),
                                           ]
                                     ),
+                                    
                                     FutureBuilder(
                                       future: homeFuture(context, type), 
                                       builder: (context,snapshot){
-
-                                         if(snapshot.hasData){
+                                       // print("kdkf ${snapshot.connectionState}");
+                                         if(snapshot.hasData && snapshot.connectionState == ConnectionState.done){
                                              return Column(
                                                   children: [
                                                       SizedBox(height:20.h),
                                                       const OfferContainer(),
+                                                      SizedBox(height:20.h),
+                                                      const BookingHistoryContainer(),
                                                       SizedBox(height:10.h),
                                                       serviceCategories(),
                                                       SizedBox(height:10.h),
                                                       const SalonNearMe(),
                                                       SizedBox(height:20.h),
                                                       const TopStylistFilterContainer(),
-                                                      SizedBox(height:10.h),
+                                                     // SizedBox(height:5.h),
                                                       const Stylist(),
                                                        SizedBox(height:50.h)
                                                   ],
@@ -435,7 +448,10 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> onClickCategory(String category) async {
     try {
       Loading.showLoding(context);
-      final res = await SalonsServices.getSalonsByCategory(coords: [77.077451, 28.676784], page: 1, limit: 10, type: type, category: category);
+      final refLocation = await context.read<LocationProvider>().getLatLng();
+      final coords = [refLocation.longitude,refLocation.latitude];
+
+      final res = await SalonsServices.getSalonsByCategory(coords: coords, page: 1, limit: 10, type: type, category: category);
       if(res.isEmpty && context.mounted){
          showErrorSnackBar(context, "Something went wrong");
          return;
@@ -458,7 +474,6 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     }
   }
-
 
 }
 
@@ -490,8 +505,12 @@ class SalonNearMe extends StatelessWidget {
               child: ListView.builder(
                 physics: const BouncingScrollPhysics(),
                 scrollDirection: Axis.horizontal,
-                itemCount: salons.length + 1,
+                itemCount: salons.length,
                 itemBuilder: (context, index) {
+                  String salonImage = (salons[index].images?.isNotEmpty ?? false) ? salons[index].images!.first.url! : "";
+    
+                  if(salonImage.isEmpty) salonImage = "https://images.pexels.com/photos/1813272/pexels-photo-1813272.jpeg?auto=compress&cs=tinysrgb&w=600";
+                  
                   if (index == salons.length) {
                     return GestureDetector(
                       onTap: () {
@@ -552,7 +571,7 @@ class SalonNearMe extends StatelessWidget {
                                     Column(
                                       crossAxisAlignment:
                                       CrossAxisAlignment.start,
-                                      children: <Widget>[
+                                      children: [
                                         Text(
                                           salons[index].name ?? '',
                                           style: TextStyle(
@@ -578,7 +597,7 @@ class SalonNearMe extends StatelessWidget {
                                       CrossAxisAlignment.start,
                                       mainAxisAlignment: MainAxisAlignment
                                           .start,
-                                      children: <Widget>[
+                                      children: [
                                         ColorfulInformationCard(
                                           imagePath:
                                           ImagePathConstant.locationIconAlt,
@@ -608,11 +627,11 @@ class SalonNearMe extends StatelessWidget {
                                       right: Radius.circular(10.h),
                                     ),
                                   child: salons[index].images!.isNotEmpty
-                                ? Image.network(
-                                        salons[index].images!.first.url!,
-                                        fit: BoxFit.cover,
-                                  )
-                      : const Placeholder(),
+                                    ? Image.network(
+                                            salons[index].images!.first.url!,
+                                            fit: BoxFit.cover,
+                                      )
+                                    : const Placeholder(),
                                   ),
                                 ),
                                 salons[index].discount == 0 || salons[index].discount == null
@@ -718,18 +737,19 @@ class Stylist extends StatelessWidget {
     final ref = Provider.of<TopArtistsProvider>(context,listen: true);
     List<TopArtistResponseModel> artists = ref.getTopArtists();
 
+
     return Container(
       padding: EdgeInsets.all(10.w),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-            TitleWithLine(
-              lineHeight: 25.h,
-              lineWidth: 5.w,
-              fontSize: 20.sp,
-              text: StringConstant.ourStylist.toUpperCase(),
-            ),
+            // TitleWithLine(
+            //   lineHeight: 25.h,
+            //   lineWidth: 5.w,
+            //   fontSize: 20.sp,
+            //   text: StringConstant.ourStylist.toUpperCase(),
+            // ),
 
             SizedBox(
               //height: 500.h,
@@ -748,7 +768,7 @@ class Stylist extends StatelessWidget {
                      String artistName = artists[index].artistDetails?.name ?? "";
                      String salonName = artists[index].salonDetails?.data?.data?.name ?? "";
                      double rating = artists[index].artistDetails?.rating ?? 5;
-                     if(imgUrl.isEmpty) imgUrl = "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=1780&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D";
+                     // if(imgUrl.isEmpty) imgUrl = "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=1780&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D";
                     
                      return ClipRRect(
                       borderRadius: BorderRadius.circular(22.r),
@@ -830,7 +850,6 @@ class Stylist extends StatelessWidget {
     );
   }
 }
-
 
 class OfferContainer extends StatefulWidget {
   const OfferContainer({super.key});
@@ -958,7 +977,10 @@ class TopStylistFilterContainer extends StatelessWidget {
                       onPressed: () async {
                           try {
                             Loading.showLoding(context);
-                            final res = await ArtistsServices.getArtistsByCategory(coords: [77.077451, 28.676784], page: 1, limit: 10, type: "male", category: ref.filterCategories[index]);
+                            final refLocation = await context.read<LocationProvider>().getLatLng();
+                            final coords = [refLocation.longitude,refLocation.latitude];
+
+                            final res = await ArtistsServices.getArtistsByCategory(coords: coords, page: 1, limit: 10, type: "male", category: ref.filterCategories[index]);
                             refTopArtists.setTopArtists(res,clear: true);
                             ref.setCategoryIndex(index);
                           } catch (e) {
@@ -993,4 +1015,3 @@ class TopStylistFilterContainer extends StatelessWidget {
     );
   }
 }
-

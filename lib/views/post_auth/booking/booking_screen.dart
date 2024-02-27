@@ -33,8 +33,6 @@ class _CreateBookingScreenState extends State<BookingScreen> {
   @override
   void initState() {
     super.initState();
-    //final ref = context.read<BookingServicesSalonProvider>();
-    //context.read<BookingScreenChangeProvider>().setScreenIndex(0);
   }
 
   @override
@@ -258,6 +256,8 @@ class _CreateBookingScreenState extends State<BookingScreen> {
                                 onTap: () async {
                                    if(refScreenChange.screenIndex == 0){
                                         print(ref.getSelectedServiceData());
+                                        
+                                        ref.resetSelectSlotAndSlot();
                                         refScreenChange.setScreenIndex(1);
                                    }else if(refScreenChange.screenIndex ==  1){
                                         try {
@@ -265,7 +265,8 @@ class _CreateBookingScreenState extends State<BookingScreen> {
 
                                           final selectedDate = ref.bookingSelectedDate;
                                           String dateString = "${selectedDate.month}-${selectedDate.day}-${selectedDate.year}";
-
+                                          
+                                  
                                           final res = await BookingServices.makeAppointment(
                                             salonId: ref.salonDetails.data?.data?.id ?? "", 
                                             bookingDate: dateString, 
@@ -274,7 +275,6 @@ class _CreateBookingScreenState extends State<BookingScreen> {
                                             accessToken: await context.read<AuthenticationProvider>().getAccessToken()
                                           );
                                           
-                                         // print(res);
                                           
                                           ref.setMakeAppointmentData(res);
 

@@ -9,4 +9,9 @@ class ReviewsProvider with ChangeNotifier {
           _reviews = value;
           notifyListeners();
     }
+
+    void addReview(ReviewsModel value){
+      _reviews.add(value);
+      notifyListeners();
+    }
 }

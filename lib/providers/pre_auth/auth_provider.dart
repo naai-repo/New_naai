@@ -136,6 +136,7 @@ class AuthenticationProvider with ChangeNotifier {
 
     Future<void> logout() async {
       final box = await Hive.openBox('userBox');
+      _authData = AuthData();
       box.delete('accesstoken');
       box.delete('isGuest');
       box.delete('userId');

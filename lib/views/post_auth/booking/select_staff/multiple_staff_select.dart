@@ -77,7 +77,9 @@ class _MultipleStaffSelectState extends State<MultipleStaffSelect> {
                                  value: (isSelected) ? 1 : 0, 
                                  groupValue: 1, 
                                  activeColor: ColorsConstant.appColor,
-                                 onChanged: (vv){}
+                                 onChanged: (vv){
+                                    ref.setStaffIndex(1);
+                                 }
                                )
                             ],
                           ),
@@ -180,6 +182,7 @@ class _ChooseAStaffState extends State<ChooseAStaff> {
   @override
   Widget build(BuildContext context){
     final ref = Provider.of<BookingServicesSalonProvider>(context,listen: false);
+    print("aritst : ${ref.selectedServices[widget.index].artists!.length}");
     final artists = ref.selectedServices[widget.index].artists ?? [];
     
     return SizedBox(
@@ -239,14 +242,12 @@ class _ChooseAStaffState extends State<ChooseAStaff> {
 
                              return InkWell(
                                onTap: () async {
-                                  if(!isSelected){
                                        if(!isSelected){
                                             setState(() {
                                               selectedArtistName = artitstName;
                                               ref.addFinalMultiStaffServices(widget.index, artists[idx]);
                                             });
                                         }
-                                  }
                                },
                                borderRadius: BorderRadius.circular(10.r),
                      

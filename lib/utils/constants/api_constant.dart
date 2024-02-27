@@ -28,6 +28,7 @@ class UrlConstants{
   static const getSingleService = '${baseUrl}partner/service/single';
   static const getSalonsByCategory = '${baseUrl}partner/service/search/salon';
   static const getSalonReview = '${baseUrl}partner/review/salon';
+  static const getArtistReview = '${baseUrl}partner/review/artist';
   static const getArtistsByCategory = '${baseUrl}partner/service/search/artist';
   static const getUser = '${baseUrl}customer/user';
   static const addReview = '${baseUrl}partner/review/add';
@@ -35,6 +36,7 @@ class UrlConstants{
   static const bookingSingleArtistList = '${baseUrl}appointments/singleArtist/list';
   static const bookingMakeAppointment = '${baseUrl}appointments/book';
   static const bookingConfirm = '${baseUrl}appointments/confirm';
+  static const getBookings = '${baseUrl}appointments/user/bookings';
   static const addUserFav = '${baseUrl}customer/user/favourite/add';
   static const getUserLoaction = '${baseUrl}customer/user/location';
   static const getUserFav = '${baseUrl}customer/user/favourite/get';

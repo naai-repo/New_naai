@@ -65,7 +65,7 @@ class StyleConstant {
 
   static TextStyle bookingDateTimeTextStyle = TextStyle(
     color: Colors.white,
-    fontSize: 10.sp,
+    fontSize: 14.sp,
     fontWeight: FontWeight.w500,
   );
   static InputDecoration searchBoxInputDecoration(

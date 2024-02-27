@@ -135,7 +135,7 @@ class VariableWidthCta extends StatelessWidget {
   final double? horizontalPadding;
   final double? verticalPadding;
   final bool isActive;
-
+  final Color fillColor;
   const VariableWidthCta({
     super.key,
     required this.onTap,
@@ -143,6 +143,7 @@ class VariableWidthCta extends StatelessWidget {
     this.horizontalPadding,
     this.verticalPadding,
     this.isActive = false,
+    this.fillColor = ColorsConstant.appColor
   });
 
   @override
@@ -156,7 +157,7 @@ class VariableWidthCta extends StatelessWidget {
         ),
         decoration: BoxDecoration(
           color: isActive
-              ? ColorsConstant.appColor
+              ? fillColor
               : ColorsConstant.appColor.withOpacity(0.2),
           borderRadius: BorderRadius.circular(15.h),
         ),

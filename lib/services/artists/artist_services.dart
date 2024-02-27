@@ -93,6 +93,27 @@ class ArtistsServices {
     }
   } 
   
+  static Future<SingleArtistModel> getSimpleArtistByID({required String artistId}) async {
+    final apiUrl = "${UrlConstants.getSingleArtist}/$artistId";
+
+    try {
+      dio.options.connectTimeout = const Duration(seconds: 10);
+      final response = await dio.get(apiUrl);
+  
+      if (response.statusCode == 200) {
+        final artistResponse = SingleArtistModel.fromJson(jsonEncode(response.data).replaceAll("_id", "id"));
+        return artistResponse;
+      }else{
+        throw ErrorDescription(jsonEncode(response.data));
+      }
+    } catch (e,stacktrace) {
+      print(stacktrace.toString());
+      print("Error Simple Artist: ${e.toString()}");
+      return SingleArtistModel();
+    }
+  } 
+  
+
   static Future<List<TopArtistResponseModel>> getArtistsByCategory({required List<double> coords,required int page,required int limit,required String type,required String category}) async {
     final apiUrl = "${UrlConstants.getArtistsByCategory}?page=${page.toString()}&limit=${limit.toString()}&name=${category.toString()}&type=${type.toString()}";
     

@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:naai/models/api_models/reviews_item_model.dart';
+import 'package:naai/models/api_models/user_model.dart';
+import 'package:naai/models/utility/reviews_username_model.dart';
+import 'package:naai/providers/post_auth/reviews_provider.dart';
 import 'package:naai/providers/pre_auth/auth_provider.dart';
 import 'package:naai/services/reviews/reviews_services.dart';
 import 'package:naai/utils/constants/colors_constant.dart';
@@ -8,6 +12,7 @@ import 'package:naai/utils/constants/image_path_constant.dart';
 import 'package:naai/utils/constants/string_constant.dart';
 import 'package:naai/utils/progress/loading.dart';
 import 'package:naai/utils/utility_functions.dart';
+import 'package:naai/views/pre_auth/signin_container/signin_container.dart';
 import 'package:provider/provider.dart';
 
 class AddReviewComponent extends StatefulWidget {
@@ -32,6 +37,14 @@ class _AddReviewComponentState extends State<AddReviewComponent> {
 
   @override
   Widget build(BuildContext context) {
+    final ref = Provider.of<AuthenticationProvider>(context,listen: false);
+    bool isGuest = ref.authData.isGuest ?? false;
+
+    if(isGuest){
+       return const SignInContainer(text: "Please create your account to add your Review.",);
+    }
+
+
     return Container(
       padding: EdgeInsets.symmetric(
         vertical: 20.h,
@@ -116,10 +129,25 @@ class _AddReviewComponentState extends State<AddReviewComponent> {
             onTap: () async {
               try {
                 Loading.showLoding(context);
+                if(selectedStarIndex == -1) throw ErrorDescription("Please Select Rating");
+                if(reviewTextController.text.isEmpty) throw ErrorDescription("Please Type Review");
+                final authRef = context.read<AuthenticationProvider>();
+                String token = authRef.authData.accessToken ?? "";
+                ReviewData res;
+                if(widget.reviewForSalon){
+                  res = await ReviewsServices.addReviewToSalon(accessToken: token,discription: reviewTextController.text,rating: selectedStarIndex + 1,salonId:  widget.salonId);
+                }else{
+                  res = await ReviewsServices.addReviewToArtist(accessToken: token,discription: reviewTextController.text,rating: selectedStarIndex + 1,artistId: widget.artistId);
+                }
+                
+                if(!context.mounted) return;
 
-                String token = context.read<AuthenticationProvider>().authData.accessToken ?? "";
-                final res = await ReviewsServices.addReviewToSalon(accessToken: token,discription: reviewTextController.text,rating: selectedStarIndex + 1,salonId:  widget.salonId);
-                print(res);
+                context.read<ReviewsProvider>().addReview(ReviewsModel(
+                  reviews: ReviewItem(review: res, replies: []),
+                  user: UserResponseModel(
+                    data: authRef.userData
+                  )
+                ));
 
                 setState(() {
                   selectedStarIndex = -1;
@@ -127,10 +155,13 @@ class _AddReviewComponentState extends State<AddReviewComponent> {
                 });
               } catch (e) {
                   if(context.mounted){
-                    showErrorSnackBar(context, "Something went wrong");
+                    showErrorSnackBar(context, e.toString());
                   }
               }finally{
-                if(context.mounted) Loading.closeLoading(context);
+                if(context.mounted){
+                  Loading.closeLoading(context);
+                  FocusManager.instance.primaryFocus!.unfocus();
+                }
               }
               
             },

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:naai/controllers/auth/auth_controller.dart';
 import 'package:naai/models/api_models/salon_item_model.dart';
 import 'package:naai/models/api_models/service_item_model.dart';
 import 'package:naai/models/api_models/single_salon_model.dart';
+import 'package:naai/providers/post_auth/booking_screen_change_provider.dart';
 import 'package:naai/providers/post_auth/booking_services_salon_provider.dart';
 import 'package:naai/providers/post_auth/reviews_provider.dart';
 import 'package:naai/providers/post_auth/salon_services_filter_provider.dart';
@@ -20,11 +22,13 @@ import 'package:naai/utils/constants/style_constant.dart';
 import 'package:naai/views/post_auth/booking/booking_screen.dart';
 import 'package:naai/views/post_auth/salon_details/contact_and_interaction_widget.dart';
 import 'package:naai/views/post_auth/utility/add_review_component.dart';
+import 'package:naai/views/post_auth/utility/review_box_compnent.dart';
 import 'package:provider/provider.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 
-Future<int> salonDetailFeature(BuildContext context,String salonId)async {
+Future<int> salonDetailFeature(BuildContext context,String salonId) async {
     final value = await SalonsServices.getSalonByID(salonId: salonId);
     if(!context.mounted) return 400;
 
@@ -36,6 +40,7 @@ Future<int> salonDetailFeature(BuildContext context,String salonId)async {
     final reviews = await ReviewsServices.getReviewsBySalonId(salonId: salonId,accessToken: token);
     if(!context.mounted) return 400;
     context.read<ReviewsProvider>().setReviews(reviews);
+    context.read<BookingScreenChangeProvider>().setScreenIndex(0);
 
     return 200;
 }
@@ -64,6 +69,7 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
   @override
   void initState() {
     super.initState();
+    context.read<BookingServicesSalonProvider>().resetAll(notify: false);
 
     salonName = widget.salonDetails.name ?? "Salon Name";
     salonType = widget.salonDetails.salonType ?? "Salon Type";
@@ -76,9 +82,6 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final ref = Provider.of<SingleSalonProvider>(context,listen: false);
-    salonDetails = ref.salonDetials;
-    print("Builded");
 
     return SafeArea(
       child: Scaffold(
@@ -142,6 +145,9 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
                             child: FutureBuilder(
                               future: salonDetailFeature(context, widget.salonDetails.id ?? ""), 
                               builder: (context, snapshot) {
+                                final ref = Provider.of<SingleSalonProvider>(context,listen: false);
+                                salonDetails = ref.salonDetials;
+                           
                                 if(snapshot.hasData){
                                    return Column(
                                      crossAxisAlignment: CrossAxisAlignment.start,
@@ -156,7 +162,7 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
                                      // here add review container
                                      selectedTab == 0
                                          ? const ServiceFilterContainer()
-                                         : ReviewContainer(salonDetails: salonDetails),
+                                         : ReviewContainer(isForSalon: true,salonDetails: salonDetails),
                                      ],
                                    );
                                 } 
@@ -182,7 +188,9 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
               child: Consumer<BookingServicesSalonProvider>(builder: (context, ref, child) {
                   double totalPrice = ref.totalPrice;
                   double discountPrice = ref.totalDiscountPrice;
-
+                  final refAuth = context.read<AuthenticationProvider>();
+                  bool isGuest = refAuth.authData.isGuest ?? false;
+    
                   if(ref.selectedServices.isNotEmpty){
                     return Container(
                           margin: EdgeInsets.only(
@@ -227,12 +235,12 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
                                           fontWeight: FontWeight.w600,
                                           fontSize: 22.sp,
                                           color: ColorsConstant.textDark,
-                                        )),
+                                      )),
                                 ],
                               ),
               
                               // discount
-                               (1 != 1) ? const SizedBox() : 
+                               ((ref.salonDetails.data?.data?.discount ?? 0) == 0) ? const SizedBox() : 
                                Column(
                                 mainAxisSize: MainAxisSize.min,
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -249,13 +257,30 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
                                       )),
                                 ],
                               ),
+                              (!isGuest) ?
                               VariableWidthCta(
                                 onTap: () async {
-                                    Navigator.of(context).push(MaterialPageRoute(builder: (_)=> const BookingScreen()));
+                                    Future.delayed(Durations.medium1,()async {
+                                        await Navigator.of(context).push(MaterialPageRoute(builder: (_)=> const BookingScreen()));
+                                        if(!context.mounted) return;
+
+                                        if(ref.confirmBookingModel.status != "false"){
+                                           ref.resetAll(notify: true);
+                                        }
+                                     });
                                 },
                                 isActive: true,
                                 buttonText: StringConstant.confirmBooking,
-                              )
+                              ) :
+                               VariableWidthCta(
+                                  onTap: () async {
+                                      await AuthenticationConroller.logout(context);
+                                  },
+                                  isActive: true,
+                                  fillColor: Colors.black,
+                                  horizontalPadding: 50.w,
+                                  buttonText: "SIGN IN",
+                                )
                             ],
                           ),
                         );
@@ -270,7 +295,7 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
 
  
   Widget imageCarousel() {
-    List<ImageData> images = salonDetails.data?.data?.images ?? [];
+    List<ImageData> images = widget.salonDetails.images ?? [];
    
     return Stack(
         alignment: Alignment.bottomCenter,
@@ -625,28 +650,27 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
               iconThreePath:  ImagePathConstant.saveIcon,
               iconFourPath: ImagePathConstant.instagramIcon,
               onTapIconOne: () {
-              //    launchUrl(
-              //   Uri(
-              //     scheme: 'tel',
-              //     path: StringConstant.generalContantNumber,
-              //   ),
-              // )
+                 launchUrl(
+                    Uri(
+                      scheme: 'tel',
+                      path: StringConstant.generalContantNumber,
+                    ),
+                  );
               },
               onTapIconTwo: () => {
-              //   launchUrl(
-              //   Uri.parse(
-              //     "https://play.google.com/store/apps/details?id=com.naai.flutterApp",
-              //   ),
-              // )
+                launchUrl(
+                  Uri.parse(
+                    "https://play.google.com/store/apps/details?id=com.naai.flutterApp",
+                  ),
+                )
               },
               onTapIconThree: () {
                      
               },
               onTapIconFour: () {
-              //    launchUrl(
-              //   Uri.parse(provider.salonDetails!.data.data.links.instagram ??
-              //       'https://www.instagram.com/naaiindia'),
-              // )
+                 launchUrl(
+                    Uri.parse('https://www.instagram.com/naaiindia'),
+                 );
               },
               backgroundColor: ColorsConstant.lightAppColor,
             ),
@@ -754,10 +778,8 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
           ),
           InkWell(
             onTap: () {
-              // navigateTo(
-              //   geoPoint.latitude,
-              //   geoPoint.longitude,
-              // );
+              final coords = salonDetails.data?.data?.location?.coordinates ?? [0,0];
+              navigateTo(coords[1],coords[0]);
             },
             child: Padding(
               padding: EdgeInsets.only(bottom: 10.w),
@@ -774,14 +796,14 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
     );
   }
   
-  // static void navigateTo(double lat, double lng) async {
-  //   var uri = Uri.parse("google.navigation:q=$lat,$lng&mode=d");
-  //   if (await canLaunchUrl(uri)) {
-  //     await launchUrl(uri);
-  //   } else {
-  //     throw 'Could not launch ${uri.toString()}';
-  //   }
-  // }
+  static void navigateTo(double lat, double lng) async {
+    final googleUrl = Uri.parse('https://www.google.com/maps/search/?api=1&query=$lat,$lng');
+    if (await canLaunchUrl(googleUrl)) {
+      await launchUrl(googleUrl);
+    } else {
+      throw 'Could not open the map.';
+    }
+  }
 
 }
 
@@ -876,14 +898,16 @@ class _ServiceFilterContainerState extends State<ServiceFilterContainer> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                          Text(
-                          title,
-                          softWrap: true,
-                          style: TextStyle(
-                            color: const Color(0xFF2B2F34),
-                            fontSize: 20.sp,
-                            fontFamily: 'Poppins',
-                            fontWeight: FontWeight.w700,
+                        Flexible(
+                          child: Text(
+                            title,
+                            softWrap: true,
+                            style: TextStyle(
+                              color: const Color(0xFF2B2F34),
+                              fontSize: 20.sp,
+                              fontFamily: 'Poppins',
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ),
                         SvgPicture.asset(
@@ -1238,6 +1262,8 @@ class _ServiceFilterContainerState extends State<ServiceFilterContainer> {
        }
      );
   }
+
+  
 }
 
 class VariableSelectionContainer extends StatefulWidget {
@@ -1439,142 +1465,4 @@ class VariableAddServiceContainer extends StatelessWidget {
   }
 }
 
-class ReviewContainer extends StatelessWidget {
-  final SingleSalonResponseModel salonDetails;
-  const ReviewContainer({super.key,required this.salonDetails});
-
-  @override
-  Widget build(BuildContext context) {
-    final ref = Provider.of<ReviewsProvider>(context,listen: true);
-    String salonId = Provider.of<SingleSalonProvider>(context,listen: false).salonDetials.data?.data?.id ?? "";
-   
-    return GestureDetector(
-          onTap: () => FocusManager.instance.primaryFocus!.unfocus(),
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 20.h),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                AddReviewComponent(reviewForSalon: true,salonId: salonId),
-                Padding(
-                  padding: EdgeInsets.only(top: 20.h),
-                  child: Text(
-                    StringConstant.userReviews,
-                    style: TextStyle(
-                      fontSize: 18.sp,
-                      color: ColorsConstant.blackAvailableStaff,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-                SizedBox(height: 20.h),
-                (ref.reviews.isNotEmpty)
-                    ? SizedBox(
-                      child: ListView.builder(
-                      itemCount: ref.reviews.length,
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemBuilder: (context, index) {
-                       final String storeName = salonDetails.data?.data?.name ?? 'No Title';
-                       final String title = ref.reviews[index].user?.data?.name ?? 'No Title';
-                       final String date = ref.reviews[index].reviews?.review.createdAt ?? 'No Date';
-                       final String discription = ref.reviews[index].reviews?.review.description ?? 'No Discription';
-                      
-                       return Container(
-                          padding: EdgeInsets.all(12.w),
-                          margin: EdgeInsets.only(bottom: 14.w),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: ColorsConstant.divider),
-                          borderRadius: BorderRadius.circular(10.sp)
-                          ),
-                          child: Column(
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                   Text(
-                                       "For : $storeName",
-                                       style: TextStyle(
-                                        fontFamily: "Poppins",
-                                        color: const Color(0xFF8C9AAC),
-                                        fontSize: 16.sp,
-                                        fontWeight: FontWeight.w500
-                                       ),
-                                   ),
-                                   SizedBox(height: 10.h),
-                                   Row(
-                                    mainAxisAlignment: MainAxisAlignment.start,
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      CircleAvatar(backgroundColor: Colors.grey,radius: 25.r),
-                                      SizedBox(width: 15.h),
-                                      Column(
-                                        mainAxisAlignment: MainAxisAlignment.start,
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                              title,
-                                              style: TextStyle(
-                                                fontFamily: "Poppins",
-                                                color: const Color(0xFF373737),
-                                                fontSize: 18.sp,
-                                                fontWeight: FontWeight.w600
-                                              ),
-                                          ),
-                                          Text(
-                                              date,
-                                              style: TextStyle(
-                                                fontFamily: "Poppins",
-                                                color: const Color(0xFF8C9AAC),
-                                                fontSize: 14.sp,
-                                                fontWeight: FontWeight.w400
-                                              ),
-                                          ),
-                                        ],
-                                      )
-                                    ],
-                                   ),
-                                   SizedBox(height: 20.h),
-                                   SizedBox(
-                                    //height: 10.h,
-                                    child: Text(
-                                              discription,
-                                              softWrap: true,
-                                              overflow: TextOverflow.ellipsis,
-                                              maxLines: 2,
-                                              style: TextStyle(
-                                                fontFamily: "Poppins",
-                                                color: const Color(0xFF8C9AAC),
-                                                fontSize: 14.sp,
-                                                fontWeight: FontWeight.w400
-                                              ),
-                                          ),
-                                   ),
-                                  SizedBox(height: 2.h,),
-                                  // Material(
-                                  //   child: InkWell(
-                                  //     onTap: (){},
-                                  //     child: Text(
-                                  //             "View More",
-                                  //             style: TextStyle(
-                                  //               fontFamily: "Poppins",
-                                  //               color: ColorsConstant.appColor,
-                                  //               fontSize: 14.sp,
-                                  //               fontWeight: FontWeight.w500
-                                  //             ),
-                                  //         ),
-                                  //   ),
-                                  // )
-
-                              ],
-                          ),
-                       );
-                    }),)
-                    : const SizedBox(),
-              ],
-            ),
-          ),
-        );
-
-  }
-}
 

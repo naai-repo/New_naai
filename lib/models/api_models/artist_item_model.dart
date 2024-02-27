@@ -86,7 +86,7 @@ class ArtistDataModel {
 
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
-      'id': id,
+      '_id': id,
       'name': name,
       'rating': rating,
       'salonId': salonId,
@@ -107,6 +107,21 @@ class ArtistDataModel {
   }
 
   factory ArtistDataModel.fromMap(Map<String, dynamic> map) {
+    String imageUrl = "";
+    bool isImage = false;
+    if(map['imageUrl'] == null || map['imageUrl'].toString().isEmpty){
+      List<String> images = [
+        "https://static.vecteezy.com/system/resources/previews/025/744/378/original/a-man-with-a-fashionable-haircut-in-profile-a-logo-for-a-barber-shop-vector.jpg",
+        "https://img.freepik.com/premium-photo/profile-photo-young-barber-trimming-his-customera-s-hair-with-electric-shaver-comb-barbershop_283617-3244.jpg",
+        "https://as2.ftcdn.net/v2/jpg/04/20/46/97/1000_F_420469753_G1aqA0FAeYUDQV8yFOv51ilwk1SY2IP8.jpg",
+        "https://c8.alamy.com/comp/RNCR9K/bearded-man-in-profile-barbershop-hairstyle-haircut-hand-drawn-vector-illustration-realistic-sketch-RNCR9K.jpg",
+        "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=1780&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+      ];
+
+      images.shuffle();
+      imageUrl = images.first;
+      isImage = true;
+    }
     return ArtistDataModel(
       id: map['id'] != null ? map['id'] as String : null,
       name: map['name'] != null ? map['name'] as String : null,
@@ -123,7 +138,7 @@ class ArtistDataModel {
       distance: map['distance'] != null ? map['distance'] as double : null,
       score: map['score'] != null ? map['score'] as double : null,
       imageKey: map['imageKey'] != null ? map['imageKey'] as String : null,
-      imageUrl: map['imageUrl'] != null ? map['imageUrl'] as String : null,
+      imageUrl: map['imageUrl'] != null ? (isImage) ? imageUrl : map['imageUrl'] as String : null,
       salonName: map['salonName'] != null ? map['salonName'] as String : null,
     );
   }

@@ -7,7 +7,8 @@ class ArtistServicesFilterProvider with ChangeNotifier {
    late SingleArtistScreenModel _artistDetials;
    SingleArtistScreenModel get artistDetials => _artistDetials;
 
-   late 
+   int _currentFilterActive = 0;
+   int get currentFilterActive => _currentFilterActive;
    
    List<ServiceDataModel> _services = [];
    List<ServiceDataModel> get services => _services;
@@ -34,20 +35,21 @@ class ArtistServicesFilterProvider with ChangeNotifier {
 
    void filterByGender(String type,{bool usePre = false}){
       if(_genderType == type) return;
-
-      _genderType = type;
-      final orgServices = (usePre) ? _services : _artistDetials.services ?? [];
+      
+      final orgServices = (_currentFilterActive > 0 && _genderType == "none") ? _services : _artistDetials.services ?? [];
       _services = [];
       for(var e in orgServices){
             if(e.targetGender == type) _services.add(e);
       }
+      if(!usePre && _genderType == "none") _currentFilterActive++;
+      _genderType = type;
       globelFilter();
    }
 
    void filterByCategory(int i,{bool usePre = false}){
       if(_selectedCategoryIndex.contains(i)) return;
 
-      final orgServices = (usePre) ? _services : _artistDetials.services ?? [];
+      final orgServices = (_currentFilterActive > 0) ? _services : _artistDetials.services ?? [];
       _services = [];
       _selectedCategoryIndex.add(i);
 
@@ -55,26 +57,34 @@ class ArtistServicesFilterProvider with ChangeNotifier {
             if(e.category == _categories[i]) _services.add(e);
       }
 
+      if(!usePre) _currentFilterActive++;
       globelFilter();
    }
 
    void filterBySearch(String value,{bool usePre = false}){
-      final orgServices = (usePre) ? _services : _artistDetials.services ?? [];
-
+      final orgServices = (_currentFilterActive > 0) ? _services : _artistDetials.services ?? [];
       _services = [];
       for(var e in orgServices){
             if(e.serviceTitle?.contains(value) ?? false) _services.add(e);
       }
+      if(!usePre) _currentFilterActive++;
       globelFilter();
       notifyListeners();
    }
 
    void globelFilter(){
       if(_selectedCategoryIndex.isNotEmpty){
-          for(var e in _selectedCategoryIndex){
-             filterByCategory(e,usePre: true);
+          for(var i in _selectedCategoryIndex){
+            final orgServices = (_currentFilterActive > 0) ? _services : _artistDetials.services ?? [];
+            _services = [];
+
+            for(var e in orgServices){
+                  if(e.category == _categories[i]) _services.add(e);
+            }
           }
       }
+      
+      print("${_services.length} - $_genderType - $_currentFilterActive");
 
       if(_genderType != "none"){
           filterByGender(_genderType,usePre: true);
@@ -84,6 +94,7 @@ class ArtistServicesFilterProvider with ChangeNotifier {
    }
 
    void resetAllFilter(){
+      _currentFilterActive = 0;
       _selectedCategoryIndex.clear();
       _genderType = "none";
       _services = _artistDetials.services ?? [];
@@ -93,6 +104,7 @@ class ArtistServicesFilterProvider with ChangeNotifier {
    void resetCategoryFilter(){
       _selectedCategoryIndex.clear();
       _services = _artistDetials.services ?? [];
+      _currentFilterActive--;
       globelFilter();
       notifyListeners();
    }
@@ -100,6 +112,7 @@ class ArtistServicesFilterProvider with ChangeNotifier {
    void resetCategoryFilterByIndex(int idx){
       _selectedCategoryIndex.remove(idx);
       _services = _artistDetials.services ?? [];
+      _currentFilterActive--;
       globelFilter();
       notifyListeners();
    }
@@ -107,6 +120,7 @@ class ArtistServicesFilterProvider with ChangeNotifier {
    void resetGenderFilter(){
       _genderType = "none";
       _services = _artistDetials.services ?? [];
+      _currentFilterActive--;
       globelFilter();
       notifyListeners();
    }

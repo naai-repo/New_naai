@@ -5,6 +5,7 @@ import 'package:naai/models/api_models/top_artist_model.dart';
 import 'package:naai/providers/post_auth/filter_artist_provider.dart';
 import 'package:naai/providers/post_auth/location_provider.dart';
 import 'package:naai/providers/post_auth/top_artists_provider.dart';
+import 'package:naai/providers/pre_auth/auth_provider.dart';
 import 'package:naai/services/artists/artist_services.dart';
 import 'package:naai/utils/buttons/buttons.dart';
 import 'package:naai/utils/common_widgets/common_widgets.dart';
@@ -382,7 +383,11 @@ class FilterArtistSheet extends StatelessWidget {
                             
                             try {
                                 Loading.showLoding(context);
-                                final response = await ArtistsServices.getTopArtists(coords: [77.077451, 28.676784], page: 1, limit: 10, type: "male");
+                                final refLocation = await context.read<LocationProvider>().getLatLng();
+                                final coords = [refLocation.longitude,refLocation.latitude];
+                                if(!context.mounted) return;
+                                final genderType =  context.read<AuthenticationProvider>().userData.gender ?? "male";
+                                final response = await ArtistsServices.getTopArtists(coords: coords, page: 1, limit: 10, type: genderType);
                                 await refTopArtist.setTopArtists(response,clear: true);
                                 ref.resetFilter();
                             } catch (e) {
@@ -572,7 +577,11 @@ class _CategoryFilterContainerState extends State<CategoryFilterContainer> {
                   Loading.showLoding(context);
                       
                   if(i != selectedCategoryIndex){
-                    final response = await ArtistsServices.getArtistsByCategory(coords: [-1.0987, 1.8865], page: 1, limit: 10, type: "male",category: categories[i]);
+                    final refLocation = await context.read<LocationProvider>().getLatLng();
+                    final coords = [refLocation.longitude,refLocation.latitude];
+                    if(!context.mounted) return;
+                    final genderType =  context.read<AuthenticationProvider>().userData.gender ?? "male";
+                    final response = await ArtistsServices.getArtistsByCategory(coords: coords, page: 1, limit: 10, type: genderType,category: categories[i]);
                     await refTopArtists.setTopArtists(response,clear: true);
                     ref.setCategoryIndex(i);
                   }

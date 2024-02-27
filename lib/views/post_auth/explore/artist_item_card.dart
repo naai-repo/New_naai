@@ -21,6 +21,7 @@ class ArtistCard extends StatelessWidget {
       String imgUrl = artist.artistDetails?.imageUrl ?? "";
       double distance = artist.artistDetails?.distance ?? 0;
       double rating = artist.artistDetails?.rating ?? 5;
+
       
 
       return Padding(
@@ -42,7 +43,7 @@ class ArtistCard extends StatelessWidget {
                       padding: EdgeInsets.symmetric(horizontal: 4.w),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: <Widget>[
+                        children: [
 
                           Column(
                             children: [
@@ -51,7 +52,7 @@ class ArtistCard extends StatelessWidget {
                                 child: (imgUrl.isNotEmpty) ? CircleAvatar(
                                   radius: 50.h,
                                   backgroundImage: NetworkImage(
-                                    imgUrl,
+                                    imgUrl
                                   ),
                                 ) : CircleAvatar(
                                   radius: 50.h,

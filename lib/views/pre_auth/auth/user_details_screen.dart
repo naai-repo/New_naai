@@ -88,21 +88,21 @@ class _UserDetailsEnterScreenState extends State<UserDetailsEnterScreen> {
                 
                     SizedBox(height: 10.h),
                     authenticationOptionsDivider(),
-                    SizedBox(height: 10.h),
-                    Text(
-                      StringConstant.Optional,
-                      style: TextStyle(
-                        fontSize: 14.sp,
-                        color: ColorsConstant.textLight,
-                      ),
-                    ),
+                    // SizedBox(height: 10.h),
+                    // Text(
+                    //   StringConstant.Optional,
+                    //   style: TextStyle(
+                    //     fontSize: 14.sp,
+                    //     color: ColorsConstant.textLight,
+                    //   ),
+                    // ),
                   Padding(
                     padding: EdgeInsets.only(top: 20.h),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          StringConstant.chooseYourGender,
+                          "${StringConstant.chooseYourGender} ${StringConstant.Optional}",
                           style: TextStyle(
                             fontSize: 16.sp,
                             color: ColorsConstant.textLight,
@@ -294,7 +294,7 @@ class _UserDetailsEnterScreenState extends State<UserDetailsEnterScreen> {
             EdgeInsets.symmetric(horizontal: 10.w, vertical: 20.h),
             filled: true,
             fillColor: ColorsConstant.appColorAccent,
-            hintText: StringConstant.enterYourEmail,
+            hintText: "${StringConstant.enterYourEmail} ${StringConstant.Optional}",
             hintStyle: TextStyle(
               fontSize: 16.sp,
               fontWeight: FontWeight.w400,

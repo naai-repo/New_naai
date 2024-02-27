@@ -1,6 +1,8 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
+
 class BookingAppointmentResponseModel {
   final AppointmentDataModel? booking;
   final int? totalTime;
@@ -48,8 +50,8 @@ class AppointmentDataModel {
   final String? userId;
   final String? bookingType;
   final String? salonId;
-  final int? amount;
-  final int? paymentAmount;
+  final double? amount;
+  final double? paymentAmount;
   final String? paymentId;
   final String? paymentStatus;
   final String? bookingStatus;
@@ -77,12 +79,13 @@ class AppointmentDataModel {
     this.updatedAt,
   });
 
+
   AppointmentDataModel copyWith({
     String? userId,
     String? bookingType,
     String? salonId,
-    int? amount,
-    int? paymentAmount,
+    double? amount,
+    double? paymentAmount,
     String? paymentId,
     String? paymentStatus,
     String? bookingStatus,
@@ -135,8 +138,8 @@ class AppointmentDataModel {
       userId: map['userId'] != null ? map['userId'] as String : null,
       bookingType: map['bookingType'] != null ? map['bookingType'] as String : null,
       salonId: map['salonId'] != null ? map['salonId'] as String : null,
-      amount: map['amount'] != null ? map['amount'] as int : null,
-      paymentAmount: map['paymentAmount'] != null ? map['paymentAmount'] as int : null,
+      amount: map['amount'] != null ?  double.tryParse(map['amount'].toString()) : null,
+      paymentAmount: map['paymentAmount'] != null ? double.tryParse(map['paymentAmount'].toString()) : null,
       paymentId: map['paymentId'] != null ? map['paymentId'] as String : null,
       paymentStatus: map['paymentStatus'] != null ? map['paymentStatus'] as String : null,
       bookingStatus: map['bookingStatus'] != null ? map['bookingStatus'] as String : null,
@@ -158,16 +161,16 @@ class AppointmentDataModel {
     return 'AppointmentDataModel(userId: $userId, bookingType: $bookingType, salonId: $salonId, amount: $amount, paymentAmount: $paymentAmount, paymentId: $paymentId, paymentStatus: $paymentStatus, bookingStatus: $bookingStatus, timeSlot: $timeSlot, bookingDate: $bookingDate, artistServiceMap: $artistServiceMap, id: $id, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 
+
 }
 
 class ArtistServiceMap {
-
   final String? serviceId;
   final String? artistId;
   final String? chosenBy;
   final Variable? variable;
   final TimeSlot? timeSlot;
-  final int? servicePrice;
+  final double? servicePrice;
  
   ArtistServiceMap({
     this.serviceId,
@@ -185,7 +188,7 @@ class ArtistServiceMap {
     String? chosenBy,
     Variable? variable,
     TimeSlot? timeSlot,
-    int? servicePrice,
+    double? servicePrice,
   }) {
     return ArtistServiceMap(
       serviceId: serviceId ?? this.serviceId,
@@ -215,7 +218,7 @@ class ArtistServiceMap {
       chosenBy: map['chosenBy'] != null ? map['chosenBy'] as String : null,
       variable: map['variable'] != null ? Variable.fromMap(map['variable'] as Map<String,dynamic>) : null,
       timeSlot: map['timeSlot'] != null ? TimeSlot.fromMap(map['timeSlot'] as Map<String,dynamic>) : null,
-      servicePrice: map['servicePrice'] != null ? map['servicePrice'] as int : null,
+      servicePrice: map['servicePrice'] != null ? double.tryParse(map['servicePrice'].toString()) : null,
     );
   }
 
@@ -227,6 +230,7 @@ class ArtistServiceMap {
   String toString() {
     return 'ArtistServiceMap(serviceId: $serviceId, artistId: $artistId, chosenBy: $chosenBy, variable: $variable, timeSlot: $timeSlot, servicePrice: $servicePrice)';
   }
+
 }
 
 class Variable {
