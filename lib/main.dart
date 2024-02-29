@@ -48,6 +48,7 @@ class MyApp extends StatelessWidget {
           ChangeNotifierProvider(create: (_) => BookingServicesSalonProvider()),
           ChangeNotifierProvider(create: (_) => BookingScreenChangeProvider()),
       ],
+      
       child: ScreenUtilInit(
         designSize: const Size(414,896),
         splitScreenMode: true,
