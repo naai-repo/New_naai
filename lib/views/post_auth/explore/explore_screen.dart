@@ -5,11 +5,13 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:naai/models/api_models/salon_item_model.dart';
 import 'package:naai/models/api_models/top_artist_model.dart';
+import 'package:naai/providers/post_auth/filter_artist_provider.dart';
 import 'package:naai/providers/post_auth/filter_salon_provider.dart';
 import 'package:naai/providers/post_auth/location_provider.dart';
 import 'package:naai/providers/post_auth/top_artists_provider.dart';
 import 'package:naai/providers/post_auth/top_salons_provider.dart';
 import 'package:naai/providers/pre_auth/auth_provider.dart';
+import 'package:naai/services/artists/artist_services.dart';
 import 'package:naai/services/salons/salons_service.dart';
 import 'package:naai/utils/buttons/buttons.dart';
 import 'package:naai/utils/cards/custom_cards.dart';
@@ -23,12 +25,25 @@ import 'package:naai/utils/routing/named_routes.dart';
 import 'package:naai/utils/utility_functions.dart';
 import 'package:naai/views/post_auth/explore/artist_item_card.dart';
 import 'package:naai/views/post_auth/salon_details/salon_details_screen.dart';
+import 'package:naai/views/post_auth/utility/artist_salon_extended.dart';
 import 'package:provider/provider.dart';
 
 
-Future<int> exploreFuture() async {
-    await Future.delayed(const Duration(seconds: 1));
-    return 20;
+Future<int> exploreFuture(BuildContext context) async {
+    final ref = await context.read<LocationProvider>().getLatLng();
+    final coords = [ref.longitude,ref.latitude];
+    String type = context.read<AuthenticationProvider>().userData.gender ?? "male";
+
+    final refSalon = await context.read<FilterSalonsProvider>();
+    final res = await SalonsServices.getTopSalons(coords: coords, page: refSalon.getPage, limit: refSalon.getLimit, type: type);
+    if(context.mounted) context.read<TopSalonsProvider>().setTopSalons(res.data,clear: true);
+
+    final refArtist = await context.read<FilterArtitsProvider>();
+    final ress = await ArtistsServices.getTopArtists(coords: coords, page: refArtist.getPage, limit: refArtist.getLimit, type: type);
+    if(context.mounted) context.read<TopArtistsProvider>().setTopArtists(ress,clear: true);
+    print("Builded $type");
+
+    return 200;
 }
 
 class ExploreScreen extends StatefulWidget {
@@ -47,6 +62,21 @@ class _ExploreScreenState extends State<ExploreScreen>{
   @override
   void initState() {
     super.initState();
+    final reff = context.read<TopArtistsProvider>();
+    final reffSalons = context.read<TopSalonsProvider>();
+    final reffFilArt = context.read<FilterArtitsProvider>();
+    final reffFillSalons = context.read<FilterSalonsProvider>();
+
+    reff.limit = 11;
+    reff.page = 1;
+    reffSalons.limit = 11;
+    reffSalons.page = 1;
+
+    reffFilArt.limit = 11;
+    reffFilArt.page = 1;
+    reffFillSalons.limit = 11;
+    reffFillSalons.page = 11;
+
   }
 
   @override
@@ -65,13 +95,14 @@ class _ExploreScreenState extends State<ExploreScreen>{
                       titleContainer(),
                       searchBar(),
                   
-                      FutureBuilder(future: exploreFuture(), builder: (context,snapshot){
+                      FutureBuilder(future: exploreFuture(context), builder: (context,snapshot){
                          if(snapshot.hasData){
                             return SliverList(
                               delegate: SliverChildListDelegate(
                                 [
                                   Container(
                                     color: Colors.white,
+                                    constraints: BoxConstraints(minHeight: MediaQuery.of(context).size.height),
                                     padding: EdgeInsets.fromLTRB(10.w, 0, 10.w, 8.h),
                                     child: Column(
                                       mainAxisSize: MainAxisSize.min,
@@ -324,14 +355,13 @@ class FilterBarberSheet extends StatelessWidget {
     final refTopSalons = Provider.of<TopSalonsProvider>(context, listen: false);
 
     List<Widget> screens = [
-      priceWidget(),
-      priceWidget(),
+     // priceWidget(),
       ratingWidget(),
       discountWidget(),
-      distanceWidget()
+      salonTypeWidget()
     ];
     
-    bool isFilterSelected = ref.getSelectedDiscountIndex != -1 || ref.getSelectedRatingIndex != -1;
+    bool isFilterSelected = ref.isFilterSelected() > 0; 
       
     return ClipRRect(
       borderRadius: BorderRadius.only(topLeft: Radius.circular(10.r),topRight: Radius.circular(10.r)),
@@ -465,8 +495,7 @@ class FilterBarberSheet extends StatelessWidget {
 
                                 final response = await SalonsServices.getTopSalons(coords: coords, page: 1, limit: 10, type: genderType);
                                 await refTopSalons.setTopSalons(response.data,clear: true);
-                                ref.setDiscountIndex(-1);
-                                ref.setRatingIndex(-1);
+                                ref.resetFilter();
                             } catch (e) {
                               if(context.mounted){
                                 showErrorSnackBar(context, e.toString());
@@ -550,6 +579,26 @@ class FilterBarberSheet extends StatelessWidget {
     );
   }
 
+  Widget salonTypeWidget() {
+    return Container(
+      padding: EdgeInsets.all(20.w),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text("Salon Type",
+          style: TextStyle(
+            fontSize: 18.sp
+          ),
+          ),
+          SizedBox(
+            height: 20.h,
+          ),
+          const SalonTypeFilterContainer()
+        ],
+      ),
+    );
+  }
   Widget ratingWidget() {
     return Container(
       padding: EdgeInsets.all(20.w),
@@ -615,6 +664,81 @@ class FilterBarberSheet extends StatelessWidget {
     );
   }
 
+}
+
+class SalonTypeFilterContainer extends StatefulWidget {
+  const SalonTypeFilterContainer({super.key});
+
+  @override
+  State<SalonTypeFilterContainer> createState() => _SalonTypeFilterContainerState();
+}
+
+class _SalonTypeFilterContainerState extends State<SalonTypeFilterContainer> {
+  int selectedSalonTypeIndex = 0;
+  List<String> categories = [];
+
+  @override
+  Widget build(BuildContext context) {
+    Color selectButtonColor = ColorsConstant.appColor,unselectButtonColor = ColorsConstant.appColorAccent,
+    borderButtonColor = ColorsConstant.appColor;
+    final ref = Provider.of<FilterSalonsProvider>(context, listen: true);
+    final refTopSalons = Provider.of<TopSalonsProvider>(context, listen: false);
+
+    categories = ref.filterSalonType;
+
+    selectedSalonTypeIndex = ref.selectedSalonTypeIndex;
+    print('SalanType Select Idx : $selectedSalonTypeIndex');
+    
+    return SizedBox(
+      height: 260.h,
+      child: SingleChildScrollView(
+        child: Wrap(
+          spacing: double.maxFinite,
+          runSpacing: 8.w,
+          verticalDirection: VerticalDirection.down,
+          children: List.generate(categories.length, (i) {
+            return FilterButton(
+              onTap: () async {
+                try {
+                  Loading.showLoding(context);
+                     
+                  if(i != selectedSalonTypeIndex){
+                    final refLocation = await context.read<LocationProvider>().getLatLng();
+                    final coords = [refLocation.longitude,refLocation.latitude];
+                    if(!context.mounted) return;
+                    //final genderType =  context.read<AuthenticationProvider>().userData.gender ?? "male";
+                    final response = await SalonsServices.getTopSalons(coords: coords, page: 1, limit: 10, type: categories[i].toLowerCase());
+                    await refTopSalons.setTopSalons(response.data,clear: true);
+                    ref.setGenderFilter(i);
+                  }
+                } catch (e) {
+                  if(context.mounted){
+                    showErrorSnackBar(context, e.toString());
+                  }
+                } finally {
+                  if(context.mounted){
+                      Loading.closeLoading(context);
+                  }
+                }
+              },
+              bgColor: (selectedSalonTypeIndex != -1 && i == selectedSalonTypeIndex) ? selectButtonColor : unselectButtonColor,
+              borderRadius: BorderRadius.circular(10.r),
+              border: Border.all(color: borderButtonColor,width: 1.w),
+              padding: EdgeInsets.symmetric(horizontal: 15.w,vertical: 8.w),
+              child: Text(
+                categories[i],
+                style: TextStyle(
+                  fontSize: 12.sp,
+                  color: (selectedSalonTypeIndex != -1 && i == selectedSalonTypeIndex) ? unselectButtonColor : selectButtonColor
+                ),
+              ));
+            
+          }),
+        ),
+      ),
+    );
+        
+  }
 }
 
 class CategoryFilterContainer extends StatefulWidget {
@@ -780,8 +904,13 @@ class _SalonsContainerState extends State<SalonsContainer> {
             padding: EdgeInsets.zero,
             physics: const NeverScrollableScrollPhysics(),
             shrinkWrap: true,
-            itemBuilder: (context, index) => SalonCard(salon: salons[index]),
-            itemCount: salons.length
+            itemBuilder: (context, index){
+               if(index == salons.length){
+                   return SalonExtendedLoading();
+               }
+               return SalonCard(salon: salons[index]);
+            },
+            itemCount: salons.length + 1
     );
   }
 }
@@ -1056,9 +1185,12 @@ class ArtistNearYou extends StatelessWidget {
             child: ListView.builder(
               shrinkWrap: true,
               scrollDirection: Axis.horizontal,
-              itemCount: artists.length,
+              itemCount: artists.length  + 1,
               physics: const BouncingScrollPhysics(),
               itemBuilder: (context, index) {
+                if(index == artists.length){
+                  return ArtistExtendedLoading();
+                }
                 return ArtistCard(artist: artists[index],index: index,isAlternate: true);
               },
             ),

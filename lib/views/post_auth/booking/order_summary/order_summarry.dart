@@ -39,6 +39,7 @@ class OrderSummary extends StatelessWidget {
     double subTotal = ref.totalPrice;
     double discount = ref.totalPrice - ref.totalDiscountPrice;
     int discountPercentage = ref.salonDetails.data?.data?.discount ?? 0;
+    
 
     return PopScope(
         canPop: true,
@@ -504,8 +505,7 @@ class OrderSummary extends StatelessWidget {
   Widget _salonOverviewCard(BookingServicesSalonProvider ref) {
     String salonName = ref.salonDetails.data?.data?.name ?? "Salon Name";
     String salonAddress = ref.salonDetails.data?.data?.address ?? "Salon Address Here Salon Address Here Salon Address Here Salon Address Here";
-    String salonImage = ref.salonDetails.data?.data?.images?.length.toString() ?? "";
-
+    String salonImage = ref.salonDetails.data?.data?.images?.first.url ?? "";
 
     return Container(
           padding: EdgeInsets.all(15.w),
@@ -520,7 +520,7 @@ class OrderSummary extends StatelessWidget {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(10.r),
-                child: (1 != 1)
+                child: (salonImage.isNotEmpty)
                     ? Image.network(
                   salonImage,
                   height: 150.h,
@@ -534,39 +534,43 @@ class OrderSummary extends StatelessWidget {
                     ),
               ),
               SizedBox(width: 10.w),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      StringConstant.salon.toUpperCase(),
-                      style: TextStyle(
-                        color: ColorsConstant.textDark,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 12.sp,
+              Flexible(
+                child: SizedBox(
+                  //height: double.maxFinite,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        StringConstant.salon.toUpperCase(),
+                        style: TextStyle(
+                          color: ColorsConstant.textDark,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12.sp,
+                        ),
                       ),
-                    ),
-                    Text(
-                      salonName,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: ColorsConstant.textDark,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 25.sp,
+                      Text(
+                        salonName,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: ColorsConstant.textDark,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 25.sp,
+                        ),
                       ),
-                    ),
-                    Text(
-                      salonAddress,
-                      softWrap: true,
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: ColorsConstant.textDark,
-                        fontSize: 14.sp,
+                      Text(
+                        salonAddress,
+                        softWrap: true,
+                        maxLines: 4,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: ColorsConstant.textDark,
+                          fontSize: 14.sp,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ],

@@ -16,6 +16,7 @@ import 'package:naai/utils/constants/style_constant.dart';
 import 'package:naai/utils/progress/loading.dart';
 import 'package:naai/utils/utility_functions.dart';
 import 'package:naai/views/post_auth/explore/artist_item_card.dart';
+import 'package:naai/views/post_auth/utility/artist_salon_extended.dart';
 import 'package:provider/provider.dart';
 
 class ExploreStylist extends StatefulWidget {
@@ -59,6 +60,7 @@ class _ExploreStylistState extends State<ExploreStylist>
                       <Widget>[
                         Container(
                           color: Colors.white,
+                          constraints: BoxConstraints(minHeight: MediaQuery.of(context).size.height),
                           padding: EdgeInsets.fromLTRB(10.w, 0, 10.w, 8.h),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -152,7 +154,10 @@ class _ExploreStylistState extends State<ExploreStylist>
                                 physics: const BouncingScrollPhysics(),
                                 mainAxisSpacing: 10.w,
                                 childAspectRatio: 7.5 / 10.0,
-                                children: List.generate(artists.length, (index) {
+                                children: List.generate(artists.length + 1, (index) {
+                                   if(index == artists.length){
+                                     return ArtistExtendedLoading();
+                                   }
                                    return ArtistCard(artist: artists[index], index: index,isAlternate: false);
                                 }),
                               ),
@@ -249,11 +254,11 @@ class FilterArtistSheet extends StatelessWidget {
     final refTopArtist = Provider.of<TopArtistsProvider>(context, listen: false);
 
     List<Widget> screens = [
-      priceWidget(),
+      //priceWidget(),
       categoryWidget(),
       ratingWidget(),
-      discountWidget(),
-      distanceWidget()
+     // discountWidget(),
+     // distanceWidget()
     ];
     
     bool isFilterSelected = (ref.isFilterSelected() > 0);
@@ -615,7 +620,6 @@ class _CategoryFilterContainerState extends State<CategoryFilterContainer> {
   }
 
 }
-
 
 class RatingButtions extends StatelessWidget {
   const RatingButtions({super.key});

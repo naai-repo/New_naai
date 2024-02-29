@@ -60,7 +60,12 @@ class _BottomNavigationScreenState extends State<BottomNavigationScreen>  with W
   Widget build(BuildContext context) {
     final ref = Provider.of<BottomChangeScreenIndexProvider>(context,listen: true);
     screenIndex = ref.screenIndex;
-    
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+          statusBarIconBrightness: Brightness.light,
+          systemNavigationBarColor: Colors.white),
+    );
+
     return PopScope(
           canPop: false,
           child: SafeArea(
@@ -192,80 +197,7 @@ class _BottomNavigationScreenState extends State<BottomNavigationScreen>  with W
                     ),
                     Image.asset('assets/images/loc_image.png'),
                     SizedBox(height: 20.h),
-                    Column(
-                      children:[
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            Expanded(
-                              child: ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: ColorsConstant.appColor,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10.r),
-                                  ),
-                                ),
-                                onPressed: () async {
-                                  try {
-                                    await ref.setIsPopUpShown(true);
-                                    if(!context.mounted) return;
-                                    final res = await LocationController.handelLocationPermissionUI(context);
-                                    
-                                    if(res){
-                                      final latng = await LocationController.getLocationLatLng();
-                                      await ref.setLatLng(latng);
-                                    }
-                                    
-                                  } catch (e) {
-                                    print("Error Location : ${e.toString()}");
-                                  }finally{
-                                    if(context.mounted){
-                                       Navigator.pop(context);
-                                    }
-                                  }
-
-                                },
-                                child: const Text(
-                                  "Enable Device Location",
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: 20.h),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            Expanded(
-                              child: ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.white,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10.r),
-                                  ),
-                                ),
-                                onPressed: () async {
-                                  await ref.setIsPopUpShown(true);
-                                  if(context.mounted) await Navigator.pushNamed(context, NamedRoutes.setHomeLocationRoute);
-                                  if(context.mounted) Navigator.pop(context);
-                                },
-                                child: const Text(
-                                  "Enter your Location Manually",
-                                  style: TextStyle(
-                                    color: ColorsConstant.appColor,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
+                    const LocationButtonsContainer()
                   ],
                 ),
               ),
@@ -276,3 +208,115 @@ class _BottomNavigationScreenState extends State<BottomNavigationScreen>  with W
     }
   }
 }
+
+class LocationButtonsContainer extends StatefulWidget {
+  const LocationButtonsContainer({super.key});
+
+  @override
+  State<LocationButtonsContainer> createState() => _LocationButtonState();
+}
+
+class _LocationButtonState extends State<LocationButtonsContainer>{
+  bool isLoading = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final ref = Provider.of<LocationProvider>(context,listen: false);
+    return Column(
+              children:[
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Expanded(
+                      child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: (isLoading) ?  ColorsConstant.appColor.withOpacity(0.5) : ColorsConstant.appColor,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10.r),
+                            ),
+                          ),
+                          onPressed: () async {
+                            if(isLoading) return;
+
+                            try {
+                              await ref.setIsPopUpShown(true);
+                              setState(() {
+                                 isLoading = true;
+                              });
+                              if(!context.mounted) return;
+                               final res = await LocationController.handelLocationPermissionUI(context);
+
+                              if(res){
+                                final latng = await LocationController.getLocationLatLng();
+                                await ref.setLatLng(latng);
+                               // if(context.mounted) Navigator.pop(context);
+                                return;
+                              }
+
+                              throw ErrorDescription("Not Enabled");
+                              
+                            } catch (e) {
+                              print("Error Location : ${e.toString()}");
+
+                              setState(() {
+                                 isLoading = false;
+                              });
+
+                            }finally{
+                              if(context.mounted) Navigator.pop(context);
+                              setState(() {
+                                  isLoading = false;
+                              });
+                            }
+
+                          },
+                          child: (isLoading) ? Padding(
+                            padding: EdgeInsets.symmetric(vertical: 5.h),
+                            child: CircularProgressIndicator(color: Colors.white,strokeWidth: 2.w),
+                          ) : const Text(
+                            "Enable Device Location",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                    ),
+                  
+                  ],
+                ),
+                SizedBox(height: 20.h),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10.r),
+                          ),
+                        ),
+                        onPressed: () async {
+                          if(isLoading) return;
+
+                          await ref.setIsPopUpShown(true);
+                          if(context.mounted) await Navigator.pushNamed(context, NamedRoutes.setHomeLocationRoute);
+                          if(context.mounted) Navigator.pop(context);
+                        },
+                        child:  Text(
+                          "Enter your Location Manually",
+                          style: TextStyle(
+                            color: (isLoading) ?  ColorsConstant.appColor.withOpacity(0.5) : ColorsConstant.appColor,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+          );
+  }
+}
+

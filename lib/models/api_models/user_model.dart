@@ -137,6 +137,9 @@ class UserItemModel {
       imgUrl = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
       isImage = true;
     }
+    if(map['phoneNumber'] != null && map['phoneNumber'] == "XXXXXXXXXX"){
+       map['phoneNumber'] = 000000000;
+    }
     
     return UserItemModel(
       location: map['location'] != null ? Location.fromMap(map['location'] as Map<String,dynamic>) : null,
@@ -145,7 +148,7 @@ class UserItemModel {
       name: map['name'] != null ? map['name'] as String : null,
       email: map['email'] != null ? map['email'] as String : null,
       gender: map['gender'] != null ? map['gender'] as String : null,
-      phoneNumber: map['phoneNumber'] != null ? map['phoneNumber'] as int : null,
+      phoneNumber: map['phoneNumber'] != null ? int.parse(map['phoneNumber'].toString()) : null,
       verified: map['verified'] != null ? map['verified'] as bool : null,
       status: map['status'] != null ? map['status'] as String : null,
       imageKey: map['imageKey'] != null ? map['imageKey'] as String : null,

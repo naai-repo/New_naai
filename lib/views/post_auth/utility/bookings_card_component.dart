@@ -8,6 +8,7 @@ import 'package:naai/utils/constants/colors_constant.dart';
 import 'package:naai/utils/constants/image_path_constant.dart';
 import 'package:naai/utils/constants/string_constant.dart';
 import 'package:naai/utils/constants/style_constant.dart';
+import 'package:naai/views/post_auth/appointment_details/appointment_details_screen.dart';
 import 'package:naai/views/post_auth/home/home_screen.dart';
 import 'package:naai/views/post_auth/utility/booked_salon_artist_name_component.dart';
 import 'package:naai/views/post_auth/utility/text_with_prefix_icon_component.dart';
@@ -25,10 +26,12 @@ class UpcommingBookingsCard extends StatelessWidget {
     String serviceStartTime = bookingData.appointmentData?.timeSlot?.start ?? "00:00";
     String serviceTime = DateFormat.jm().format(DateTime(1999,9,7,int.parse(serviceStartTime.substring(0,2)),int.parse(serviceStartTime.substring(3))));
     String weekDay = DateFormat('EEEE').format(date);
+   
+    print(bookingData.appointmentData?.id ?? "");
 
     return GestureDetector(
-        onTap: () {
-
+        onTap: () async {
+             Navigator.push(context, MaterialPageRoute(builder: (_) => AppointMentDetailsScreen(bookingData: bookingData,isUpcomming: true,)));
         },
         child: Container(
           padding: EdgeInsets.all(15.w),
@@ -233,7 +236,9 @@ class PrevBookingCard extends StatelessWidget {
                   ),
                   SizedBox(width: 50.w),
                   RedButtonWithText(
-                    onTap: () => {},
+                    onTap: () async {
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => AppointMentDetailsScreen(bookingData: bookingData,isUpcomming: false)));
+                    },
                     buttonText: StringConstant.seeDetails,
                     fontSize: 16.sp,
                     fillColor: Colors.white,

@@ -190,7 +190,7 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
 
   Widget mobileNumberTextField() {
     return Padding(
-          padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 11.h),
+          padding: EdgeInsets.symmetric(horizontal: 15.w, vertical: 11.h),
               child: TextFormField(
                 controller: textController,
                 keyboardType: TextInputType.phone,

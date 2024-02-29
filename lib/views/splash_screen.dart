@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:naai/controllers/auth/auth_controller.dart';
+import 'package:naai/providers/bottom_change_index_provider.dart';
 import 'package:naai/providers/post_auth/location_provider.dart';
 import 'package:naai/providers/pre_auth/auth_provider.dart';
 import 'package:naai/utils/constants/colors_constant.dart';
@@ -41,6 +42,9 @@ class _SplashScreenState extends State<SplashScreen> {
       bool isGuest = await context.read<AuthenticationProvider>().getIsGuest();
       if(!context.mounted) return;
 
+      context.read<BottomChangeScreenIndexProvider>().setScreenIndex(0);
+      if(!context.mounted) return;
+      
       await context.read<LocationProvider>().intit();
       if(!context.mounted) return;
 
@@ -49,7 +53,7 @@ class _SplashScreenState extends State<SplashScreen> {
       if (accessToken.isNotEmpty) {
           String userId = await context.read<AuthenticationProvider>().getUserId();
           if(!context.mounted) return;
-
+          
           await AuthenticationConroller.setUserDetails(context, userId);
           if(!context.mounted) return;
 

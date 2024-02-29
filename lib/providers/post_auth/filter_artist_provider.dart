@@ -4,12 +4,20 @@ import 'package:flutter/material.dart';
 class FilterArtitsProvider with ChangeNotifier {
   int _selectedDiscountIndex = -1;
   int get getSelectedDiscountIndex => _selectedDiscountIndex;
+  
+  int _page = 0,_limit = 10;
+  set page(int i) => _page = i;
+  set limit(int i) => _limit = i;
+  int get getPage => _page;
+  int get getLimit => _limit;
 
+  
   int _selectedRatingIndex = -1;
   int get getSelectedRatingIndex => _selectedRatingIndex;
   
   int _selectedindex = 0;
-  final List<String> _filterTypes = ['Price','Category','Rating','Discount','Salon Type','Distance'];
+  final List<String> _filterTypes = ['Category','Rating'];
+  //final List<String> _filterTypes = ['Price','Category','Rating','Discount','Salon Type','Distance'];
   
   int get getSelectdIndex => _selectedindex;
   List<String> get getFilterTypes => _filterTypes;

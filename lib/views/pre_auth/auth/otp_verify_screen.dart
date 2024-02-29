@@ -40,6 +40,16 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
     otpDigitFiveController.dispose();
     otpDigitSixController.dispose();
   }
+  @override
+  void initState() {
+    super.initState();
+     SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+          statusBarIconBrightness: Brightness.light,
+          systemNavigationBarColor: Colors.white),
+    );
+    
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -134,16 +144,19 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
                           } else {
                             await AuthenticationConroller.setUserDetails(context, userId);
                             if(!context.mounted) return;
-                            
-                            Navigator.pushReplacementNamed(context,NamedRoutes.bottomNavigationRoute);
+                            Loading.closeLoading(context);
+
+                            Future.delayed(Durations.medium2,(){
+                              Navigator.pushReplacementNamed(context,NamedRoutes.bottomNavigationRoute);
+                            });
                           }
                         } else {
                           throw ErrorDescription(response.message);
                         }
                     } catch (error) {
                         print('Error During OTP verification: $error');
-
                         Loading.closeLoading(context);
+                        
                         if(context.mounted){
                           showErrorSnackBar(context, error.toString());
                         }
@@ -205,6 +218,7 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
       width: 60.h,
       child: TextFormField(
         controller: controller,
+        autofocus: true,
         textInputAction: TextInputAction.next,
         textAlign: TextAlign.center,
         cursorColor: ColorsConstant.appColor,

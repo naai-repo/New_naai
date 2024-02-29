@@ -7,6 +7,7 @@ import 'package:naai/models/api_models/salon_item_model.dart';
 import 'package:naai/models/api_models/top_artist_model.dart';
 import 'package:naai/providers/bottom_change_index_provider.dart';
 import 'package:naai/providers/post_auth/filter_artist_provider.dart';
+import 'package:naai/providers/post_auth/filter_salon_provider.dart';
 import 'package:naai/providers/post_auth/location_provider.dart';
 import 'package:naai/providers/post_auth/top_artists_provider.dart';
 import 'package:naai/providers/post_auth/top_salons_provider.dart';
@@ -25,16 +26,19 @@ import 'package:naai/utils/utility_functions.dart';
 import 'package:naai/views/post_auth/artist_details/artist_details_screen.dart';
 import 'package:naai/views/post_auth/booking/booking_history/booking_history_screen.dart';
 import 'package:naai/views/post_auth/salon_details/salon_details_screen.dart';
+import 'package:naai/views/post_auth/utility/artist_salon_extended.dart';
 import 'package:provider/provider.dart';
-
 
 Future<int> homeFuture(BuildContext context,String type) async {
     final ref = await context.read<LocationProvider>().getLatLng();
     final coords = [ref.longitude,ref.latitude];
 
-    final res = await SalonsServices.getTopSalons(coords: coords, page: 1, limit: 10, type: type);
+    final refSalon = await context.read<FilterSalonsProvider>();
+    final res = await SalonsServices.getTopSalons(coords: coords, page: refSalon.getPage, limit: refSalon.getLimit, type: type);
     if(context.mounted) context.read<TopSalonsProvider>().setTopSalons(res.data,clear: true);
-    final ress = await ArtistsServices.getTopArtists(coords: coords, page: 1, limit: 10, type: type);
+
+    final refArtist = await context.read<FilterArtitsProvider>();
+    final ress = await ArtistsServices.getTopArtists(coords: coords, page: refArtist.getPage, limit: refArtist.getLimit, type: type);
     if(context.mounted) context.read<TopArtistsProvider>().setTopArtists(ress,clear: true);
     print("Builded $type");
 
@@ -52,7 +56,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   ScrollController scrollController = ScrollController();
 
-  String type = "men";
+  String type = "male";
 
   @override
   void initState() {
@@ -60,10 +64,26 @@ class _HomeScreenState extends State<HomeScreen> {
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
           statusBarIconBrightness: Brightness.light,
-          systemNavigationBarColor: Colors.white),
+          systemNavigationBarColor: Colors.white
+      ),
     );
 
     type = context.read<AuthenticationProvider>().userData.gender ?? "male";
+
+    final reff = context.read<TopArtistsProvider>();
+    final reffSalons = context.read<TopSalonsProvider>();
+    final reffFilArt = context.read<FilterArtitsProvider>();
+    final reffFillSalons = context.read<FilterSalonsProvider>();
+
+    reff.limit = 11;
+    reff.page = 1;
+    reffSalons.limit = 11;
+    reffSalons.page = 1;
+
+    reffFilArt.limit = 11;
+    reffFilArt.page = 1;
+    reffFillSalons.limit = 11;
+    reffFillSalons.page = 1;
     
   }
 
@@ -76,27 +96,17 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final ref = Provider.of<LocationProvider>(context,listen: true);
-    
-    // scrollController.addListener(()async { 
-    //   if(scrollController.position.pixels == scrollController.position.maxScrollExtent){
-    //       try {
-    //           Loading.showLoding(context);
-    //           final res = await ArtistsServices.getTopArtists(coords: [77.077451, 28.676784], page: 2, limit: 10, type: type);
-    //           if(context.mounted) Provider.of<TopArtistsProvider>(context,listen: false).setTopArtists(res);
-    //       } catch (e) {
-    //         if(context.mounted){
-    //            showErrorSnackBar(context, "Something went wrong");
-    //         }
-    //       }finally{
-    //         if(context.mounted){
-    //            Loading.closeLoading(context);
-    //         }
-    //       }
-    //   }
-    // });
+    print("Builde");
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+          statusBarIconBrightness: Brightness.light,
+          systemNavigationBarColor: Colors.white),
+    );
+
     
     return DefaultTabController(
       length: 2,
+      initialIndex: (type == "male") ? 0 : 1,
       child: Scaffold(
           body: Stack(
             children: [
@@ -133,7 +143,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                         indicatorSize: TabBarIndicatorSize.tab,
                                         onTap: (index){
                                           setState(() {
-                                              type = (index == 0) ? "men" : "female";
+                                              type = (index == 0) ? "male" : "female";
                                           });
                                         },
                                         tabs: [
@@ -505,43 +515,16 @@ class SalonNearMe extends StatelessWidget {
               child: ListView.builder(
                 physics: const BouncingScrollPhysics(),
                 scrollDirection: Axis.horizontal,
-                itemCount: salons.length,
+                itemCount: salons.length + 1,
                 itemBuilder: (context, index) {
+                  if (index == salons.length) {
+                    return SalonExtendedLoading();
+                  } 
+
                   String salonImage = (salons[index].images?.isNotEmpty ?? false) ? salons[index].images!.first.url! : "";
     
                   if(salonImage.isEmpty) salonImage = "https://images.pexels.com/photos/1813272/pexels-photo-1813272.jpeg?auto=compress&cs=tinysrgb&w=600";
                   
-                  if (index == salons.length) {
-                    return GestureDetector(
-                      onTap: () {
-                          
-                      },
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 10.w,
-                          vertical: 50.h,
-                        ),
-                        child: Container(
-                           width: 120.w,
-                          // margin: EdgeInsets.only(right: 5.w),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(10.h),
-                            color: ColorsConstant.appColor,
-                          ),
-                          child: Center(
-                            child: Text(
-                              'Load More',
-                              style: TextStyle(
-                                fontSize: 12.sp,
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    );
-                  } else {
 
                     return GestureDetector(
                       onTap: () async {
@@ -675,7 +658,7 @@ class SalonNearMe extends StatelessWidget {
                         ),
                       ),
                     );
-                  }
+      
                 },
               ),
             )
@@ -763,13 +746,19 @@ class Stylist extends StatelessWidget {
                 physics: const ScrollPhysics(parent: ScrollPhysics()),
                 primary: true,
                 padding: EdgeInsets.only(top: 20.w),
-                children: List.generate(artists.length, (index){
+                children: List.generate(artists.length + 1, (index){
+
+                     if(artists.length == index){
+                        return ArtistExtendedLoading();
+                     }
+
+
                      String imgUrl = artists[index].artistDetails?.imageUrl ?? "";
                      String artistName = artists[index].artistDetails?.name ?? "";
                      String salonName = artists[index].salonDetails?.data?.data?.name ?? "";
                      double rating = artists[index].artistDetails?.rating ?? 5;
-                     // if(imgUrl.isEmpty) imgUrl = "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=1780&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D";
-                    
+                     
+
                      return ClipRRect(
                       borderRadius: BorderRadius.circular(22.r),
                        child: SizedBox(
@@ -1015,3 +1004,7 @@ class TopStylistFilterContainer extends StatelessWidget {
     );
   }
 }
+
+
+
+

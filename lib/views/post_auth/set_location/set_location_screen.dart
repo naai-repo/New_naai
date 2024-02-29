@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
 import 'package:mapbox_gl/mapbox_gl.dart';
+import 'package:naai/controllers/location/location_controller.dart';
 import 'package:naai/models/location/location_model.dart';
 import 'package:naai/providers/post_auth/location_provider.dart';
 import 'package:naai/services/location/location_services.dart';
@@ -12,6 +13,7 @@ import 'package:naai/utils/constants/colors_constant.dart';
 import 'package:naai/utils/constants/image_path_constant.dart';
 import 'package:naai/utils/constants/string_constant.dart';
 import 'package:naai/utils/constants/style_constant.dart';
+import 'package:naai/utils/progress/loading.dart';
 import 'package:provider/provider.dart';
 
 class SetLocationScreen extends StatefulWidget {
@@ -203,7 +205,8 @@ class _SetHomeLocationScreenState extends State<SetLocationScreen> {
             onMapCreated: (MapboxMapController mapController) async {
              // await provider.onMapCreated(mapController, context);
               _mapBoxController = mapController;
-              LatLng dummyLocation = const LatLng(28.7383,77.0822); // Set your desired dummy location
+              LatLng dummyLocation = await context.read<LocationProvider>().getLatLng(); // Set your desired dummy location
+              
               await mapController.animateCamera(
                 CameraUpdate.newCameraPosition(
                   CameraPosition(
@@ -240,7 +243,68 @@ class _SetHomeLocationScreenState extends State<SetLocationScreen> {
               if(context.mounted) await setLocationModal(context, coordinates);
             },
           ),
-         // ReusableWidgets.recenterWidget(context, provider: provider),
+          Positioned(
+              top: 20.h,
+              right: 20.h,
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () async {
+                     try {
+                      Loading.showLoding(context);
+                      final res = await LocationController.handelLocationPermissionUI(context);
+                      
+                      
+                      if(res){
+                        final latng = await LocationController.getLocationLatLng();
+                         await _mapBoxController.removeSymbol(_symbol);
+                                    
+                        await _mapBoxController.animateCamera(
+                          CameraUpdate.newCameraPosition(
+                            CameraPosition(target: latng, zoom: 16),
+                          ),
+                        );
+
+                        await _mapBoxController.addSymbol(SymbolOptions(
+                          geometry: latng,
+                          iconImage: ImagePathConstant.currentLocationPointer,
+                          iconSize: 0.2,
+                        ));
+
+                        
+                        if(context.mounted){
+                          Loading.closeLoading(context);
+                          await setLocationModal(context, latng);
+                          FocusManager.instance.primaryFocus?.unfocus();
+                        }
+                        return;
+                      }
+
+                      throw ErrorDescription("Not Enabled");
+                      
+                    } catch (e) {
+                      print("Error Recenter Location : ${e.toString()}");
+                      if(context.mounted){
+                        Loading.closeLoading(context);
+                      }
+                    }finally{
+                      // if(context.mounted){
+                      //   Loading.closeLoading(context);
+                      // }
+                    }
+                },
+                child: Container(
+                  height: 50.h,
+                  width: 50.h,
+                  padding: EdgeInsets.all(10.h),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Image.asset(ImagePathConstant.currentLocationPointer),
+                ),
+              ),
+            )
+  
         ],
       );
   }

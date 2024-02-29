@@ -20,7 +20,7 @@
 </queries>
 
     <application
-        android:label="naai"
+        android:label="Naai"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

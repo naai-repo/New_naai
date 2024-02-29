@@ -25,6 +25,7 @@ class BookingHistoryContainer extends StatelessWidget {
             final commingsBookings = snapshot.data?.upcommingBookings ?? [];
             final prevsBookings = snapshot.data?.prevBooking ?? [];
             if(commingsBookings.isEmpty && prevsBookings.isEmpty) return const SizedBox();
+
             return SizedBox(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.start,

@@ -12,6 +12,7 @@ class AuthenticationConroller {
   
   static Future<void> setUserDetails(BuildContext context,String userId) async {
     final res = await UserServices.getUserByID(userId: userId);
+  
     if(context.mounted) context.read<AuthenticationProvider>().setUserData(res.data!);
   }
 
@@ -19,10 +20,8 @@ class AuthenticationConroller {
     try {
         Loading.showLoding(context);
         final ref = context.read<AuthenticationProvider>();
-
         await ref.logout();
         if(context.mounted) await context.read<LocationProvider>().resetAll();
-        if(context.mounted) context.read<BottomChangeScreenIndexProvider>().setScreenIndex(0);
 
         Future.delayed(Durations.medium1,(){
           Navigator.pushNamedAndRemoveUntil(context, NamedRoutes.splashRoute, (route) => false);

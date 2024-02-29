@@ -29,7 +29,7 @@ class StyleConstant {
   );
 
   static TextStyle textLight11sp400Style = TextStyle(
-    fontSize: 11.sp,
+    fontSize: 16.sp,
     color: ColorsConstant.textLight,
   );
 

@@ -5,7 +5,7 @@ import 'package:naai/models/api_models/top_artist_model.dart';
 class TopArtistsProvider with ChangeNotifier {
   final List<TopArtistResponseModel> _topArtists = [];
   
-  int _page = 0,_limit = 10;
+  int _page = 0,_limit = 11;
   set page(int i) => _page = i;
   set limit(int i) => _limit = i;
   int get getPage => _page;

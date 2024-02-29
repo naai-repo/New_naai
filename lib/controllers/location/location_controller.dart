@@ -116,12 +116,15 @@ class LocationController {
            if(!context.mounted) return false;
            // if we want to request again service we will show explainatry dialog for this permission as per policy
 
-            await showLocationDialog(context, () {
+          await showLocationDialog(context, () {
                Navigator.pop(context);
            });
+           print("Setting");
            await Future.delayed(Durations.medium1,()async {
-                  serviceEnabled = await getLocationServicePermission(); // 2nd ask
-            });
+                serviceEnabled = await getLocationServicePermission(); // 2nd ask
+           });
+
+           print("We are .....");
        }
     }
 
@@ -137,6 +140,7 @@ class LocationController {
        // if we want user to reenable it we must go redirect to it to phone settings page as per policy
        return false;
     }
+    
 
     PermissionStatus permission = await location.hasPermission();
 

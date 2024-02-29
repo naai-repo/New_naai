@@ -52,28 +52,6 @@ class SignInContainer extends StatelessWidget {
                         ),
                       onPressed: () async {
                           await AuthenticationConroller.logout(context);
-                          
-                          //  try {
-                          //     Loading.showLoding(context);
-                          //     final ref = context.read<AuthenticationProvider>();
-                          //     String token = await ref.getAccessToken();
-                          //     await ref.logout();
-                          //     await UserServices.deleteUser(accessToken: token);
-                          //     if(context.mounted) await context.read<LocationProvider>().resetAll();
-                          //     if(context.mounted) context.read<BottomChangeScreenIndexProvider>().setScreenIndex(0);
-
-                          //     Future.delayed(Durations.medium1,(){
-                          //       Navigator.pushNamedAndRemoveUntil(context, NamedRoutes.splashRoute, (route) => false);
-                          //     });
-                          //   } catch (e) {
-                          //     if(context.mounted){
-                          //       showErrorSnackBar(context, "Something Went Wrong");
-                          //     }
-                          //   }finally{
-                          //     if(context.mounted){
-                          //         Loading.closeLoading(context);
-                          //     }
-                          //  }
                       },
                       child: const Text("SIGN IN", style: TextStyle(
                         color: Colors.white,

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:naai/models/api_models/booking_appointment_model.dart';
+import 'package:naai/models/api_models/booking_delete_response_model.dart';
 import 'package:naai/models/api_models/booking_single_artist_list_model.dart';
 import 'package:naai/models/api_models/confirm_booking_model.dart';
 import 'package:naai/models/api_models/get_user_bookings_model.dart';
@@ -39,6 +40,37 @@ class BookingServices {
        print(stacktrace.toString());
        print("Error ScheduleAppointment : ${e.toString()}");
        return ScheduleResponseModel(salonId: "0000");
+    }
+  }
+  
+  static Future<BookingDeleteResponseModel> deleteBooking({required String bookingId,required String accessToken}) async {
+    const apiUrl = UrlConstants.deleteBooking;
+    final Map<String, dynamic> requestData = {
+       "bookingId" : bookingId
+    };
+    
+
+    try {
+      dio.options.connectTimeout = const Duration(seconds: 10);
+      dio.options.headers['Authorization'] = 'Bearer $accessToken';
+
+      final response = await dio.post(
+          apiUrl,
+          options: Options(headers: {"Content-Type": "application/json"}),
+          data: json.encode(requestData),
+      );
+     
+      
+      if (response.statusCode == 200) {
+        final res = BookingDeleteResponseModel.fromJson(jsonEncode(response.data).replaceAll("_id", "id"));
+        return res;
+      } else {
+        throw ErrorDescription(response.data['message']);
+      }
+    } catch (e,stacktrace) {
+       print(stacktrace.toString());
+       print("Error ScheduleAppointment : ${e.toString()}");
+       return BookingDeleteResponseModel();
     }
   }
   

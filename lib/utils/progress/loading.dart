@@ -49,7 +49,8 @@ class Loading {
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
           statusBarIconBrightness: Brightness.light,
-          systemNavigationBarColor: Colors.white),
+          systemNavigationBarColor: Colors.white
+      ),
     );
   }
 
