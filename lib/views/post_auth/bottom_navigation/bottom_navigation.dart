@@ -60,6 +60,7 @@ class _BottomNavigationScreenState extends State<BottomNavigationScreen>  with W
   Widget build(BuildContext context) {
     final ref = Provider.of<BottomChangeScreenIndexProvider>(context,listen: true);
     screenIndex = ref.screenIndex;
+
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
           statusBarIconBrightness: Brightness.light,
@@ -73,6 +74,10 @@ class _BottomNavigationScreenState extends State<BottomNavigationScreen>  with W
               extendBody: true,
               body: _screens[screenIndex],
               bottomNavigationBar: Container(
+                padding: EdgeInsets.symmetric(
+                      horizontal: 15.w,
+                      vertical: 15.h,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.only(
@@ -86,15 +91,11 @@ class _BottomNavigationScreenState extends State<BottomNavigationScreen>  with W
                     topRight: Radius.circular(35.h),
                   ),
                   child: SalomonBottomBar(
-                    margin: EdgeInsets.symmetric(
-                      horizontal: 15.w,
-                      vertical: 15.h,
-                    ),
                     currentIndex: screenIndex,
                     onTap: (i){
                         ref.setScreenIndex(i);
                     },
-                    items: <SalomonBottomBarItem>[
+                    items: [
                       _bottomWidget(
                         tabName: StringConstant.home,
                         image: ImagePathConstant.homeIcon,
@@ -243,6 +244,7 @@ class _LocationButtonState extends State<LocationButtonsContainer>{
                               setState(() {
                                  isLoading = true;
                               });
+                              
                               if(!context.mounted) return;
                                final res = await LocationController.handelLocationPermissionUI(context);
 

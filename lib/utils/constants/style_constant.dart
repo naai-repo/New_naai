@@ -82,6 +82,7 @@ class StyleConstant {
           child: SvgPicture.asset(
             ImagePathConstant.searchIcon,
             fit: BoxFit.scaleDown,
+            height: 20.h,
           ),
         ),
         suffixIcon: SizedBox(
@@ -94,6 +95,7 @@ class StyleConstant {
                       child: SvgPicture.asset(
                         ImagePathConstant.blackLocationIcon,
                         fit: BoxFit.scaleDown,
+                        height: 20.h,
                       ),
                     ),
                     SizedBox(width: 10.w),

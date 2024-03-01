@@ -68,7 +68,8 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
 
-    type = context.read<AuthenticationProvider>().userData.gender ?? "male";
+    type = context.read<AuthenticationProvider>().userData.gender?.toLowerCase() ?? "male";
+    
 
     final reff = context.read<TopArtistsProvider>();
     final reffSalons = context.read<TopSalonsProvider>();
@@ -96,7 +97,9 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final ref = Provider.of<LocationProvider>(context,listen: true);
-    print("Builde");
+
+    print(type);
+
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
           statusBarIconBrightness: Brightness.light,

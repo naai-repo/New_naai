@@ -120,6 +120,7 @@ class ArtistCard extends StatelessWidget {
                                         child: SvgPicture.asset(
                                           ImagePathConstant.starIcon,
                                           color: ColorsConstant.greenRating,
+                                          height: 18.h,
                                         ),
                                       ),
                                       WidgetSpan(

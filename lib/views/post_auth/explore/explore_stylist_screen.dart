@@ -110,7 +110,9 @@ class _ExploreStylistState extends State<ExploreStylist>
                                                 ),
                                               )
                                             : SvgPicture.asset(
-                                                ImagePathConstant.filterIcon),
+                                                ImagePathConstant.filterIcon,
+                                                height: 18.h,
+                                              ),
                                         fillColor: (isFilterSelected) ? ColorsConstant.appColor : ColorsConstant.lightAppColor,
                                         borderRadius: 20.h,
                                         onTap: () => showModalBottomSheet(

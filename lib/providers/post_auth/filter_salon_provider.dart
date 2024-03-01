@@ -68,6 +68,7 @@ class FilterSalonsProvider with ChangeNotifier {
     if(getSelectedRatingIndex != -1) cnt++;
     if(getselectedCategoryIndex != -1) cnt++;
     if(selectedSalonTypeIndex != -1) cnt++;
+    print("$getSelectedDiscountIndex $getSelectedRatingIndex $getselectedCategoryIndex $selectedSalonTypeIndex");
     return cnt;
   }
   

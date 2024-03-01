@@ -60,6 +60,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       ),
                       backgroundColor: Colors.white,
+                      automaticallyImplyLeading: false,
                       pinned: true,
                       floating: true,
                       surfaceTintColor: Colors.white,
@@ -115,30 +116,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               SizedBox(height: 30.h),
                               Column(
                                 children: [
-                                  profileOptions(
-                                    onTap: () => Navigator.pushNamed(
-                                      context,
-                                      NamedRoutes.reviewsRoute,
-                                    ),
-                                    imagePath: ImagePathConstant.reviewsIcon,
-                                    optionTitle: StringConstant.reviews,
-                                  ),
-                                  profileOptions(
-                                    onTap: () => Navigator.pushNamed(
-                                      context,
-                                      NamedRoutes.favouritesRoute,
-                                    ),
-                                    imagePath: ImagePathConstant.saveIcon,
-                                    optionTitle: StringConstant.favourties,
-                                  ),
-                                  profileOptions(
-                                    onTap: () => Navigator.pushNamed(
-                                      context,
-                                      NamedRoutes.bookingHistoryRoute,
-                                    ),
-                                    imagePath: ImagePathConstant.bookingHistoryIcon,
-                                    optionTitle: StringConstant.bookingHistory,
-                                  ),
+                                  // profileOptions(
+                                  //   onTap: () => Navigator.pushNamed(
+                                  //     context,
+                                  //     NamedRoutes.reviewsRoute,
+                                  //   ),
+                                  //   imagePath: ImagePathConstant.reviewsIcon,
+                                  //   optionTitle: StringConstant.reviews,
+                                  // ),
+                                  // profileOptions(
+                                  //   onTap: () => Navigator.pushNamed(
+                                  //     context,
+                                  //     NamedRoutes.favouritesRoute,
+                                  //   ),
+                                  //   imagePath: ImagePathConstant.saveIcon,
+                                  //   optionTitle: StringConstant.favourties,
+                                  // ),
+                                  // profileOptions(
+                                  //   onTap: () => Navigator.pushNamed(
+                                  //     context,
+                                  //     NamedRoutes.bookingHistoryRoute,
+                                  //   ),
+                                  //   imagePath: ImagePathConstant.bookingHistoryIcon,
+                                  //   optionTitle: StringConstant.bookingHistory,
+                                  // ),
                                   profileOptions(
                                     onTap: () {
                                       launchUrl(

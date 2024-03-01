@@ -75,12 +75,14 @@ class _ExploreScreenState extends State<ExploreScreen>{
     reffFilArt.limit = 11;
     reffFilArt.page = 1;
     reffFillSalons.limit = 11;
-    reffFillSalons.page = 11;
+    reffFillSalons.page = 1;
 
   }
 
   @override
   Widget build(BuildContext context) {
+    final refFilterSalon = Provider.of<FilterSalonsProvider>(context,listen: true);
+    bool isFilterSelected = (refFilterSalon.isFilterSelected() > 0);
     
     return DefaultTabController(
       length: 1,
@@ -197,23 +199,24 @@ class _ExploreScreenState extends State<ExploreScreen>{
                                             ),
                                             RedButtonWithText(
                                               buttonText: StringConstant.filter,
-                                              textColor: ColorsConstant.appColor,
+                                              textColor: (isFilterSelected) ? Colors.white : ColorsConstant.appColor,
                                               fontSize: 16.sp,
                                               border: Border.all(
                                                   color: ColorsConstant.appColor),
-                                              icon: (1 != 1)
-                                                  ? Text(
-                                                      '${4}',
-                                                      style: TextStyle(
-                                                        fontSize: 10.sp,
-                                                        fontWeight: FontWeight.w600,
-                                                        color:
-                                                            ColorsConstant.appColor,
-                                                      ),
-                                                    )
-                                                  : SvgPicture.asset(
-                                                      ImagePathConstant.filterIcon),
-                                              fillColor: ColorsConstant.lightAppColor,
+                                              icon: (isFilterSelected)
+                                            ? Text(
+                                                '(${refFilterSalon.isFilterSelected()})',
+                                                style: TextStyle(
+                                                  fontSize: 16.sp,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: (isFilterSelected) ? Colors.white : ColorsConstant.appColor,
+                                                ),
+                                              )
+                                            : SvgPicture.asset(
+                                                ImagePathConstant.filterIcon,
+                                                height: 18.h,
+                                              ),
+                                              fillColor: (isFilterSelected) ? ColorsConstant.appColor : ColorsConstant.lightAppColor,
                                               borderRadius: 20.h,
                                               onTap: () => showModalBottomSheet(
                                                 context: context,
@@ -322,6 +325,7 @@ class _ExploreScreenState extends State<ExploreScreen>{
       surfaceTintColor: Colors.white,
       title: Consumer<LocationProvider>(builder: (context,ref,child){
               return Container(
+               // margin: EdgeInsets.symmetric(vertical: 20.h),
                 padding: EdgeInsets.symmetric(horizontal: 0.h),
                 child: TextFormField(
                   cursorColor: ColorsConstant.appColor,
