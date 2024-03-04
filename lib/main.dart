@@ -20,6 +20,7 @@ import 'package:naai/utils/routing/named_routes.dart';
 import 'package:naai/utils/routing/routing_functions.dart';
 import 'package:provider/provider.dart';
 
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Hive.initFlutter();
