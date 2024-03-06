@@ -140,8 +140,11 @@ class _BottomNavigationScreenState extends State<BottomNavigationScreen>  with W
       ),
       title: Text(
         tabName,
+        softWrap: true,
+        textAlign: TextAlign.center,
         style: TextStyle(
           color: ColorsConstant.appColor,
+          textBaseline: TextBaseline.ideographic,
           fontSize: 15.sp,
           fontWeight: FontWeight.w600,
         ),

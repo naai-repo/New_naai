@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:naai/controllers/auth/auth_controller.dart';
@@ -13,6 +14,7 @@ import 'package:naai/providers/post_auth/single_salon_provider.dart';
 import 'package:naai/providers/pre_auth/auth_provider.dart';
 import 'package:naai/services/reviews/reviews_services.dart';
 import 'package:naai/services/salons/salons_service.dart';
+import 'package:naai/services/uni_deeplink_services/uni_deep_link_services.dart';
 import 'package:naai/utils/cards/custom_cards.dart';
 import 'package:naai/utils/common_widgets/common_widgets.dart';
 import 'package:naai/utils/constants/colors_constant.dart';
@@ -21,9 +23,9 @@ import 'package:naai/utils/constants/string_constant.dart';
 import 'package:naai/utils/constants/style_constant.dart';
 import 'package:naai/views/post_auth/booking/booking_screen.dart';
 import 'package:naai/views/post_auth/salon_details/contact_and_interaction_widget.dart';
-import 'package:naai/views/post_auth/utility/add_review_component.dart';
 import 'package:naai/views/post_auth/utility/review_box_compnent.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -66,18 +68,27 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
 
   late SingleSalonResponseModel salonDetails;
 
+  void setSalonDetails(SalonResponseData value){
+    salonName = value.name ?? "Salon Name";
+    salonType = value.salonType ?? "Salon Type";
+    salonAddresss = value.address ?? "Salon Address";
+    salonRating = value.rating ?? 5;
+    salonDiscount = value.discount ?? 0;
+    timing = value.timing ?? Timing(opening: "", closing: "");
+    closedOn = value.closedOn ?? "closed on";
+  }
+
   @override
   void initState() {
     super.initState();
     context.read<BookingServicesSalonProvider>().resetAll(notify: false);
-
-    salonName = widget.salonDetails.name ?? "Salon Name";
-    salonType = widget.salonDetails.salonType ?? "Salon Type";
-    salonAddresss = widget.salonDetails.address ?? "Salon Address";
-    salonRating = widget.salonDetails.rating ?? 5;
-    salonDiscount = widget.salonDetails.discount ?? 0;
-    timing = widget.salonDetails.timing ?? Timing(opening: "", closing: "");
-    closedOn = widget.salonDetails.closedOn ?? "closed on";
+    setSalonDetails(widget.salonDetails);
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+          statusBarIconBrightness: Brightness.light,
+          systemNavigationBarColor: Colors.white
+      ),
+    );
   }
 
   @override
@@ -147,7 +158,8 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
                               builder: (context, snapshot) {
                                 final ref = Provider.of<SingleSalonProvider>(context,listen: false);
                                 salonDetails = ref.salonDetials;
-                           
+                                setSalonDetails(salonDetails.data?.data ?? SalonResponseData());
+
                                 if(snapshot.hasData){
                                    return Column(
                                      crossAxisAlignment: CrossAxisAlignment.start,
@@ -517,6 +529,10 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
   }
 
   Widget salonDetailOverview() {
+    final refUser = context.read<AuthenticationProvider>();
+    final String salonId = widget.salonDetails.id ?? "";
+    bool isSaved = refUser.userData.favourite?.salons?.contains(salonId) ?? false;
+
     return Container(
         padding: EdgeInsets.symmetric(
           vertical: 10.h,
@@ -640,14 +656,13 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
 
             salonAddress(
               address: salonAddresss,
-
             ),
 
             salonTiming(),
             ContactAndInteractionWidget(
               iconOnePath: ImagePathConstant.phoneIcon,
               iconTwoPath: ImagePathConstant.shareIcon,
-              iconThreePath:  ImagePathConstant.saveIcon,
+              iconThreePath:  (isSaved) ? ImagePathConstant.saveIconFill : ImagePathConstant.saveIcon,
               iconFourPath: ImagePathConstant.instagramIcon,
               onTapIconOne: () {
                  launchUrl(
@@ -657,15 +672,17 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
                     ),
                   );
               },
-              onTapIconTwo: () => {
+              onTapIconTwo: ()  {
+                final String salonShareUrl = "${StringConstant.artistShareLink}/${widget.salonDetails.id ?? ""}";
+                Share.share(salonShareUrl, subject: 'Naai Salon');
+                
+              },
+              onTapIconThree: () {
                 launchUrl(
                   Uri.parse(
                     "https://play.google.com/store/apps/details?id=com.naai.flutterApp",
                   ),
-                )
-              },
-              onTapIconThree: () {
-                     
+                );
               },
               onTapIconFour: () {
                  launchUrl(
@@ -1464,5 +1481,7 @@ class VariableAddServiceContainer extends StatelessWidget {
           );
   }
 }
+
+
 
 

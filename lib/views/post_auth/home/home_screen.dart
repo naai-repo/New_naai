@@ -14,6 +14,7 @@ import 'package:naai/providers/post_auth/top_salons_provider.dart';
 import 'package:naai/providers/pre_auth/auth_provider.dart';
 import 'package:naai/services/artists/artist_services.dart';
 import 'package:naai/services/salons/salons_service.dart';
+import 'package:naai/services/uni_deeplink_services/uni_deep_link_services.dart';
 import 'package:naai/utils/cards/custom_cards.dart';
 import 'package:naai/utils/common_widgets/common_widgets.dart';
 import 'package:naai/utils/common_widgets/stacked_image.dart';
@@ -36,10 +37,12 @@ Future<int> homeFuture(BuildContext context,String type) async {
     final refSalon = await context.read<FilterSalonsProvider>();
     final res = await SalonsServices.getTopSalons(coords: coords, page: refSalon.getPage, limit: refSalon.getLimit, type: type);
     if(context.mounted) context.read<TopSalonsProvider>().setTopSalons(res.data,clear: true);
+    
 
     final refArtist = await context.read<FilterArtitsProvider>();
     final ress = await ArtistsServices.getTopArtists(coords: coords, page: refArtist.getPage, limit: refArtist.getLimit, type: type);
     if(context.mounted) context.read<TopArtistsProvider>().setTopArtists(ress,clear: true);
+ 
     print("Builded $type");
 
     return 200;
@@ -97,7 +100,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final ref = Provider.of<LocationProvider>(context,listen: true);
-
+    
     print(type);
 
     SystemChrome.setSystemUIOverlayStyle(

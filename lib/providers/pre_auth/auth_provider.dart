@@ -75,6 +75,25 @@ class AuthenticationProvider with ChangeNotifier {
         notifyListeners();
     }
 
+    void setUserFavroteArtistId(String artistId){
+        if(_userData.favourite!.artists!.contains(artistId)){
+          _userData.favourite!.artists!.remove(artistId);
+        }else{
+          _userData.favourite!.artists!.add(artistId);
+        }
+        
+        notifyListeners();
+    }
+
+    void setUserFavroteSalonId(String salonId){
+        if(_userData.favourite!.salons!.contains(salonId)){
+          _userData.favourite!.salons!.remove(salonId);
+        }else{
+          _userData.favourite!.salons!.add(salonId);
+        }
+        notifyListeners();
+    }
+
     void setMobileNumber(int value){
       _mobileNumber = value;
       notifyListeners();
@@ -102,6 +121,8 @@ class AuthenticationProvider with ChangeNotifier {
     }
 
     Future<String> getUserId() async {
+        if(_userData.id != "0000") return _userData.id ?? "";
+
         var box = Hive.box('userBox');
         final res = box.get('userId', defaultValue: "") ?? "";
         return res;
@@ -116,7 +137,10 @@ class AuthenticationProvider with ChangeNotifier {
     Future<bool> getIsGuest() async {
         bool res = _authData.isGuest ?? false;
         if(res) return res;
-
+        
+        final userID = await getUserId();
+        if(userID.isEmpty) return true;
+        
         final box = await Hive.openBox('userBox');
         res = box.get('isGuest', defaultValue: false) ?? false;
         if(res) setIsGuest(res);

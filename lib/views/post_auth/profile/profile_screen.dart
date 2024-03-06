@@ -15,6 +15,7 @@ import 'package:naai/utils/constants/style_constant.dart';
 import 'package:naai/utils/progress/loading.dart';
 import 'package:naai/utils/routing/named_routes.dart';
 import 'package:naai/utils/utility_functions.dart';
+import 'package:naai/views/post_auth/favourite_screen/favourite_screen.dart';
 import 'package:naai/views/pre_auth/signin_container/signin_container.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -117,21 +118,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               Column(
                                 children: [
                                   // profileOptions(
-                                  //   onTap: () => Navigator.pushNamed(
-                                  //     context,
-                                  //     NamedRoutes.reviewsRoute,
-                                  //   ),
+                                  //   onTap: () {
+                                  //     Navigator.of(context).push(MaterialPageRoute(builder: (_) => FavouriteScreen()));
+                                  //   },
                                   //   imagePath: ImagePathConstant.reviewsIcon,
                                   //   optionTitle: StringConstant.reviews,
                                   // ),
-                                  // profileOptions(
-                                  //   onTap: () => Navigator.pushNamed(
-                                  //     context,
-                                  //     NamedRoutes.favouritesRoute,
-                                  //   ),
-                                  //   imagePath: ImagePathConstant.saveIcon,
-                                  //   optionTitle: StringConstant.favourties,
-                                  // ),
+                                  profileOptions(
+                                    onTap: (){
+                                       Navigator.of(context).push(MaterialPageRoute(builder: (_) => FavouriteScreen()));
+                                    },
+                                    imagePath: ImagePathConstant.saveIcon,
+                                    optionTitle: StringConstant.favourties,
+                                  ),
                                   // profileOptions(
                                   //   onTap: () => Navigator.pushNamed(
                                   //     context,

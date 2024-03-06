@@ -31,8 +31,8 @@ class StringConstant {
   static const String continueText = 'CONTINUE';
   static const String enterYourPassword = 'Enter your password';
   static const String enterYourEmail = 'Enter your email';
-  static const String male = 'Male';
-  static const String female = 'Female';
+  static const String male = 'male';
+  static const String female = 'female';
   static const String addNameSubtext =
       'We’ll require your personal name to set up your profile';
   static const String chooseYourGender = 'Choose your gender';
@@ -91,6 +91,7 @@ class StringConstant {
   static const String multipleStaffText = 'MULTIPLE STAFF';
   static const String useThisToSaveTime = 'USE THIS TO SAVE TIME';
   static const String next = 'NEXT';
+  static const String salonLink = "https://www.naai.in/salon";
 
   // Maps screen strings
   static const String map = 'Map';
@@ -112,6 +113,7 @@ class StringConstant {
   static const String worksAt = 'WORKS AT';
   static const String rating = "RATING";
   static const String favourties = "Favourites";
+  static const String artistShareLink = "https://www.naai.in/artist";
 
   // Exception related strings
   static const String locationApiTookTooLong =

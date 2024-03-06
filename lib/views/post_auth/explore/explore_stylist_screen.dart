@@ -57,7 +57,7 @@ class _ExploreStylistState extends State<ExploreStylist>
                   searchBar(),
                   SliverList(
                     delegate: SliverChildListDelegate(
-                      <Widget>[
+                      [
                         Container(
                           color: Colors.white,
                           constraints: BoxConstraints(minHeight: MediaQuery.of(context).size.height),
@@ -177,7 +177,6 @@ class _ExploreStylistState extends State<ExploreStylist>
     );
   }
   
- 
   Widget titleContainer(){
    return SliverAppBar(
           elevation: 10,

@@ -166,6 +166,7 @@ class ArtistsServices {
 
     try {
       dio.options.connectTimeout = const Duration(seconds: 10);
+      // print("start artist");
       final response = await dio.post(
         apiUrl,
         options: Options(headers: {
@@ -173,20 +174,22 @@ class ArtistsServices {
         }),
         data: requestData,
       );
+    //  print("end artist");
 
       if (response.statusCode == 200) {
         //print("Response of artist:- ${response.data}");
         ArtistResponseModel artistApiResponse = ArtistResponseModel.fromJson(jsonEncode(response.data).replaceAll("_id", "id"));
 
         List<TopArtistResponseModel> res = [];
+       // print("start loop");
         for (var artistData in artistApiResponse.data){
           var salonId = artistData.salonId;
-          final salonResponse = await dio.get("${UrlConstants.getSingleSalon}/$salonId");
-          final salonDetailResponse = SingleSalonResponseModel.fromJson(jsonEncode(salonResponse.data).replaceAll("_id", "id"));
-          
+         // print("start salon");
+          final salonResponse = await SalonsServices.getSalonByID(salonId: salonId ?? "");
+         // print("end salon");
           res.add(TopArtistResponseModel(
              artistDetails: artistData,
-             salonDetails: salonDetailResponse
+             salonDetails: salonResponse
           ));
         }
 

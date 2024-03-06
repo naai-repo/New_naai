@@ -90,7 +90,7 @@ class UserServices {
         if(artistId.isNotEmpty) "artist": artistId,
         "userId": userId
     };
-
+   
     try {
       dio.options.connectTimeout = const Duration(seconds: 10);
       dio.options.headers['Authorization'] = 'Bearer $accessToken';
@@ -101,7 +101,7 @@ class UserServices {
           data: json.encode(requestData),
       );
      
-      
+     
       if (response.statusCode == 200) {
         final res = AddUserFavResponseModel.fromJson(jsonEncode(response.data).replaceAll("_id", "id"));
         return res;
@@ -209,6 +209,5 @@ class UserServices {
        return DeleteUserResponseModel();
     }
   }
-  
   
 }

@@ -29,8 +29,8 @@ class UserFavItemModel {
 
   factory UserFavItemModel.fromMap(Map<String, dynamic> map) {
     return UserFavItemModel(
-      salons: map['salons'] != null ? List<String>.from((map['salons'] as List<String>)) : null,
-      artists: map['artists'] != null ? List<String>.from((map['artists'] as List<String>)) : null,
+      salons: map['salons'] != null ? List<String>.from((map['salons'] as List<dynamic>)) : null,
+      artists: map['artists'] != null ? List<String>.from((map['artists'] as List<dynamic>)) : null,
     );
   }
 

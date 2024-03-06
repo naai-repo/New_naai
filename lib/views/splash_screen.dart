@@ -6,6 +6,7 @@ import 'package:naai/controllers/auth/auth_controller.dart';
 import 'package:naai/providers/bottom_change_index_provider.dart';
 import 'package:naai/providers/post_auth/location_provider.dart';
 import 'package:naai/providers/pre_auth/auth_provider.dart';
+import 'package:naai/services/uni_deeplink_services/uni_deep_link_services.dart';
 import 'package:naai/utils/constants/colors_constant.dart';
 import 'package:naai/utils/constants/image_path_constant.dart';
 import 'package:naai/utils/routing/named_routes.dart';
@@ -23,6 +24,14 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen> {
   @override
+  void dispose() {
+    super.dispose();
+    // if(UniServices.sub != null){
+    //    UniServices.sub?.cancel();
+    // }
+  }
+
+  @override
   void initState() {
     super.initState();
     SystemChrome.setSystemUIOverlayStyle(
@@ -34,7 +43,7 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
 
-  void checkIfUserExists() {
+  void checkIfUserExists() async{
     Timer(const Duration(seconds: 2), () async {
       String? accessToken = await context.read<AuthenticationProvider>().getAccessToken();
       if(!context.mounted) return;
@@ -47,21 +56,24 @@ class _SplashScreenState extends State<SplashScreen> {
       
       await context.read<LocationProvider>().intit();
       if(!context.mounted) return;
-
+      
       print("Auth Data : $accessToken - $isGuest");
-     
-      if (accessToken.isNotEmpty) {
-          String userId = await context.read<AuthenticationProvider>().getUserId();
-          if(!context.mounted) return;
-          
+      
+      String userId = await context.read<AuthenticationProvider>().getUserId();
+      if(!context.mounted) return;
+
+      if(userId.isNotEmpty){
           await AuthenticationConroller.setUserDetails(context, userId);
           if(!context.mounted) return;
+          await UniServices.init();
+      }
 
-          Navigator.pushReplacementNamed(context, NamedRoutes.bottomNavigationRoute);
+      if (accessToken.isNotEmpty) {
+         Navigator.pushReplacementNamed(context, NamedRoutes.bottomNavigationRoute);
       }else if (isGuest){
-          Navigator.pushReplacementNamed(context, NamedRoutes.bottomNavigationRoute);
+         Navigator.pushReplacementNamed(context, NamedRoutes.bottomNavigationRoute);
       } else {
-          Navigator.pushReplacementNamed(context,NamedRoutes.authenticationRoute);
+         Navigator.pushReplacementNamed(context,NamedRoutes.authenticationRoute);
       }
     });
   }

@@ -24,6 +24,7 @@ import 'package:naai/views/post_auth/salon_details/contact_and_interaction_widge
 import 'package:naai/views/post_auth/salon_details/salon_details_screen.dart';
 import 'package:naai/views/post_auth/utility/review_box_compnent.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 Future<int> artistDetailsScreenFuture(BuildContext context,String artistId) async {
@@ -329,7 +330,11 @@ class _BarberProfileScreenState extends State<ArtistDetailScreen> {
     final String artistName = artistDetails.artistDetails?.data?.name ?? "Artist Name";
     final String image = artistDetails.artistDetails?.data?.imageUrl ?? "";
     final String salonName = artistDetails.salonDetails?.data?.data?.name ?? "Salon Name";
+    final String artistId = artistDetails.artistDetails?.data?.id ?? "";
     final double rating = artistDetails.artistDetails?.data?.rating ?? 5;
+
+    final refUser = context.read<AuthenticationProvider>();
+    bool isSaved = refUser.userData.favourite?.artists?.contains(artistId) ?? false;
 
     return Column(
         children: [
@@ -485,7 +490,7 @@ class _BarberProfileScreenState extends State<ArtistDetailScreen> {
           ContactAndInteractionWidget(
             iconOnePath: ImagePathConstant.phoneIcon,
             iconTwoPath: ImagePathConstant.shareIcon,
-            iconThreePath: ImagePathConstant.saveIcon,
+            iconThreePath: (isSaved) ? ImagePathConstant.saveIconFill : ImagePathConstant.saveIcon,
             iconFourPath: ImagePathConstant.instagramIcon,
             onTapIconOne: () {
               launchUrl(
@@ -496,12 +501,13 @@ class _BarberProfileScreenState extends State<ArtistDetailScreen> {
               );
             },
             onTapIconTwo: () {
+                final String artistShareUrl = "${StringConstant.artistShareLink}/${artistId}";
+                Share.share(artistShareUrl, subject: 'Naai Artist');
+            },
+            onTapIconThree: () {
               launchUrl(
                 Uri.parse('https://www.instagram.com/naaiindia'),
               );
-            },
-            onTapIconThree: () {
-               
             },
             onTapIconFour: () {
               launchUrl(

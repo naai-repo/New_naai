@@ -50,7 +50,7 @@ class Loading {
       const SystemUiOverlayStyle(
           statusBarIconBrightness: Brightness.light,
           systemNavigationBarColor: Colors.white
-      ),
+      )
     );
   }
 

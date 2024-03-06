@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:naai/models/api_models/salon_item_model.dart';
 import 'package:naai/utils/routing/named_routes.dart';
 import 'package:naai/views/post_auth/bottom_navigation/bottom_navigation.dart';
 import 'package:naai/views/post_auth/explore/explore_stylist_screen.dart';
@@ -8,6 +9,9 @@ import 'package:naai/views/pre_auth/auth/auth_screen.dart';
 import 'package:naai/views/pre_auth/auth/otp_verify_screen.dart';
 import 'package:naai/views/pre_auth/auth/user_details_screen.dart';
 import 'package:naai/views/splash_screen.dart';
+
+import '../../views/post_auth/artist_details/artist_details_screen.dart';
+import '../../views/post_auth/salon_details/salon_details_screen.dart';
 
 class ScreenArguments {
   num showPrice;
@@ -20,8 +24,19 @@ class RoutingFunctions {
   static Route<dynamic>? generateRoutes(RouteSettings settings) {
     print("generateRoutes($settings)");
     Uri routeUri = Uri.parse(settings.name!);
+    List<String> paths = routeUri.pathSegments;
 
     Widget? target;
+    print(paths);
+    if(paths.length == 2){
+       if(paths[0] == "salon"){
+         target = SalonDetailsScreen(salonDetails: SalonResponseData(id : paths[1]));
+      }else if(paths[0] == "artist"){
+         target = ArtistDetailScreen(artistId: paths[1]);
+      }
+
+      if (target != null) return createRoute(target);
+    }
 
     switch (routeUri.path) {
       case NamedRoutes.splashRoute:
@@ -38,6 +53,7 @@ class RoutingFunctions {
         break;
       case NamedRoutes.exploreStylistRoute:
         target = const ExploreStylist();
+
       case NamedRoutes.setHomeLocationRoute:
         target = const SetLocationScreen();
         break;

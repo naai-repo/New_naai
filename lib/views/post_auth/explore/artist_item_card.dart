@@ -2,10 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:naai/models/api_models/top_artist_model.dart';
+import 'package:naai/providers/pre_auth/auth_provider.dart';
+import 'package:naai/services/users/user_services.dart';
 import 'package:naai/utils/cards/custom_cards.dart';
 import 'package:naai/utils/constants/colors_constant.dart';
 import 'package:naai/utils/constants/image_path_constant.dart';
+import 'package:naai/utils/progress/loading.dart';
+import 'package:naai/utils/utility_functions.dart';
 import 'package:naai/views/post_auth/artist_details/artist_details_screen.dart';
+import 'package:provider/provider.dart';
 
 
 class ArtistCard extends StatelessWidget {
@@ -35,16 +40,15 @@ class ArtistCard extends StatelessWidget {
               width: 190.w,
               child: GestureDetector(
                 onTap: () async {
-                     Navigator.push(context, MaterialPageRoute(builder: (_) =>  ArtistDetailScreen(artistId: artist.artistDetails?.id ?? "",)));
+                     Navigator.push(context, MaterialPageRoute(builder: (_) =>  ArtistDetailScreen(artistId: artist.artistDetails?.id ?? "")));
                 },
                 child: Stack(
-                  children: <Widget>[
+                  children: [
                     Padding(
                       padding: EdgeInsets.symmetric(horizontal: 4.w),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-
                           Column(
                             children: [
                               Padding(
@@ -145,15 +149,7 @@ class ArtistCard extends StatelessWidget {
                     ),
                     Align(
                       alignment: Alignment.topRight,
-                      child: InkWell(
-                        onTap: () {
-      
-                        },
-                        child: SvgPicture.asset(ImagePathConstant.saveIcon,
-                          color: ColorsConstant.appColor,
-                          height: 25.h,
-                        ),
-                      ),
+                      child: ArtistSaveIcon(artist: artist),
                     ),
                   ],
                 ),
@@ -161,5 +157,68 @@ class ArtistCard extends StatelessWidget {
             ),
           ),
       );
+  }
+}
+
+class ArtistSaveIcon extends StatefulWidget {
+  final TopArtistResponseModel artist;
+  const ArtistSaveIcon({super.key, required this.artist});
+
+  @override
+  State<ArtistSaveIcon> createState() => _ArtistSaveIconState();
+}
+
+class _ArtistSaveIconState extends State<ArtistSaveIcon> {
+  bool isSaved = false;
+  
+  @override
+  void initState() {
+    super.initState();
+    final refUser = context.read<AuthenticationProvider>();
+    final String artistId = widget.artist.artistDetails?.id ?? "";
+    bool ans = refUser.userData.favourite?.artists?.contains(artistId) ?? false;
+    if(ans) isSaved = true;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final refAuth = Provider.of<AuthenticationProvider>(context,listen: false);
+    final String artistId = widget.artist.artistDetails?.id ?? "";
+    
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+          onTap: () async {
+                try {
+                    Loading.showLoding(context);
+
+                    final String userId = await refAuth.getUserId();
+                    final String token = await refAuth.getAccessToken();
+                    final res = await UserServices.addUserFav(userId: userId, accessToken: token,artistId: artistId);
+
+                    if(res.status == "success"){
+                       setState(() {
+                         isSaved = !isSaved;
+                         refAuth.setUserFavroteArtistId(artistId);
+                       });
+                       
+                    }
+                } catch (e) {
+                  if(context.mounted){
+                    showErrorSnackBar(context, "Something went wrong");
+                  }
+                }finally {
+                    if(context.mounted){
+                      Loading.closeLoading(context);
+                    }
+                }
+          },
+          child: SvgPicture.asset( (!isSaved) ? ImagePathConstant.saveIcon : ImagePathConstant.saveIconFill,
+            color: ColorsConstant.appColor,
+            height: 25.h,
+          ),
+        ),
+    );
   }
 }
