@@ -1,5 +1,3 @@
-import 'package:carousel_slider/carousel_slider.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -13,9 +11,7 @@ import 'package:naai/providers/post_auth/top_salons_provider.dart';
 import 'package:naai/providers/pre_auth/auth_provider.dart';
 import 'package:naai/services/artists/artist_services.dart';
 import 'package:naai/services/salons/salons_service.dart';
-import 'package:naai/services/users/user_services.dart';
 import 'package:naai/utils/buttons/buttons.dart';
-import 'package:naai/utils/cards/custom_cards.dart';
 import 'package:naai/utils/common_widgets/common_widgets.dart';
 import 'package:naai/utils/constants/colors_constant.dart';
 import 'package:naai/utils/constants/image_path_constant.dart';
@@ -26,7 +22,6 @@ import 'package:naai/utils/routing/named_routes.dart';
 import 'package:naai/utils/utility_functions.dart';
 import 'package:naai/views/post_auth/explore/artist_item_card.dart';
 import 'package:naai/views/post_auth/explore/salon_item_card.dart';
-import 'package:naai/views/post_auth/salon_details/salon_details_screen.dart';
 import 'package:naai/views/post_auth/utility/artist_salon_extended.dart';
 import 'package:provider/provider.dart';
 
@@ -34,20 +29,42 @@ import 'package:provider/provider.dart';
 Future<int> exploreFuture(BuildContext context) async {
     final ref = await context.read<LocationProvider>().getLatLng();
     final coords = [ref.longitude,ref.latitude];
-    String type = context.read<AuthenticationProvider>().userData.gender ?? "male";
-
-    final refSalon = await context.read<FilterSalonsProvider>();
-    final res = await SalonsServices.getTopSalons(coords: coords, page: refSalon.getPage, limit: refSalon.getLimit, type: type);
-    if(context.mounted) context.read<TopSalonsProvider>().setTopSalons(res.data,clear: true);
-
-    final refArtist = await context.read<FilterArtitsProvider>();
-    final ress = await ArtistsServices.getTopArtists(coords: coords, page: refArtist.getPage, limit: refArtist.getLimit, type: type);
-    if(context.mounted) context.read<TopArtistsProvider>().setTopArtists(ress,clear: true);
     
-    print("Builded $type");
+    final refSalon = context.read<FilterSalonsProvider>();
+    final refArtist = await context.read<FilterArtitsProvider>();
 
+    // print("Exec Start ::: ${DateTime.now().second} - ${DateTime.now().millisecond}");
+    // await Future.wait([
+    //    (() async {
+    //       // print("Exec ::: ${DateTime.now().second} - ${DateTime.now().millisecond}");
+    //       final res = await SalonsServices.getTopSalons(coords: coords, page: refSalon.getPage, limit: refSalon.getLimit, type: "");
+    //       if(context.mounted) context.read<TopSalonsProvider>().setTopSalons(res.data,clear: true);
+    //    })(),
+    //    (() async {
+    //     //print("Exec T::: ${DateTime.now().second} - ${DateTime.now().millisecond}");
+    //       final ress = await ArtistsServices.getTopArtists(coords: coords, page: refArtist.getPage, limit: refArtist.getLimit, type: "");
+    //       if(context.mounted) context.read<TopArtistsProvider>().setTopArtists(ress,clear: true);
+    //    })()
+    // ]);
+    // print("Exec End ::: ${DateTime.now().second} - ${DateTime.now().millisecond}");
+
+    await Future.delayed(Durations.medium3);
+    print("Exec Start ::: ${DateTime.now().second} - ${DateTime.now().millisecond}");
+    (() async {
+          //print("Exec ::: ${DateTime.now().second} - ${DateTime.now().millisecond}");
+          final res = await SalonsServices.getTopSalons(coords: coords, page: refSalon.getPage, limit: refSalon.getLimit, type: "");
+          if(context.mounted) context.read<TopSalonsProvider>().setTopSalons(res.data,clear: true);
+     })();
+    (() async {
+      //print("Exec T::: ${DateTime.now().second} - ${DateTime.now().millisecond}");
+      final ress = await ArtistsServices.getTopArtists(coords: coords, page: refArtist.getPage, limit: refArtist.getLimit, type: "");
+      if(context.mounted) context.read<TopArtistsProvider>().setTopArtists(ress,clear: true);
+    })();
+    print("Exec End ::: ${DateTime.now().second} - ${DateTime.now().millisecond}");
+   
     return 200;
 }
+
 
 class ExploreScreen extends StatefulWidget {
   const ExploreScreen({Key? key}) : super(key: key);
@@ -94,7 +111,7 @@ class _ExploreScreenState extends State<ExploreScreen>{
               children: [
                 CommonWidget.appScreenCommonBackground(),
                 CustomScrollView(
-                  physics: const BouncingScrollPhysics(),
+                  //physics: const BouncingScrollPhysics(),
                   slivers: [
                     CommonWidget.transparentFlexibleSpace(),
                       titleContainer(),
@@ -497,9 +514,8 @@ class FilterBarberSheet extends StatelessWidget {
                                 final refLocation = await context.read<LocationProvider>().getLatLng();
                                 final coords = [refLocation.longitude,refLocation.latitude];
                                 if(!context.mounted) return;
-                                final genderType =  context.read<AuthenticationProvider>().userData.gender ?? "male";
-
-                                final response = await SalonsServices.getTopSalons(coords: coords, page: 1, limit: 10, type: genderType);
+                              
+                                final response = await SalonsServices.getTopSalons(coords: coords, page: 1, limit: 10, type: "");
                                 await refTopSalons.setTopSalons(response.data,clear: true);
                                 ref.resetFilter();
                             } catch (e) {

@@ -63,7 +63,7 @@ class AuthData {
 class AuthenticationProvider with ChangeNotifier {
     AuthData _authData = AuthData();
     int? _mobileNumber = 0;
-    
+
     AuthData get authData => _authData;
     int get mobileNumber => _mobileNumber ?? 0;
 
@@ -134,16 +134,27 @@ class AuthenticationProvider with ChangeNotifier {
         _authData = _authData.copyWith(isGuest: value);
     }
 
+    Future<void> setIsGuestTemp(bool value) async {
+        _authData = _authData.copyWith(isGuest: value);
+        notifyListeners();
+    }
+
     Future<bool> getIsGuest() async {
         bool res = _authData.isGuest ?? false;
         if(res) return res;
-        
+
         final userID = await getUserId();
-        if(userID.isEmpty) return true;
+        if(userID.isEmpty) return  true;
         
         final box = await Hive.openBox('userBox');
         res = box.get('isGuest', defaultValue: false) ?? false;
         if(res) setIsGuest(res);
+        return res;
+    }
+    
+    Future<bool> getIsGuestLocally() async {
+        final box = await Hive.openBox('userBox');
+        bool res = box.get('isGuest', defaultValue: false) ?? false;
         return res;
     }
 
@@ -160,7 +171,7 @@ class AuthenticationProvider with ChangeNotifier {
 
     Future<void> logout() async {
       final box = await Hive.openBox('userBox');
-      _authData = AuthData();
+      _authData = AuthData(isGuest: true);
       box.delete('accesstoken');
       box.delete('isGuest');
       box.delete('userId');

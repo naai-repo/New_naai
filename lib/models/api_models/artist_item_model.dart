@@ -158,14 +158,15 @@ class Service {
   final dynamic? price;
   final String? id;
   final List<Variables>? variables;
+  final double? cutPrice;
 
   Service({
     this.serviceId,
     this.price,
     this.id,
     required this.variables,
+    this.cutPrice
   });
-
 
 
   Service copyWith({
@@ -173,12 +174,14 @@ class Service {
     dynamic? price,
     String? id,
     List<Variables>? variables,
+    double? cutPrice
   }) {
     return Service(
       serviceId: serviceId ?? this.serviceId,
       price: price ?? this.price,
       id: id ?? this.id,
       variables: variables ?? this.variables,
+      cutPrice:  cutPrice ?? this.cutPrice
     );
   }
 
@@ -188,6 +191,7 @@ class Service {
       'price': price,
       'id': id,
       'variables': variables?.map((x) => x.toMap()).toList() ?? [],
+      'cutPrice' : cutPrice
     };
   }
 
@@ -197,6 +201,7 @@ class Service {
       price: map['price'] != null ? map['price'] as dynamic : null,
       id: map['id'] != null ? map['id'] as String : null,
       variables: map['variables'] != null ? List<Variables>.from((map['variables'] as List<dynamic>).map<Variables?>((x) => Variables.fromMap(x as Map<String,dynamic>),),) : null,
+      cutPrice: map['cutPrice'] != null ? double.tryParse(map['cutPrice'].toString()) : null
     );
   }
 
@@ -216,11 +221,13 @@ class Variables {
   final String? id;
   final String? variableId;
   final dynamic? price;
+  final double? cutPrice; 
 
   Variables({
     this.id,
     this.variableId,
     this.price,
+    this.cutPrice
   });
 
 
@@ -228,11 +235,13 @@ class Variables {
     String? id,
     String? variableId,
     dynamic? price,
+    double? cutPrice
   }) {
     return Variables(
       id: id ?? this.id,
       variableId: variableId ?? this.variableId,
       price: price ?? this.price,
+      cutPrice: cutPrice ?? this.cutPrice
     );
   }
 
@@ -241,6 +250,7 @@ class Variables {
       'id': id,
       'variableId': variableId,
       'price': price,
+      'cutPrice' : cutPrice
     };
   }
 
@@ -249,6 +259,7 @@ class Variables {
       id: map['id'] != null ? map['id'] as String : null,
       variableId: map['variableId'] != null ? map['variableId'] as String : null,
       price: map['price'] != null ? map['price'] as dynamic : null,
+      cutPrice: map['cutPrice'] != null ? double.tryParse(map['cutPrice'].toString()) : null
     );
   }
 

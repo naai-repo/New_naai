@@ -8,16 +8,19 @@ import 'package:naai/utils/constants/api_constant.dart';
 
 class SalonsServices {
   static Dio dio = Dio();
+  
+  static setAuthToken(String token){
+      dio.options.headers['Authorization'] = 'Bearer $token';
+  }
 
   static Future<SingleSalonResponseModel> getSalonByID({required String salonId}) async {
     final apiUrl = "${UrlConstants.getSingleSalon}/$salonId";
     
     try {
       dio.options.connectTimeout = const Duration(seconds: 10);
-
+ 
       final response = await dio.get(apiUrl);
-     
-      if (response.statusCode == 200) {
+      if (response.statusCode == 200){
         final res = SingleSalonResponseModel.fromJson(jsonEncode(response.data).replaceAll("_id", "id"));
         return res;
       } else {
@@ -25,6 +28,7 @@ class SalonsServices {
       }
     } catch (e,stacktrace) {
        print(stacktrace.toString());
+       print("Error Salon GetById : ${e.toString()}");
        return SingleSalonResponseModel(status: 'failed', message: e.toString(), data: SingleSalonItemModel());
     }
   }
@@ -90,7 +94,7 @@ class SalonsServices {
   } 
   
   static Future<List<SalonResponseData>> getSalonsByCategory({required List<double> coords,required int page,required int limit,required String type,required String category}) async {
-    final apiUrl = "${UrlConstants.getSalonsByCategory}?page=${page.toString()}&limit=${limit.toString()}&name=${category.toString()}&type=${type.toString()}";
+    final apiUrl = "${UrlConstants.getSalonsByCategory}?page=${page.toString()}&limit=${limit.toString()}&name=${category.toString()}${(type.isNotEmpty) ? "&type=$type" : ""}";
     final Map<String, dynamic> requestData = {
       "location": {"type": "Point", "coordinates": coords},
     };
@@ -127,7 +131,7 @@ class SalonsServices {
   } 
   
   static Future<SalonResponseModel> getTopSalons({required List<double> coords,required int page,required int limit,required String type}) async {
-    final apiUrl = "${UrlConstants.topSalon}?page=${page.toString()}&limit=${limit.toString()}&type=$type";
+    final apiUrl = "${UrlConstants.topSalon}?page=${page.toString()}&limit=${limit.toString()}${(type.isNotEmpty) ? "&type=$type" : ""}";
 
     final Map<String, dynamic> requestData = {
       "location": {"type": "Point", "coordinates": coords},
@@ -155,6 +159,5 @@ class SalonsServices {
        return SalonResponseModel(status: 'failed', message: e.toString(), data: []);
     }
   } 
-
 
 }

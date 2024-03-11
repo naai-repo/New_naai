@@ -15,6 +15,7 @@ import 'package:naai/utils/constants/style_constant.dart';
 import 'package:naai/utils/progress/loading.dart';
 import 'package:naai/utils/routing/named_routes.dart';
 import 'package:naai/utils/utility_functions.dart';
+import 'package:naai/views/post_auth/booking_history_screen/booking_history_screen.dart';
 import 'package:naai/views/post_auth/favourite_screen/favourite_screen.dart';
 import 'package:naai/views/pre_auth/signin_container/signin_container.dart';
 import 'package:provider/provider.dart';
@@ -42,14 +43,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final ref = Provider.of<AuthenticationProvider>(context,listen: false);
-
+    
     return SafeArea(
       child: Scaffold(
             body: Stack(
               children: [
                 CommonWidget.appScreenCommonBackground(),
                 CustomScrollView(
-                  physics: const BouncingScrollPhysics(),
+                 // physics: const BouncingScrollPhysics(),
                   slivers: [
                     CommonWidget.transparentFlexibleSpace(),
                     SliverAppBar(
@@ -131,14 +132,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     imagePath: ImagePathConstant.saveIcon,
                                     optionTitle: StringConstant.favourties,
                                   ),
-                                  // profileOptions(
-                                  //   onTap: () => Navigator.pushNamed(
-                                  //     context,
-                                  //     NamedRoutes.bookingHistoryRoute,
-                                  //   ),
-                                  //   imagePath: ImagePathConstant.bookingHistoryIcon,
-                                  //   optionTitle: StringConstant.bookingHistory,
-                                  // ),
+                                  profileOptions(
+                                    onTap: () {
+                                       Navigator.of(context).push(MaterialPageRoute(builder: (_) => BookingHistoryScreen()));
+                                    },
+                                    imagePath: ImagePathConstant.bookingHistoryIcon,
+                                    optionTitle: StringConstant.bookingHistory,
+                                  ),
                                   profileOptions(
                                     onTap: () {
                                       launchUrl(

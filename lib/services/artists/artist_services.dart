@@ -9,7 +9,6 @@ import 'package:naai/models/api_models/single_salon_model.dart';
 import 'package:naai/models/api_models/top_artist_model.dart';
 import 'package:naai/models/utility/single_artist_screen_model.dart';
 import 'package:naai/services/salons/salons_service.dart';
-import 'package:naai/services/services_artists/services_artist.dart';
 import 'package:naai/utils/constants/api_constant.dart';
 
 class ArtistsServices {
@@ -33,20 +32,25 @@ class ArtistsServices {
       );
 
       if (response.statusCode == 200) {
-        //print("Response of artist:- ${response.data}");
         ArtistResponseModel artistApiResponse = ArtistResponseModel.fromJson(jsonEncode(response.data).replaceAll("_id", "id"));
 
         List<TopArtistResponseModel> res = [];
+        List<Future<SingleSalonResponseModel>> salonRequests = [];
+        List<ArtistDataModel> artistsDetails = [];
+
         for (var artistData in artistApiResponse.data){
-          var salonId = artistData.salonId;
-          final salonResponse = await dio.get("${UrlConstants.getSingleSalon}/$salonId");
-          final salonDetailResponse = SingleSalonResponseModel.fromJson(jsonEncode(salonResponse.data).replaceAll("_id", "id"));
-          
-          res.add(TopArtistResponseModel(
-             artistDetails: artistData,
-             salonDetails: salonDetailResponse
-          ));
+          salonRequests.add(SalonsServices.getSalonByID(salonId: artistData.salonId ?? ""));
+          artistsDetails.add(artistData);
         }
+
+        final salonResponses = await Future.wait(salonRequests);
+
+        salonResponses.asMap().forEach((i, salonRes) {
+          res.add(TopArtistResponseModel(
+              artistDetails: artistsDetails[i],
+              salonDetails: salonRes
+          ));
+        });
 
         return res;
       } else {
@@ -70,13 +74,26 @@ class ArtistsServices {
       if (response.statusCode == 200) {
         final artistResponse = SingleArtistModel.fromJson(jsonEncode(response.data).replaceAll("_id", "id"));
         final salonResponse = await SalonsServices.getSalonByID(salonId: artistResponse.data?.salonId ?? "");
-         
+        
         List<Service> artistServices = artistResponse.data?.services ?? [];
+        //artistServices.asMap().forEach((key, value) => services.add(ServiceDataModel.fromMap(value.toMap())));
 
-        for(var e in artistServices){
-              final serviceResponse = await ServicesArtists.getServicesByID(serviceId: e.serviceId ?? "");
-              services.add(serviceResponse.data ?? ServiceDataModel());
-        }
+        artistServices.asMap().forEach((key, value) {
+            final serv = salonResponse.data!.services!.singleWhere((element) => element.id == value.serviceId,orElse: () => ServiceDataModel(id: "00"));
+            if(serv.id != "00") services.add(serv);
+        });
+        
+        // List<Future<ServiceArtistModel>> servicesRequests = [];
+        
+        // for(var e in artistServices){
+        //     servicesRequests.add(ServicesArtists.getServicesByID(serviceId: e.serviceId ?? ""));
+        // }
+
+        // final res = await Future.wait(servicesRequests);
+
+        // for(int i = 0;i < artistServices.length;i++){
+        //     services.add(res[i].data ?? ServiceDataModel());
+        // }
 
         return SingleArtistScreenModel(
           artistDetails: artistResponse,
@@ -113,9 +130,8 @@ class ArtistsServices {
     }
   } 
   
-
   static Future<List<TopArtistResponseModel>> getArtistsByCategory({required List<double> coords,required int page,required int limit,required String type,required String category}) async {
-    final apiUrl = "${UrlConstants.getArtistsByCategory}?page=${page.toString()}&limit=${limit.toString()}&name=${category.toString()}&type=${type.toString()}";
+    final apiUrl = "${UrlConstants.getArtistsByCategory}?page=${page.toString()}&limit=${limit.toString()}&name=${category.toString()}${(type.isNotEmpty) ? "&type=$type" : ""}";
     
     final Map<String, dynamic> requestData = {
       "location": {"type": "Point", "coordinates": coords},
@@ -133,18 +149,25 @@ class ArtistsServices {
       );
 
       List<TopArtistResponseModel> ans = [];
-      
+      List<Future<SingleSalonResponseModel>> salonRequests = [];
+      List<ArtistDataModel> artistsDetails = [];
+
       if (response.statusCode == 200) {
         if((response.data["data"] as dynamic).isNotEmpty){
           for(var e in (response.data["data"]["list"] as dynamic)){
               final artists = ArtistDataModel.fromJson(jsonEncode(e).replaceAll("_id", "id"));
-              final salonResponse = await SalonsServices.getSalonByID(salonId: artists.salonId ?? "");
-
-              ans.add(TopArtistResponseModel(
-                artistDetails: artists,
-                salonDetails: salonResponse
-              ));
+              salonRequests.add(SalonsServices.getSalonByID(salonId: artists.salonId ?? ""));
+              artistsDetails.add(artists);
           }
+
+          final salonResponses = await Future.wait(salonRequests);
+
+          salonResponses.asMap().forEach((i, res) {
+            ans.add(TopArtistResponseModel(
+                artistDetails: artistsDetails[i],
+                salonDetails: res
+            ));
+          });
         }
         return ans;
       }else{
@@ -158,7 +181,7 @@ class ArtistsServices {
   } 
   
   static Future<List<TopArtistResponseModel>> getTopArtists({required List<double> coords,required int page,required int limit,required String type}) async {
-    final apiUrl = "${UrlConstants.topArtist}?page=${page.toString()}&limit=${limit.toString()}&type=$type";
+    final apiUrl = "${UrlConstants.topArtist}?page=${page.toString()}&limit=${limit.toString()}${(type.isNotEmpty) ? "&type=$type" : ""}";
 
     final Map<String, dynamic> requestData = {
       "location": {"type": "Point", "coordinates": coords},
@@ -166,7 +189,7 @@ class ArtistsServices {
 
     try {
       dio.options.connectTimeout = const Duration(seconds: 10);
-      // print("start artist");
+      
       final response = await dio.post(
         apiUrl,
         options: Options(headers: {
@@ -174,33 +197,35 @@ class ArtistsServices {
         }),
         data: requestData,
       );
-    //  print("end artist");
 
       if (response.statusCode == 200) {
-        //print("Response of artist:- ${response.data}");
         ArtistResponseModel artistApiResponse = ArtistResponseModel.fromJson(jsonEncode(response.data).replaceAll("_id", "id"));
 
         List<TopArtistResponseModel> res = [];
-       // print("start loop");
+   
+        List<Future<SingleSalonResponseModel>> requests = [];
+      
         for (var artistData in artistApiResponse.data){
-          var salonId = artistData.salonId;
-         // print("start salon");
-          final salonResponse = await SalonsServices.getSalonByID(salonId: salonId ?? "");
-         // print("end salon");
-          res.add(TopArtistResponseModel(
-             artistDetails: artistData,
-             salonDetails: salonResponse
-          ));
+          requests.add(SalonsServices.getSalonByID(salonId: artistData.salonId ?? ""));
         }
+
+       final resss = await Future.wait(requests);
+       
+       for(int i = 0;i < artistApiResponse.data.length;i++){
+           res.add(TopArtistResponseModel(
+             artistDetails: artistApiResponse.data[i],
+             salonDetails: resss[i]
+          ));
+       }
 
         return res;
       } else {
         throw ErrorDescription(jsonEncode(response.data));
       }
     } catch (e,stacktrace) {
-      print(stacktrace.toString());
-      print("Error : ${e.toString()}");
-      return [TopArtistResponseModel()];
+    //  print(stacktrace.toString());
+    //  print("Error : ${e.toString()}");
+      return [];
     }
   }
   

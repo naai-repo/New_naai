@@ -129,6 +129,7 @@ class BookingServicesSalonProvider with ChangeNotifier {
     _selectedServices.clear();
     _totalPrice = 0;
     _totalDiscountPrice = 0;
+    
     if(notify) notifyListeners();
   }
 
@@ -344,16 +345,51 @@ class BookingServicesSalonProvider with ChangeNotifier {
      }
      return "";
   }
-  
-  double getSelectedServiceAmountById(String serviceId){
+
+  List<double> getSelectedServiceAmountById(String serviceId,{String variableId = ""}){
+    double serviceBasePrice = 9999, serviceCutPrice = 9999;
+
+    final service = _selectedServices.singleWhere((element) => element.service!.id == serviceId);
+
+    serviceBasePrice = service.service?.basePrice ?? 9999;
+    serviceCutPrice = service.service?.cutPrice ?? 9999;
+
+    if(variableId.isNotEmpty && (service.service?.variables?.isNotEmpty ?? false)){
+        final variable = service.service!.variables!.singleWhere((element) => element.id == variableId);
+        serviceBasePrice = variable.variablePrice ?? 9999;
+        serviceCutPrice = variable.variableCutPrice ?? 9999;
+    }
+
+     return [serviceBasePrice,serviceCutPrice];
+  }
+
+  List<double> getSelectedServiceArtistAmountById(String serviceId,String artistId,{String variableId = ""}){
+    double artistBasePrice = 9999, artistCutPrice = 9999;
+
      for(var e in _selectedServices){
-        if(e.service!.id == serviceId) return e.service?.cutPrice ?? 0;
+      if(e.service!.id != serviceId) continue;
+      
+       for(var a in e.artists!){
+          if(a.id == artistId){
+              final s = a.services!.singleWhere((element) => element.serviceId == serviceId);
+              artistBasePrice = double.tryParse(s.price.toString()) ?? 9999;
+              artistCutPrice = double.tryParse(s.cutPrice.toString()) ?? e.service!.cutPrice!;
+              print(s);
+
+              print("${artistBasePrice} -- ${double.tryParse(s.cutPrice.toString())} -- ${e.service!.cutPrice!}");
+
+              if(variableId.isNotEmpty){
+                  final variable = s.variables!.singleWhere((element) => element.variableId == variableId);
+                  artistBasePrice = double.tryParse(variable.price.toString()) ?? 9999;
+                  artistCutPrice = double.tryParse(variable.cutPrice.toString()) ?? e.service!.cutPrice!;
+              }
+
+              return [artistBasePrice,artistCutPrice];
+          }
+       }
      }
-    // final services = _appointmentResponseModel.booking?.artistServiceMap ?? [];
-    // for(var s in services){
-    //     if(s.serviceId == serviceId) return s.servicePrice ?? 0;
-    // }
-     return 0;
+
+     return [artistBasePrice,artistCutPrice];
   }
 
   String getSelectedServiceArtistNameById(String artistId){

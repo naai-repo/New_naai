@@ -189,12 +189,6 @@ class BookingServices {
   static Future<GetUserBookingResponseModel> getBookings({required String userId,required String accessToken,required int page,required int limit}) async {
     final apiUrl = "${UrlConstants.getBookings}?page=${page.toString()}&limit=${limit.toString()}";
 
-    
-    // print(json.encode(requestData["timeSlots"][0]["order"]));
-    // print(json.encode(requestData["timeSlot"]));
-    //print(json.encode(requestData));
-  
-
     try {
       dio.options.connectTimeout = const Duration(seconds: 10);
       dio.options.headers['Authorization'] = 'Bearer $accessToken';

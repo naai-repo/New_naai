@@ -247,14 +247,35 @@ class OrderSummary extends StatelessWidget {
                                                   SizedBox(height: 10.h),
 
                                                   ...List.generate(services.length, (index) {
-                                                     String serviceName = ref.getSelectedServiceNameById(services[index].service ?? "00");
-                                                     String artistName = ref.getSelectedServiceArtistNameById(services[index].artist ?? "00");
-                                                     double amount = 9999;
+                                                     String serviceId = services[index].service ?? "00";
+                                                     String artistId = services[index].artist ?? "00";
+                                                     String serviceName = ref.getSelectedServiceNameById(serviceId);
+                                                     String artistName = ref.getSelectedServiceArtistNameById(artistId);
+                                                     List<double> servicesPrices = [9999,9999];
+                                                     List<double> artistPrices = [9999,9999];
+
                                                      if(services[index].variable != null){
-                                                        amount = services[index].variable?.variableCutPrice?.toDouble() ?? 0;
+                                                        servicesPrices = ref.getSelectedServiceAmountById(serviceId,variableId: services[index].variable?.id ?? "");
+                                                        artistPrices = ref.getSelectedServiceArtistAmountById(serviceId, artistId,variableId: services[index].variable?.id ?? "");
                                                      }else{
-                                                        amount = ref.getSelectedServiceAmountById(services[index].service ?? "00").toDouble();
+                                                        servicesPrices = ref.getSelectedServiceAmountById(serviceId);
+                                                        artistPrices = ref.getSelectedServiceArtistAmountById(serviceId, artistId);
                                                      }
+
+                                                     double artistBasePrice = artistPrices[0];
+                                                     double artistCutPrice = artistPrices[1];
+
+                                                     double serviceBasePrice = artistPrices[0];
+                                                     double serviceCutPrice = servicesPrices[1];
+
+                                                     
+
+                                                     double amount = serviceCutPrice;
+                                                     double extraArtistPrice = artistCutPrice - serviceCutPrice;
+                                                     bool extraPriceWillShow = (serviceCutPrice != artistCutPrice);
+                                                     
+                                                     subTotal += extraArtistPrice;
+                                                     discount += extraArtistPrice - (artistBasePrice - serviceBasePrice);
 
                                                     return Container(
                                                       padding: EdgeInsets.all(5.w),
@@ -302,15 +323,50 @@ class OrderSummary extends StatelessWidget {
                                                           ),
 
                                                           SizedBox(height: 5.h),
+                                                          SizedBox(
+                                                            child: Row(
+                                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                              crossAxisAlignment: CrossAxisAlignment.center,
+                                                              children: [
+                                                                     Text.rich(
+                                                                        TextSpan(
+                                                                          style: TextStyle(
+                                                                            fontFamily: "Poppins",
+                                                                            fontSize: 14.sp,
+                                                                            fontWeight: FontWeight.w500,
+                                                                            color: const Color(0xFF373737)
+                                                                          ),
+                                                                          children: [
+                                                                            TextSpan(text: artistName),
+                                                                          ]
+                                                                        )
+                                                                    ),
 
-                                                          Text(artistName,
-                                                              style: TextStyle(
-                                                                fontFamily: "Poppins",
-                                                                fontSize: 14.sp,
-                                                                fontWeight: FontWeight.w500,
-                                                                color: const Color(0xFF373737)
+                                                                    if(extraPriceWillShow)
+                                                                     Text.rich(
+                                                                        TextSpan(
+                                                                          style: TextStyle(
+                                                                            fontFamily: "Poppins",
+                                                                            fontSize: 14.sp,
+                                                                            fontWeight: FontWeight.w500,
+                                                                            color: const Color(0xFF373737)
+                                                                          ),
+                                                                          children: [
+                                                                            TextSpan(
+                                                                              text: "+ Rs. ${extraArtistPrice}",
+                                                                              style: TextStyle(
+                                                                                color: ColorsConstant.appColor,
+                                                                                fontWeight: FontWeight.w700
+                                                                              )
+                                                                            )
+                                                                          ]
+                                                                        )
+                                                                    ),
+                                                              ],
                                                             ),
-                                                          ),
+                                                          )
+                                                          
+                                                          
                                                         ],
                                                       ),
                                                     );

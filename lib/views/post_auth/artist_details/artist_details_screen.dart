@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:naai/controllers/auth/auth_controller.dart';
@@ -13,12 +16,14 @@ import 'package:naai/providers/post_auth/single_artist_provider.dart';
 import 'package:naai/providers/pre_auth/auth_provider.dart';
 import 'package:naai/services/artists/artist_services.dart';
 import 'package:naai/services/reviews/reviews_services.dart';
-import 'package:naai/utils/buttons/buttons.dart';
+import 'package:naai/services/users/user_services.dart';
 import 'package:naai/utils/cards/custom_cards.dart';
 import 'package:naai/utils/common_widgets/common_widgets.dart';
 import 'package:naai/utils/constants/colors_constant.dart';
 import 'package:naai/utils/constants/image_path_constant.dart';
 import 'package:naai/utils/constants/string_constant.dart';
+import 'package:naai/utils/routing/named_routes.dart';
+import 'package:naai/utils/utility_functions.dart';
 import 'package:naai/views/post_auth/booking/booking_screen.dart';
 import 'package:naai/views/post_auth/salon_details/contact_and_interaction_widget.dart';
 import 'package:naai/views/post_auth/salon_details/salon_details_screen.dart';
@@ -38,6 +43,7 @@ Future<int> artistDetailsScreenFuture(BuildContext context,String artistId) asyn
     final String token = await context.read<AuthenticationProvider>().getAccessToken();
     final reviews = await ReviewsServices.getReviewsByArtistId(artistId: artistId,accessToken: token);
     if(!context.mounted) return 400;
+    
     context.read<ReviewsProvider>().setReviews(reviews);
     context.read<ArtistServicesFilterProvider>().resetAllFilter();
   
@@ -46,7 +52,8 @@ Future<int> artistDetailsScreenFuture(BuildContext context,String artistId) asyn
 
 class ArtistDetailScreen extends StatefulWidget {
   final String artistId;
-  const ArtistDetailScreen({Key? key,required this.artistId}) : super(key: key);
+  final bool? isFromDeepLink;
+  const ArtistDetailScreen({Key? key,required this.artistId,this.isFromDeepLink = false}) : super(key: key);
 
   @override
   State<ArtistDetailScreen> createState() => _BarberProfileScreenState();
@@ -59,6 +66,12 @@ class _BarberProfileScreenState extends State<ArtistDetailScreen> {
   @override
   void initState() {
     super.initState();
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+          statusBarIconBrightness: Brightness.light,
+          systemNavigationBarColor: Colors.white
+      ),
+    );
     context.read<BookingServicesSalonProvider>().resetAll(notify: false);
   }
 
@@ -66,227 +79,254 @@ class _BarberProfileScreenState extends State<ArtistDetailScreen> {
   Widget build(BuildContext context) {
     
     return SafeArea(
-      child: Scaffold(
-           //   resizeToAvoidBottomInset: true,
-              body: Stack(
-                children: [
-                  CommonWidget.appScreenCommonBackground(),
-                  CustomScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    slivers: [
-                      CommonWidget.transparentFlexibleSpace(),
-                      SliverAppBar(
-                        elevation: 10,
-                        automaticallyImplyLeading: false,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.only(
-                            topLeft: Radius.circular(30.h),
-                            topRight: Radius.circular(30.h),
+      child: PopScope(
+        canPop: true,
+        onPopInvoked: (didPop) async {
+          // if(didPop) return;
+
+          // if(widget.isFromDeepLink ?? false){
+          //     final bool isGuest = await context.read<AuthenticationProvider>().getIsGuest();
+          //     final String token = await context.read<AuthenticationProvider>().getAccessToken();
+          //     final bool isGuestLocally = await context.read<AuthenticationProvider>().getIsGuestLocally();
+
+          //     if(token.isNotEmpty){
+          //        Navigator.of(context).pop();
+          //        return;
+          //     }
+              
+          //     if(isGuest && isGuestLocally){
+          //        Navigator.pushNamedAndRemoveUntil(context, NamedRoutes.bottomNavigationRoute, (route) => false);
+          //     }else if(isGuest){
+          //        Navigator.pushNamedAndRemoveUntil(context, NamedRoutes.authenticationRoute, (route) => false);
+          //     }else{
+          //        Navigator.pop(context);
+          //     }
+          //     return;
+          // }
+          // Navigator.of(context).pop();
+        },
+        child: Scaffold(
+             //   resizeToAvoidBottomInset: true,
+                body: Stack(
+                  children: [
+                    CommonWidget.appScreenCommonBackground(),
+                    CustomScrollView(
+                     // physics: const BouncingScrollPhysics(),
+                      slivers: [
+                        CommonWidget.transparentFlexibleSpace(),
+                        SliverAppBar(
+                          elevation: 10,
+                          automaticallyImplyLeading: false,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.only(
+                              topLeft: Radius.circular(30.h),
+                              topRight: Radius.circular(30.h),
+                            ),
                           ),
-                        ),
-                        backgroundColor: Colors.white,
-                        surfaceTintColor: Colors.white,
-                        pinned: true,
-                        floating: true,
-                        leadingWidth: 0,
-                        title: Container(
-                          padding: EdgeInsets.only(top: 20.h, bottom: 20.h),
-                          child: Row(
-                            children: [
-                              GestureDetector(
-                                behavior: HitTestBehavior.opaque,
-                                onTap: () {
-                                    Navigator.pop(context);
-                                },
-                                child: Padding(
-                                  padding: EdgeInsets.all(10.h),
-                                  child: SvgPicture.asset(
-                                    ImagePathConstant.leftArrowIcon,
-                                    color: ColorsConstant.textDark,
-                                    height: 20.h,
+                          backgroundColor: Colors.white,
+                          surfaceTintColor: Colors.white,
+                          pinned: true,
+                          floating: true,
+                          leadingWidth: 0,
+                          title: Container(
+                            padding: EdgeInsets.only(top: 20.h, bottom: 20.h),
+                            child: Row(
+                              children: [
+                                GestureDetector(
+                                  behavior: HitTestBehavior.opaque,
+                                  onTap: () {
+                                      Navigator.pop(context);
+                                  },
+                                  child: Padding(
+                                    padding: EdgeInsets.all(10.h),
+                                    child: SvgPicture.asset(
+                                      ImagePathConstant.leftArrowIcon,
+                                      color: ColorsConstant.textDark,
+                                      height: 20.h,
+                                    ),
                                   ),
                                 ),
-                              ),
-                              SizedBox(width: 10.w),
-                              Text(
-                                StringConstant.artist,
-                                style: TextStyle(
-                                    color: ColorsConstant.textDark,
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 22.sp,
-                                  ),
-                              ),
+                                SizedBox(width: 10.w),
+                                Text(
+                                  StringConstant.artist,
+                                  style: TextStyle(
+                                      color: ColorsConstant.textDark,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 22.sp,
+                                    ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          
+                          centerTitle: false,
+                        ),
+                        SliverList(
+                          delegate: SliverChildListDelegate(
+                            [
+                              Container(
+                                color: Colors.white,
+                                child: FutureBuilder(
+                                  future: artistDetailsScreenFuture(context, widget.artistId), 
+                                  builder: (context,snapshot){
+                                    artistDetails = Provider.of<SingleArtistProvider>(context,listen: false).artistDetails;
+        
+                                    if(snapshot.hasData){
+                                       return Column(
+                                         crossAxisAlignment: CrossAxisAlignment.start,
+                                         children: [
+                                           Container(
+                                             margin: EdgeInsets.only(
+                                                 top: 10.h, right: 14.w, left: 14.w),
+                                             padding: EdgeInsets.all(10.h),
+                                             decoration: BoxDecoration(
+                                               borderRadius: BorderRadius.circular(
+                                                   20.h),
+                                             ),
+                                             child: barberOverview(),
+                                           ),
+                                           SizedBox(height: 20.h),
+                                           const Divider(
+                                             thickness: 2,
+                                             height: 0,
+                                             color: ColorsConstant.graphicFillDark,
+                                           ),
+                                           servicesAndReviewTabBar(),
+                                           selectedTab == 0
+                                               ? const ServiceFilterContainer()
+                                               : ReviewContainer(isForSalon: false,artistDetails: artistDetails,salonDetails: artistDetails.salonDetails),
+                                         ],
+                                       );
+                                                          
+                                    }
+                                    return SizedBox(
+                                            height:  MediaQuery.of(context).size.height,
+                                              child: Center(
+                                              child: CircularProgressIndicator(color: ColorsConstant.appColor,strokeWidth: 4.w),
+                                              ),
+                                      );
+                                  }
+                                ),
+                              )
+                              
                             ],
                           ),
                         ),
-                        
-                        centerTitle: false,
-                      ),
-                      SliverList(
-                        delegate: SliverChildListDelegate(
-                          [
-                            Container(
-                              color: Colors.white,
-                              child: FutureBuilder(
-                                future: artistDetailsScreenFuture(context, widget.artistId), 
-                                builder: (context,snapshot){
-                                  artistDetails = Provider.of<SingleArtistProvider>(context,listen: false).artistDetails;
-
-                                  if(snapshot.hasData){
-                                     return Column(
-                                       crossAxisAlignment: CrossAxisAlignment.start,
-                                       children: [
-                                         Container(
-                                           margin: EdgeInsets.only(
-                                               top: 10.h, right: 14.w, left: 14.w),
-                                           padding: EdgeInsets.all(10.h),
-                                           decoration: BoxDecoration(
-                                             borderRadius: BorderRadius.circular(
-                                                 20.h),
-                                           ),
-                                           child: barberOverview(),
-                                         ),
-                                         SizedBox(height: 20.h),
-                                         const Divider(
-                                           thickness: 2,
-                                           height: 0,
-                                           color: ColorsConstant.graphicFillDark,
-                                         ),
-                                         servicesAndReviewTabBar(),
-                                         selectedTab == 0
-                                             ? const ServiceFilterContainer()
-                                             : ReviewContainer(isForSalon: false,artistDetails: artistDetails,salonDetails: artistDetails.salonDetails),
-                                       ],
-                                     );
-                                                        
-                                  }
-                                  return SizedBox(
-                                          height:  MediaQuery.of(context).size.height,
-                                            child: Center(
-                                            child: CircularProgressIndicator(color: ColorsConstant.appColor,strokeWidth: 4.w),
-                                            ),
-                                    );
-                                }
+                      ],
+                    ),
+                  ],
+                ),
+                
+                bottomNavigationBar: Container(
+                  color: Colors.white,
+                  child: Consumer<BookingServicesSalonProvider>(builder: (context, ref, child) {
+                      double totalPrice = ref.totalPrice;
+                      double discountPrice = ref.totalDiscountPrice;
+                      final refAuth = context.read<AuthenticationProvider>();
+                      bool isGuest = refAuth.authData.isGuest ?? false;
+        
+                      if(ref.selectedServices.isNotEmpty){
+                        return Container(
+                              margin: EdgeInsets.only(
+                                bottom: 20.h,
+                                right: 15.w,
+                                left: 15.w,
+                                top: 10.h
                               ),
-                            )
-                            
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              
-              bottomNavigationBar: Container(
-                color: Colors.white,
-                child: Consumer<BookingServicesSalonProvider>(builder: (context, ref, child) {
-                    double totalPrice = ref.totalPrice;
-                    double discountPrice = ref.totalDiscountPrice;
-                    final refAuth = context.read<AuthenticationProvider>();
-                    bool isGuest = refAuth.authData.isGuest ?? false;
-      
-                    if(ref.selectedServices.isNotEmpty){
-                      return Container(
-                            margin: EdgeInsets.only(
-                              bottom: 20.h,
-                              right: 15.w,
-                              left: 15.w,
-                              top: 10.h
-                            ),
-                            padding: EdgeInsets.symmetric(
-                              vertical: 10.h,
-                              horizontal: 10.w,
-                            ),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(10.h),
-                              border: Border.all(color: ColorsConstant.greyBorderColor,width: 0.5.w),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.2),
-                                  blurRadius: 10,
-                                  offset: const Offset(5, 5)
-                                )
-                              ],
-                              color: Colors.white,
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      StringConstant.total,
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w500,
-                                        fontSize: 18.sp,
-                                        color: ColorsConstant.textDark,
-                                      ),
-                                    ),
-                                    Text('Rs. ${discountPrice.toString()}',
+                              padding: EdgeInsets.symmetric(
+                                vertical: 10.h,
+                                horizontal: 10.w,
+                              ),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(10.h),
+                                border: Border.all(color: ColorsConstant.greyBorderColor,width: 0.5.w),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.2),
+                                    blurRadius: 10,
+                                    offset: const Offset(5, 5)
+                                  )
+                                ],
+                                color: Colors.white,
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        StringConstant.total,
                                         style: TextStyle(
-                                            fontWeight: FontWeight.w600,
+                                          fontWeight: FontWeight.w500,
+                                          fontSize: 18.sp,
+                                          color: ColorsConstant.textDark,
+                                        ),
+                                      ),
+                                      Text('Rs. ${discountPrice.toString()}',
+                                          style: TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 22.sp,
+                                              color: ColorsConstant.textDark,
+                                            )),
+                                    ],
+                                  ),
+                  
+                                  // discount
+                                  (1 != 1) ? const SizedBox() : 
+                                  Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      SizedBox(
+                                        height: 25.h,
+                                      ),
+                                      Text(totalPrice.toString(),
+                                          style: TextStyle(
                                             fontSize: 22.sp,
                                             color: ColorsConstant.textDark,
+                                            fontWeight: FontWeight.w500,
+                                              decoration: TextDecoration.lineThrough
                                           )),
-                                  ],
-                                ),
-                
-                                // discount
-                                (1 != 1) ? const SizedBox() : 
-                                Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    SizedBox(
-                                      height: 25.h,
-                                    ),
-                                    Text(totalPrice.toString(),
-                                        style: TextStyle(
-                                          fontSize: 22.sp,
-                                          color: ColorsConstant.textDark,
-                                          fontWeight: FontWeight.w500,
-                                            decoration: TextDecoration.lineThrough
-                                        )),
-                                  ],
-                                ),
-                                (!isGuest) ?
-                                VariableWidthCta(
-                                  onTap: () async {
-                                     context.read<BookingScreenChangeProvider>().setScreenIndex(1);
-                                     ref.addFinalSingleStaffServices(artistDetails.artistDetails?.data ?? ArtistDataModel(id: "0000"));
-                                     Future.delayed(Durations.medium1,() async {
-                                        await Navigator.of(context).push(MaterialPageRoute(builder: (_)=> const BookingScreen()));
-                                        if(!context.mounted) return;
-                                        
-                                        if(ref.confirmBookingModel.status != "false"){
-                                           ref.resetAll(notify: true);
-                                        }
-                                     });
-                                  },
-                                  isActive: true,
-                                  buttonText: StringConstant.confirmBooking,
-                                ) :
-                                VariableWidthCta(
+                                    ],
+                                  ),
+                                  (!isGuest) ?
+                                  VariableWidthCta(
                                     onTap: () async {
-                                        await AuthenticationConroller.logout(context);
+                                       context.read<BookingScreenChangeProvider>().setScreenIndex(1);
+                                       ref.addFinalSingleStaffServices(artistDetails.artistDetails?.data ?? ArtistDataModel(id: "0000"));
+                                       Future.delayed(Durations.medium1,() async {
+                                          await Navigator.of(context).push(MaterialPageRoute(builder: (_)=> const BookingScreen()));
+                                          if(!context.mounted) return;
+                                          
+                                          if(ref.confirmBookingModel.status != "false"){
+                                             ref.resetAll(notify: true);
+                                          }
+                                       });
                                     },
                                     isActive: true,
-                                    fillColor: Colors.black,
-                                    horizontalPadding: 50.w,
-                                    buttonText: "SIGN IN",
-                                )
-                              ],
-                            ),
-                          );
-                    }
-                    return const SizedBox();
-              })
-            )
-        
-            ),
+                                    buttonText: StringConstant.confirmBooking,
+                                  ) :
+                                  VariableWidthCta(
+                                      onTap: () async {
+                                          await AuthenticationConroller.logout(context);
+                                      },
+                                      isActive: true,
+                                      fillColor: Colors.black,
+                                      horizontalPadding: 50.w,
+                                      buttonText: "SIGN IN",
+                                  )
+                                ],
+                              ),
+                            );
+                      }
+                      return const SizedBox();
+                })
+              )
+          
+              ),
+      ),
     );
   }
 
@@ -500,14 +540,36 @@ class _BarberProfileScreenState extends State<ArtistDetailScreen> {
                 ),
               );
             },
-            onTapIconTwo: () {
+            onTapIconTwo: () async {
                 final String artistShareUrl = "${StringConstant.artistShareLink}/${artistId}";
-                Share.share(artistShareUrl, subject: 'Naai Artist');
+                //Share.share(artistShareUrl, subject: 'Naai Artist');
+                final box = context.findRenderObject() as RenderBox?;
+
+                await Share.share(
+                  artistShareUrl,
+                  subject: "Naai Artist",
+                  sharePositionOrigin: box!.localToGlobal(Offset.zero) & box.size,
+                );
             },
-            onTapIconThree: () {
-              launchUrl(
-                Uri.parse('https://www.instagram.com/naaiindia'),
-              );
+            onTapIconThree: () async {
+              try {
+                    final refAuth = context.read<AuthenticationProvider>();
+
+                    final String userId = await refAuth.getUserId();
+                    final String token = await refAuth.getAccessToken();
+                    final res = await UserServices.addUserFav(userId: userId, accessToken: token,artistId: artistId);
+
+                    if(res.status == "success"){
+                       setState(() {
+                         isSaved = !isSaved;
+                         refAuth.setUserFavroteArtistId(artistId);
+                       });
+                    }
+                } catch (e) {
+                  if(context.mounted){
+                    showErrorSnackBar(context, "Something went wrong");
+                  }
+                }
             },
             onTapIconFour: () {
               launchUrl(
@@ -543,9 +605,9 @@ class _ServiceFilterContainerState extends State<ServiceFilterContainer> {
   Widget build(BuildContext context) {
     final ref = Provider.of<ArtistServicesFilterProvider>(context,listen: true);
     final refBooking = Provider.of<BookingServicesSalonProvider>(context,listen: true);
-
-    List<ServiceDataModel> services = ref.services;
+    List<ServiceDataModel> services = ref.getServices();
     
+
     return Column(
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -582,14 +644,13 @@ class _ServiceFilterContainerState extends State<ServiceFilterContainer> {
           
           SizedBox(height: 10.h),
 
-          (services.isEmpty)
-              ? SizedBox(
-            height: 100.h,
-            child: const Center(
-              child: Text('Nothing here :('),
-            ),
-          )
-              : ListView.builder(
+            (services.isEmpty) ? SizedBox(
+              height: MediaQuery.of(context).size.height,
+              child: const Center(
+                child: Text('Nothing here :('),
+              ),
+            ) : 
+           ListView.builder(
             padding: EdgeInsets.zero,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -633,7 +694,7 @@ class _ServiceFilterContainerState extends State<ServiceFilterContainer> {
                                     ? ImagePathConstant.manIcon
                                     : ImagePathConstant.womanIcon,
                                 height: 30.h,
-                              )
+                        )
                       ],
                     ),
                     (discription.isNotEmpty) ? SizedBox(height: 1.h) : const SizedBox(),
@@ -775,7 +836,8 @@ class _ServiceFilterContainerState extends State<ServiceFilterContainer> {
   
   Widget genderAndSearchFilterWidget() {
     final ref = context.read<ArtistServicesFilterProvider>();
-
+    Timer timer = Timer(Duration.zero, () { });
+    
     return Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -801,7 +863,12 @@ class _ServiceFilterContainerState extends State<ServiceFilterContainer> {
               ),
               textInputAction: TextInputAction.done,
               onChanged: (searchText) {
-                    ref.filterBySearch(searchText);
+                   if(searchText.isNotEmpty){
+                     if(timer.isActive) timer.cancel();
+                     timer = Timer(Durations.long4, () { 
+                        ref.filterBySearch(searchText);
+                     });
+                   }
               },
               decoration: InputDecoration(
                 filled: true,
@@ -835,7 +902,7 @@ class _ServiceFilterContainerState extends State<ServiceFilterContainer> {
   
   Widget serviceCategoryFilterWidget() {
     final ref = context.read<ArtistServicesFilterProvider>();
-    
+   
     return SizedBox(
         height: 42.h,
         child: ListView.builder(
@@ -1180,4 +1247,5 @@ class VariableAddServiceContainer extends StatelessWidget {
           );
   }
 }
+
 

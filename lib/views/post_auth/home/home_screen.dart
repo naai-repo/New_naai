@@ -14,7 +14,6 @@ import 'package:naai/providers/post_auth/top_salons_provider.dart';
 import 'package:naai/providers/pre_auth/auth_provider.dart';
 import 'package:naai/services/artists/artist_services.dart';
 import 'package:naai/services/salons/salons_service.dart';
-import 'package:naai/services/uni_deeplink_services/uni_deep_link_services.dart';
 import 'package:naai/utils/cards/custom_cards.dart';
 import 'package:naai/utils/common_widgets/common_widgets.dart';
 import 'package:naai/utils/common_widgets/stacked_image.dart';
@@ -35,19 +34,25 @@ Future<int> homeFuture(BuildContext context,String type) async {
     final coords = [ref.longitude,ref.latitude];
 
     final refSalon = await context.read<FilterSalonsProvider>();
-    final res = await SalonsServices.getTopSalons(coords: coords, page: refSalon.getPage, limit: refSalon.getLimit, type: type);
-    if(context.mounted) context.read<TopSalonsProvider>().setTopSalons(res.data,clear: true);
-    
-
     final refArtist = await context.read<FilterArtitsProvider>();
-    final ress = await ArtistsServices.getTopArtists(coords: coords, page: refArtist.getPage, limit: refArtist.getLimit, type: type);
-    if(context.mounted) context.read<TopArtistsProvider>().setTopArtists(ress,clear: true);
+
+    await Future.delayed(Durations.medium1);
+    print("Exec Start ::: ${DateTime.now().second} - ${DateTime.now().millisecond}");
+
+     (() async {
+          final res = await SalonsServices.getTopSalons(coords: coords, page: refSalon.getPage, limit: refSalon.getLimit, type: "");
+          if(context.mounted) context.read<TopSalonsProvider>().setTopSalons(res.data,clear: true);
+     })();
+     (() async {
+      final ress = await ArtistsServices.getTopArtists(coords: coords, page: refArtist.getPage, limit: refArtist.getLimit, type: "");
+      if(context.mounted) context.read<TopArtistsProvider>().setTopArtists(ress,clear: true);
+    })();
+    print("Exec End ::: ${DateTime.now().second} - ${DateTime.now().millisecond}");
  
     print("Builded $type");
 
     return 200;
 }
-
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -64,13 +69,6 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    SystemChrome.setSystemUIOverlayStyle(
-      const SystemUiOverlayStyle(
-          statusBarIconBrightness: Brightness.light,
-          systemNavigationBarColor: Colors.white
-      ),
-    );
-
     type = context.read<AuthenticationProvider>().userData.gender?.toLowerCase() ?? "male";
     
 
@@ -119,7 +117,7 @@ class _HomeScreenState extends State<HomeScreen> {
               CommonWidget.appScreenCommonBackground(),
               CustomScrollView(
                 controller: scrollController,
-                physics: const BouncingScrollPhysics(),
+               // physics: const BouncingScrollPhysics(),
                 slivers: [
                   CommonWidget.transparentFlexibleSpace(),
                   SliverList(
@@ -528,7 +526,7 @@ class SalonNearMe extends StatelessWidget {
                   } 
 
                   String salonImage = (salons[index].images?.isNotEmpty ?? false) ? salons[index].images!.first.url! : "";
-    
+  
                   if(salonImage.isEmpty) salonImage = "https://images.pexels.com/photos/1813272/pexels-photo-1813272.jpeg?auto=compress&cs=tinysrgb&w=600";
                   
 
@@ -556,7 +554,7 @@ class SalonNearMe extends StatelessWidget {
                                   mainAxisAlignment:
                                   MainAxisAlignment.spaceBetween,
                                   crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: <Widget>[
+                                  children: [
                                     Column(
                                       crossAxisAlignment:
                                       CrossAxisAlignment.start,
@@ -611,12 +609,16 @@ class SalonNearMe extends StatelessWidget {
                                 Container(
                                   height: 170.h,
                                   width: 120.w,
+                                  //color: Colors.white,
+                                  //padding: EdgeInsets.all(5.w),
                                   child: ClipRRect(
                                     borderRadius: BorderRadius.horizontal(
                                       right: Radius.circular(10.h),
                                     ),
                                   child: salons[index].images!.isNotEmpty
                                     ? Image.network(
+                                            height: double.maxFinite,
+                                            width: double.maxFinite,
                                             salons[index].images!.first.url!,
                                             fit: BoxFit.cover,
                                       )
@@ -636,8 +638,7 @@ class SalonNearMe extends StatelessWidget {
                                     borderRadius: BorderRadius.circular(5.h),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: const Color(0xFF000000)
-                                            .withOpacity(0.14),
+                                        color: const Color(0xFF000000).withOpacity(0.14),
                                         blurRadius: 10,
                                         spreadRadius: 2,
                                       ),
@@ -773,7 +774,7 @@ class Stylist extends StatelessWidget {
                          child: Stack(
                            children: [
                              SizedBox(
-                               child: (imgUrl.isNotEmpty) ? Image.network(imgUrl,fit: BoxFit.cover,height: double.maxFinite,) : const SizedBox(),
+                               child: (imgUrl.isNotEmpty) ? Image.network(imgUrl,fit: BoxFit.cover,height: double.maxFinite,width: double.maxFinite) : const SizedBox(),
                              ),
                              Material(
                               color: Colors.transparent,

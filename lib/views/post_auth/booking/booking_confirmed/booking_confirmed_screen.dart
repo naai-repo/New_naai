@@ -27,14 +27,14 @@ class _BookingConfirmedScreenState extends State<BookingConfirmedScreen> {
     String timeSlot = DateFormat.jm().format(DateTime(1999,9,7,int.parse(serviceStartTime.substring(0,2)),int.parse(serviceStartTime.substring(3))));
     
 
-     return SafeArea(
+    return SafeArea(
        child: PopScope(
          canPop: false,
          onPopInvoked: (vc){
              context.read<BottomChangeScreenIndexProvider>().setScreenIndex(0);
-            Future.delayed(Durations.medium1,(){
-              Navigator.pushNamedAndRemoveUntil(context, NamedRoutes.bottomNavigationRoute, (route) => false);
-            });
+              Future.delayed(Durations.medium1,(){
+                Navigator.pushNamedAndRemoveUntil(context, NamedRoutes.bottomNavigationRoute, (route) => false);
+              });
          },
          child: Scaffold(
               backgroundColor: Colors.white,

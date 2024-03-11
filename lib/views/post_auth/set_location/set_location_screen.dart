@@ -230,7 +230,7 @@ class _SetHomeLocationScreenState extends State<SetLocationScreen> {
 
                await _mapBoxController.removeSymbol(_symbol);
 
-               _mapBoxController.animateCamera(
+              await _mapBoxController.animateCamera(
                 CameraUpdate.newCameraPosition(
                   CameraPosition(target: coordinates, zoom: 16),
                 ),

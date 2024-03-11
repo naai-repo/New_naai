@@ -15,16 +15,38 @@ class BookingHistoryContainer extends StatelessWidget {
   Widget build(BuildContext context) {
     final refAuth = Provider.of<AuthenticationProvider>(context,listen: false);
     bool isGuest = refAuth.authData.isGuest ?? false;
-
+    print("Booking History Guest Status : ... $isGuest");
+    
     return FutureBuilder(
-      future: BookingAppointmentsController.getBookings(context), 
+      future: BookingAppointmentsController.getBookingsForHistory(context,1,2), 
       builder: (context,snapshot){
          if(isGuest) return const SizedBox();
 
          if(snapshot.hasData){
-            final commingsBookings = snapshot.data?.upcommingBookings ?? [];
+            final currBookings = snapshot.data?.currentBookings ?? [];
+            final upBookings = snapshot.data?.upcommingBookings ?? [];
+            final commingsBookings = [...currBookings,...upBookings];
+
+            commingsBookings.sort((a, b) {
+              final aa = DateTime.parse(a.appointmentData!.bookingDate!);
+              final bb = DateTime.parse(b.appointmentData!.bookingDate!);
+              
+              return bb.day - aa.day;
+            });
+
             final prevsBookings = snapshot.data?.prevBooking ?? [];
+            currBookings.sort((a, b) {
+              final aa = DateTime.parse(a.appointmentData!.bookingDate!);
+              final bb = DateTime.parse(b.appointmentData!.bookingDate!);
+              
+              return bb.day - aa.day;
+            });
+       
+
             if(commingsBookings.isEmpty && prevsBookings.isEmpty) return const SizedBox();
+            if(commingsBookings.isNotEmpty) prevsBookings.clear();
+
+        
 
             return SizedBox(
                 child: Column(

@@ -6,6 +6,8 @@ import 'package:mapbox_gl/mapbox_gl.dart';
 import 'package:naai/controllers/location/location_controller.dart';
 import 'package:naai/providers/bottom_change_index_provider.dart';
 import 'package:naai/providers/post_auth/location_provider.dart';
+import 'package:naai/providers/pre_auth/auth_provider.dart';
+import 'package:naai/services/users/user_services.dart';
 import 'package:naai/utils/constants/colors_constant.dart';
 import 'package:naai/utils/constants/image_path_constant.dart';
 import 'package:naai/utils/constants/string_constant.dart';
@@ -226,6 +228,8 @@ class _LocationButtonState extends State<LocationButtonsContainer>{
   @override
   Widget build(BuildContext context) {
     final ref = Provider.of<LocationProvider>(context,listen: false);
+    final refAuth = Provider.of<AuthenticationProvider>(context,listen: false);
+
     return Column(
               children:[
                 Row(
@@ -248,13 +252,17 @@ class _LocationButtonState extends State<LocationButtonsContainer>{
                                  isLoading = true;
                               });
                               
-                              if(!context.mounted) return;
-                               final res = await LocationController.handelLocationPermissionUI(context);
+                              final res = await LocationController.handelLocationPermissionUI(context);
 
                               if(res){
                                 final latng = await LocationController.getLocationLatLng();
                                 await ref.setLatLng(latng);
-                               // if(context.mounted) Navigator.pop(context);
+                                final bool isGuest = await refAuth.getIsGuest();
+
+                                if(!isGuest){
+                                    String userId = await refAuth.getUserId();
+                                    await UserServices.updateUserLocation(userId: userId, coords: [latng.latitude,latng.longitude]);
+                                }
                                 return;
                               }
 

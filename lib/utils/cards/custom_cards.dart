@@ -12,6 +12,7 @@ class CurvedBorderedCard extends StatelessWidget {
   final Color? fillColor;
   final Color? borderColor;
   final double? borderRadius;
+  final EdgeInsetsGeometry? margin;
 
   const CurvedBorderedCard({
     super.key,
@@ -23,6 +24,7 @@ class CurvedBorderedCard extends StatelessWidget {
     this.fillColor,
     this.borderColor,
     this.borderRadius,
+    this.margin
   });
 
   @override
@@ -30,6 +32,7 @@ class CurvedBorderedCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap ?? () {},
       child: Container(
+        margin: margin,
         padding: removeBottomPadding
             ? EdgeInsets.only(top: removeBottomPadding ? 0 : 15.h)
             : EdgeInsets.symmetric(vertical: 15.h),

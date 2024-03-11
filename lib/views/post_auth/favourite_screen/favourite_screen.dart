@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:naai/models/api_models/booking_single_artist_list_model.dart';
 import 'package:naai/models/api_models/salon_item_model.dart';
+import 'package:naai/models/api_models/single_artist_model.dart';
+import 'package:naai/models/api_models/single_salon_model.dart';
 import 'package:naai/models/api_models/top_artist_model.dart';
 import 'package:naai/providers/pre_auth/auth_provider.dart';
 import 'package:naai/services/artists/artist_services.dart';
@@ -11,7 +12,6 @@ import 'package:naai/utils/constants/colors_constant.dart';
 import 'package:naai/utils/constants/string_constant.dart';
 import 'package:naai/views/post_auth/explore/artist_item_card.dart';
 import 'package:naai/views/post_auth/explore/salon_item_card.dart';
-import 'package:naai/views/post_auth/utility/artist_salon_extended.dart';
 import 'package:provider/provider.dart';
 
 class FavouriteScreen extends StatefulWidget {
@@ -26,8 +26,7 @@ class _FavouriteScreenState extends State<FavouriteScreen> {
 
   @override
   Widget build(BuildContext context){
-    final refAuth = Provider.of<AuthenticationProvider>(context,listen: false);
-
+  
     return SafeArea(
       child: DefaultTabController(
         length: 2,
@@ -78,8 +77,7 @@ class _FavouriteScreenState extends State<FavouriteScreen> {
                                       ]
                                 ),
                                 SizedBox(height: 20.h),
-                                (screenIndex == 0) ?
-                                 FavSalonContainer() : FavArtistContainer()
+                                (screenIndex == 0) ? FavSalonContainer() : FavArtistContainer()
                               ],
                             ),
                           ),
@@ -135,11 +133,12 @@ Future<List<SalonResponseData>> getFavSalons(BuildContext context) async {
     final refUser = context.read<AuthenticationProvider>();
     final salonsIds = refUser.userData.favourite?.salons ?? [];
     List<SalonResponseData> ans = [];
-
-    for(var e in salonsIds){
-        final res = await SalonsServices.getSalonByID(salonId: e);
-        ans.add(res.data?.data ?? SalonResponseData());
-    }
+    List<Future<SingleSalonResponseModel>> salonRequests = [];
+    
+    salonsIds.asMap().forEach((key, res) => salonRequests.add(SalonsServices.getSalonByID(salonId: res ?? "")));
+    final salonResponses = await Future.wait(salonRequests);
+ 
+    salonResponses.asMap().forEach((key, res) => ans.add(res.data?.data ?? SalonResponseData()));
     
     return ans;
 }
@@ -156,16 +155,14 @@ class FavSalonContainer extends StatelessWidget {
         if(snapshot.hasData && ConnectionState.done == snapshot.connectionState){
           final salons = snapshot.data ?? [];
 
-          return GridView.count(
+          return ListView.builder(
               padding: EdgeInsets.zero,
+              physics: const NeverScrollableScrollPhysics(),
               shrinkWrap: true,
-              crossAxisCount: 1,
-              physics: const BouncingScrollPhysics(),
-              mainAxisSpacing: 10.w,
-              childAspectRatio: 8.0 / 10.0,
-              children: List.generate(salons.length, (index) {
-                  return SalonItemCard(salon: salons[index]);
-              }),
+              itemBuilder: (context, index){
+                return SalonItemCard(salon: salons[index]);
+              },
+              itemCount: salons.length
             );
         }
 
@@ -185,14 +182,21 @@ Future<List<TopArtistResponseModel>> getFavArtists(BuildContext context) async {
     final artistsIds = refUser.userData.favourite?.artists ?? [];
     List<TopArtistResponseModel> ans = [];
 
-    for(var e in artistsIds){
-        final res = await ArtistsServices.getArtistByID(artistId: e);
+    List<Future<SingleArtistModel>> artistRequests = [];
+    List<Future<SingleSalonResponseModel>> salonRequests = [];
 
-        ans.add(TopArtistResponseModel(
-          artistDetails: res.artistDetails!.data,
-          salonDetails: res.salonDetails
-        ));
-    }
+    artistsIds.asMap().forEach((key, e) => artistRequests.add(ArtistsServices.getSimpleArtistByID(artistId: e)));
+    final artistResponses = await Future.wait(artistRequests);
+
+    artistResponses.asMap().forEach((key, res) => salonRequests.add(SalonsServices.getSalonByID(salonId: res.data?.salonId ?? "")));
+    final salonResponses = await Future.wait(salonRequests);
+    
+    salonResponses.asMap().forEach((i, res) {
+      ans.add(TopArtistResponseModel(
+          artistDetails:  artistResponses[i].data,
+          salonDetails: res
+      ));
+    });
 
     return ans;
 }

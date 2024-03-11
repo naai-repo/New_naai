@@ -36,11 +36,7 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
   @override
   void initState() {
     super.initState();
-    SystemChrome.setSystemUIOverlayStyle(
-      const SystemUiOverlayStyle(
-          statusBarIconBrightness: Brightness.light,
-          systemNavigationBarColor: Colors.white),
-    );
+    UtilityFunctions.changeSystemBarReset();
     mobileNumber = context.read<AuthenticationProvider>().mobileNumber.toString();
   }
 

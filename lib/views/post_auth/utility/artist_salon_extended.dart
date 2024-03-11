@@ -53,9 +53,9 @@ class _ArtistExtendedLoadingState extends State<ArtistExtendedLoading> {
                     final refLocation = await context.read<LocationProvider>().getLatLng();
                     final coords = [refLocation.longitude,refLocation.latitude];
                     final refArtits = await context.read<FilterArtitsProvider>(); 
-                    final refAuth = await context.read<AuthenticationProvider>();
+                    //final refAuth = await context.read<AuthenticationProvider>();
                     
-                    String gender = refAuth.userData.gender ?? "male"; 
+                    String gender = ""; 
                     List<TopArtistResponseModel> res = [];
 
                     if(refArtits.getselectedCategoryIndex != -1){
@@ -122,9 +122,9 @@ class _SalonExtendedLoadingState extends State<SalonExtendedLoading> {
                     final refLocation = await context.read<LocationProvider>().getLatLng();
                     final coords = [refLocation.longitude,refLocation.latitude];
                     final refArtits = await context.read<FilterSalonsProvider>(); 
-                    final refAuth = await context.read<AuthenticationProvider>();
+                    //final refAuth = await context.read<AuthenticationProvider>();
                     
-                    String gender = refAuth.userData.gender ?? "male"; 
+                    String gender = (refArtits.selectedSalonTypeIndex == -1 || refArtits.selectedSalonTypeIndex == 2) ? "" : refArtits.filterSalonType[refArtits.selectedSalonTypeIndex]; 
                     List<SalonResponseData> res = [];
 
                     if(refArtits.getselectedCategoryIndex != -1){

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:naai/utils/constants/colors_constant.dart';
 import 'package:naai/utils/constants/string_constant.dart';
@@ -20,6 +21,26 @@ class UtilityFunctions {
       'access_token': "pk.eyJ1IjoibXlwZXJybyIsImEiOiJjbDRmZGVwNmwwMjlmM3BvZm02czd5ZWhlIn0.vjixPEoZnR1G6QmKxMva2w",
     };
   }
+
+   static changeSystemBarToRed(){
+      SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+          statusBarBrightness: Brightness.light,
+          systemNavigationBarColor: ColorsConstant.appColor,
+          statusBarColor: ColorsConstant.appColor
+      )
+     );
+   }
+
+   static changeSystemBarReset(){
+      SystemChrome.setSystemUIOverlayStyle(
+        const SystemUiOverlayStyle(
+            statusBarBrightness: Brightness.light,
+            systemNavigationBarColor: Colors.white,
+            statusBarColor: Colors.black
+        )
+     );
+   }
 }
 
 

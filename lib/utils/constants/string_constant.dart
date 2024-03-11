@@ -91,7 +91,7 @@ class StringConstant {
   static const String multipleStaffText = 'MULTIPLE STAFF';
   static const String useThisToSaveTime = 'USE THIS TO SAVE TIME';
   static const String next = 'NEXT';
-  static const String salonLink = "https://www.naai.in/salon";
+  static const String salonLink = "https://m.naai.in/salon";
 
   // Maps screen strings
   static const String map = 'Map';
@@ -113,7 +113,7 @@ class StringConstant {
   static const String worksAt = 'WORKS AT';
   static const String rating = "RATING";
   static const String favourties = "Favourites";
-  static const String artistShareLink = "https://www.naai.in/artist";
+  static const String artistShareLink = "https://m.naai.in/artist";
 
   // Exception related strings
   static const String locationApiTookTooLong =

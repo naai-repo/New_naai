@@ -56,9 +56,10 @@ class MyApp extends StatelessWidget {
         splitScreenMode: true,
         minTextAdapt: true,
         ensureScreenSize: true,
-        builder: (context, child) => MaterialApp(
+        builder: (context, child) {
+          RoutingFunctions.context = context;
+          return MaterialApp(
                 debugShowCheckedModeBanner: false,
-                key: UniServices.navigatorKey,
                 title: 'Naai',
                 theme: ThemeData(
                   fontFamily: 'Poppins',
@@ -69,7 +70,8 @@ class MyApp extends StatelessWidget {
                 
                onGenerateRoute: RoutingFunctions.generateRoutes,
                initialRoute: NamedRoutes.splashRoute,
-              ),
+          );
+        },
         child: const Center(child: Text("Hello world")),
       ),
     );

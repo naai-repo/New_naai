@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:naai/models/api_models/artist_item_model.dart';
 import 'package:naai/providers/post_auth/booking_services_salon_provider.dart';
 import 'package:naai/utils/constants/colors_constant.dart';
 import 'package:naai/utils/constants/image_path_constant.dart';
@@ -15,7 +16,8 @@ class MultipleStaffSelect extends StatefulWidget {
 
 class _MultipleStaffSelectState extends State<MultipleStaffSelect> {
   
-   @override
+
+  @override
   Widget build(BuildContext context){
     final ref = Provider.of<BookingServicesSalonProvider>(context,listen: true);
     bool isSelected = (ref.selectedStaffIndex == 1);
@@ -182,8 +184,11 @@ class _ChooseAStaffState extends State<ChooseAStaff> {
   @override
   Widget build(BuildContext context){
     final ref = Provider.of<BookingServicesSalonProvider>(context,listen: false);
-    print("aritst : ${ref.selectedServices[widget.index].artists!.length}");
+    print("Multi Aritst Length : ${ref.selectedServices[widget.index].artists!.length}");
     final artists = ref.selectedServices[widget.index].artists ?? [];
+    final selectedServiceId = ref.selectedServices[widget.index].service?.id ?? "";
+    final double serviceBasePrice = ref.selectedServices[widget.index].service?.basePrice ?? 9999;
+    //final double serviceCutPrice = ref.selectedServices[widget.index].service?.cutPrice ?? 9999;
     
     return SizedBox(
       child: Material(
@@ -239,12 +244,24 @@ class _ChooseAStaffState extends State<ChooseAStaff> {
                              String artitstName = artists[idx].name ?? "Artist Name";
                              double rating = artists[idx].rating ?? 0;
                              bool isSelected = ref.isMultiSatffArtistSelected(widget.index,artists[idx].id ?? "");
+                             final service = artists[idx].services?.singleWhere((element) => element.serviceId == selectedServiceId) ?? Service(variables: []);
+
+                             double artistBasePrice = double.tryParse(service.price.toString()) ?? 9999;
+                             //double artistCutPrice = double.tryParse(service.cutPrice.toString()) ?? 9999;
+                             print(artists[idx]);
+                             
+                             print("Artist base p :: ${artistBasePrice}");
+                             print("Artist cut p :: ${service.cutPrice}");
+
+                             double artistExtaBasePrice = artistBasePrice - serviceBasePrice;
+                             bool extraPriceWillShow = (serviceBasePrice != artistBasePrice);
 
                              return InkWell(
                                onTap: () async {
                                        if(!isSelected){
                                             setState(() {
                                               selectedArtistName = artitstName;
+                                              isCollapse = true;
                                               ref.addFinalMultiStaffServices(widget.index, artists[idx]);
                                             });
                                         }
@@ -278,6 +295,7 @@ class _ChooseAStaffState extends State<ChooseAStaff> {
                                                   if(!isSelected){
                                                       setState(() {
                                                         selectedArtistName = artitstName;
+                                                        isCollapse = true;
                                                         ref.addFinalMultiStaffServices(widget.index, artists[idx]);
                                                       });
                                                   }
@@ -285,7 +303,16 @@ class _ChooseAStaffState extends State<ChooseAStaff> {
                                              )
                                            ),
                                            WidgetSpan(child: SizedBox(width: 0.w)),
-                                           TextSpan(text: artitstName)
+                                           TextSpan(text: artitstName),
+                                           if(extraPriceWillShow) WidgetSpan(child: SizedBox(width: 5.w)),
+                                           if(extraPriceWillShow) TextSpan(
+                                            text: "+ Rs. ${artistExtaBasePrice}",
+                                            style: TextStyle(
+                                              fontFamily: "Poppins",
+                                              fontWeight: FontWeight.w500,
+                                              color: ColorsConstant.appColor
+                                            )
+                                           )
                                          ]
                                      )),
                                              

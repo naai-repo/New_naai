@@ -24,7 +24,7 @@ class ArtistCard extends StatelessWidget {
       String artistName = artist.artistDetails?.name ?? "";
       String salonName = artist.salonDetails?.data?.data?.name ?? "";
       String imgUrl = artist.artistDetails?.imageUrl ?? "";
-      double distance = artist.artistDetails?.distance ?? 0;
+      double distance = artist.artistDetails?.distance ?? 1e9;
       double rating = artist.artistDetails?.rating ?? 5;
 
       
@@ -89,9 +89,10 @@ class ArtistCard extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: <Widget>[
+                                if(distance != 1e9)
                                 Text.rich(
                                   TextSpan(
-                                    children: <InlineSpan>[
+                                    children: [
                                       WidgetSpan(
                                         alignment: PlaceholderAlignment.baseline,
                                         baseline: TextBaseline.ideographic,
@@ -115,6 +116,7 @@ class ArtistCard extends StatelessWidget {
                                     ],
                                   ),
                                 ),
+                                
                                 Text.rich(
                                   TextSpan(
                                     children: <InlineSpan>[
@@ -191,7 +193,7 @@ class _ArtistSaveIconState extends State<ArtistSaveIcon> {
       child: InkWell(
           onTap: () async {
                 try {
-                    Loading.showLoding(context);
+                   // Loading.showLoding(context);
 
                     final String userId = await refAuth.getUserId();
                     final String token = await refAuth.getAccessToken();
@@ -202,7 +204,6 @@ class _ArtistSaveIconState extends State<ArtistSaveIcon> {
                          isSaved = !isSaved;
                          refAuth.setUserFavroteArtistId(artistId);
                        });
-                       
                     }
                 } catch (e) {
                   if(context.mounted){
@@ -210,7 +211,7 @@ class _ArtistSaveIconState extends State<ArtistSaveIcon> {
                   }
                 }finally {
                     if(context.mounted){
-                      Loading.closeLoading(context);
+                     // Loading.closeLoading(context);
                     }
                 }
           },

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
+import 'package:naai/models/api_models/location_item_model.dart';
 import 'package:naai/models/utility/booking_info_model.dart';
 import 'package:naai/utils/buttons/buttons.dart';
 import 'package:naai/utils/cards/custom_cards.dart';
@@ -12,6 +14,7 @@ import 'package:naai/views/post_auth/appointment_details/appointment_details_scr
 import 'package:naai/views/post_auth/home/home_screen.dart';
 import 'package:naai/views/post_auth/utility/booked_salon_artist_name_component.dart';
 import 'package:naai/views/post_auth/utility/text_with_prefix_icon_component.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class UpcommingBookingsCard extends StatelessWidget {
   final BookingInfoItemModel bookingData;
@@ -26,14 +29,14 @@ class UpcommingBookingsCard extends StatelessWidget {
     String serviceStartTime = bookingData.appointmentData?.timeSlot?.start ?? "00:00";
     String serviceTime = DateFormat.jm().format(DateTime(1999,9,7,int.parse(serviceStartTime.substring(0,2)),int.parse(serviceStartTime.substring(3))));
     String weekDay = DateFormat('EEEE').format(date);
-   
-    print(bookingData.appointmentData?.id ?? "");
-
+    List<double> coords = bookingData.salonDetails?.data?.data?.location?.coordinates ?? [0,0];
+    
     return GestureDetector(
         onTap: () async {
              Navigator.push(context, MaterialPageRoute(builder: (_) => AppointMentDetailsScreen(bookingData: bookingData,isUpcomming: true,)));
         },
         child: Container(
+          margin: EdgeInsets.only(bottom: 10.h),
           padding: EdgeInsets.all(15.w),
           decoration:  BoxDecoration(
             image: const DecorationImage(
@@ -105,27 +108,49 @@ class UpcommingBookingsCard extends StatelessWidget {
                       ),
                       SizedBox(height: 10.h),
                       Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          TimeDateCard(
-                            fillColor: ColorsConstant.textDark,
-                            child: Text(serviceDate,
-                              style: StyleConstant.bookingDateTimeTextStyle,
+                          SizedBox(
+                            child: Row(
+                              children: [
+                                TimeDateCard(
+                                  fillColor: ColorsConstant.textDark,
+                                  child: Text(serviceDate,
+                                    style: StyleConstant.bookingDateTimeTextStyle,
+                                  ),
+                                ),
+                                SizedBox(width: 5.w),
+                                TimeDateCard(
+                                  fillColor: ColorsConstant.textDark,
+                                  child: Text(weekDay,
+                                    style: StyleConstant.bookingDateTimeTextStyle,
+                                  ),
+                                ),
+                                SizedBox(width: 5.w),
+                                TimeDateCard(
+                                  fillColor: ColorsConstant.textDark,
+                                  child: Text(serviceTime,
+                                    style: StyleConstant.bookingDateTimeTextStyle,
+                                  ),
+                                ),
+
+                              ],
                             ),
                           ),
-                          SizedBox(width: 5.w),
-                          TimeDateCard(
-                            fillColor: ColorsConstant.textDark,
-                            child: Text(weekDay,
-                              style: StyleConstant.bookingDateTimeTextStyle,
+                          GestureDetector(
+                            onTap: () async {
+                              navigateTo(coords[1],coords[0]);
+                            },
+                            child: Container(
+                                padding: EdgeInsets.all(15.h),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  border: Border.all(color: ColorsConstant.appColor,width: 1.w),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Image.asset(ImagePathConstant.currentLocationPointer,height: 25.sp),
                             ),
-                          ),
-                          SizedBox(width: 5.w),
-                          TimeDateCard(
-                            fillColor: ColorsConstant.textDark,
-                            child: Text(serviceTime,
-                              style: StyleConstant.bookingDateTimeTextStyle,
-                            ),
-                          ),
+                          )
                         ],
                       ),
                     ],
@@ -138,6 +163,16 @@ class UpcommingBookingsCard extends StatelessWidget {
       );
     
   }
+
+  void navigateTo(double lat, double lng) async {
+    final googleUrl = Uri.parse('https://www.google.com/maps/search/?api=1&query=$lat,$lng');
+    if (await canLaunchUrl(googleUrl)) {
+      await launchUrl(googleUrl);
+    } else {
+      throw 'Could not open the map.';
+    }
+  }
+
 }
 
 class PrevBookingCard extends StatelessWidget {
@@ -157,8 +192,9 @@ class PrevBookingCard extends StatelessWidget {
     return CurvedBorderedCard(
         fillColor: const Color(0xFFFCF3F3),
         borderColor: const Color(0xFFF3D3DB),
+        margin: EdgeInsets.only(bottom: 10.h),
         borderRadius: 10.r,
-        child: Padding(
+        child: Container(
           padding: EdgeInsets.all(20.h),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

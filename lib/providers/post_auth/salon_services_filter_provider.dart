@@ -20,6 +20,9 @@ class SalonsServiceFilterProvider with ChangeNotifier {
 
    String _genderType = "none";
    String get genderType => _genderType;
+   
+   String _searchValue = "";
+   String get searchValue => _searchValue;
 
    void setSalonDetails(SingleSalonResponseModel value){
        _salonDetials = value;
@@ -32,68 +35,60 @@ class SalonsServiceFilterProvider with ChangeNotifier {
        notifyListeners();
    }
 
-   void filterByGender(String type,{bool usePre = false}){
+     List<ServiceDataModel> getServices(){
+       final orgServices = _salonDetials.data?.services ?? [];
+       if(_currentFilterActive <= 0 && _searchValue.isEmpty) return orgServices;
+       
+       // Gender Filter
+      _services = orgServices;
+      if(_genderType != "none"){
+         _services = _services.where((element) => element.targetGender == _genderType).toList();
+      }
+      print("Servce ${_services.length}");
+
+      //Category Filter
+      if(_selectedCategoryIndex.isNotEmpty){
+         _services = _services.where((element) {
+              if(_selectedCategoryIndex.contains(categories.indexOf(element.category?.toLowerCase() ?? ""))){
+                return true;
+              }
+              return false;
+          }).toList();
+      }
+
+      // Search Filter
+      if(_searchValue.isNotEmpty){
+         print(_searchValue);
+         _services = _services.where((element) => (element.serviceTitle?.toLowerCase().contains(_searchValue.toLowerCase()) ?? true)).toList();
+      }
+      return _services;
+
+   }
+   
+   void filterByGender(String type){
       if(_genderType == type) return;
-
-      
-      final orgServices = (_currentFilterActive > 0 && _genderType == "none") ? _services : _salonDetials.data?.services ?? [];
-      _services = [];
-      for(var e in orgServices){
-            if(e.targetGender == type) _services.add(e);
-      }
-
-      if(!usePre && _genderType == "none") _currentFilterActive++;
+      if(_genderType == "none") _currentFilterActive++;
       _genderType = type;
-      globelFilter();
-   }
-
-   void filterByCategory(int i,{bool usePre = false}){
-      if(_selectedCategoryIndex.contains(i)) return;
-
-      final orgServices = (_currentFilterActive > 0) ? _services : _salonDetials.data?.services ?? [];
-      _services = [];
-      _selectedCategoryIndex.add(i);
-
-      for(var e in orgServices){
-            if(e.category == _categories[i]) _services.add(e);
-      }
-      if(!usePre) _currentFilterActive++;
-      globelFilter();
-   }
-
-   void filterBySearch(String value,{bool usePre = false}){
-      final orgServices = (_currentFilterActive > 0) ? _services : _salonDetials.data?.services ?? [];
-      _services = [];
-      for(var e in orgServices){
-            if(e.serviceTitle?.contains(value) ?? false) _services.add(e);
-      }
-      if(!usePre) _currentFilterActive++;
-      globelFilter();
       notifyListeners();
    }
 
-   void globelFilter(){
-      if(_selectedCategoryIndex.isNotEmpty){
-          for(var i in _selectedCategoryIndex){
-            final orgServices = (_currentFilterActive > 0) ? _services : _salonDetials.data?.services ?? [];
-            _services = [];
+   void filterByCategory(int i){
+      if(_selectedCategoryIndex.contains(i)) return;
+      _selectedCategoryIndex.add(i);
+      _currentFilterActive++;
+      notifyListeners();
+   }
 
-            for(var e in orgServices){
-                  if(e.category == _categories[i]) _services.add(e);
-            }
-          }
-      }
-
-      if(_genderType != "none"){
-          filterByGender(_genderType,usePre: true);
-      }
-
+   void filterBySearch(String value){
+      if(value.isEmpty) return;
+       _searchValue = value;
       notifyListeners();
    }
 
    void resetAllFilter(){
-       _currentFilterActive = 0;
+      _currentFilterActive = 0;
       _selectedCategoryIndex.clear();
+      _searchValue = "";
       _genderType = "none";
       _services = _salonDetials.data?.services ?? [];
       notifyListeners();
@@ -103,7 +98,6 @@ class SalonsServiceFilterProvider with ChangeNotifier {
       _selectedCategoryIndex.clear();
       _services = _salonDetials.data?.services ?? [];
       _currentFilterActive--;
-      globelFilter();
       notifyListeners();
    }
 
@@ -111,7 +105,6 @@ class SalonsServiceFilterProvider with ChangeNotifier {
       _selectedCategoryIndex.remove(idx);
       _services = _salonDetials.data?.services ?? [];
       _currentFilterActive--;
-      globelFilter();
       notifyListeners();
    }
 
@@ -119,7 +112,6 @@ class SalonsServiceFilterProvider with ChangeNotifier {
       _genderType = "none";
       _services = _salonDetials.data?.services ?? [];
       _currentFilterActive--;
-      globelFilter();
       notifyListeners();
    }
    
