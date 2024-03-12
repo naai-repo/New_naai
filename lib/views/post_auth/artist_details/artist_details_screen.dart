@@ -66,12 +66,7 @@ class _BarberProfileScreenState extends State<ArtistDetailScreen> {
   @override
   void initState() {
     super.initState();
-    SystemChrome.setSystemUIOverlayStyle(
-      const SystemUiOverlayStyle(
-          statusBarIconBrightness: Brightness.light,
-          systemNavigationBarColor: Colors.white
-      ),
-    );
+    UtilityFunctions.changeSystemBarReset();
     context.read<BookingServicesSalonProvider>().resetAll(notify: false);
   }
 
@@ -302,6 +297,8 @@ class _BarberProfileScreenState extends State<ArtistDetailScreen> {
                                           
                                           if(ref.confirmBookingModel.status != "false"){
                                              ref.resetAll(notify: true);
+                                          }else{
+                                            ref.resetAllOnlyForScreensSwitch(notify: true);
                                           }
                                        });
                                     },

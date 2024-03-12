@@ -328,9 +328,11 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
                                       Future.delayed(Durations.medium1,()async {
                                           await Navigator.of(context).push(MaterialPageRoute(builder: (_)=> const BookingScreen()));
                                           if(!context.mounted) return;
-        
+                                          
                                           if(ref.confirmBookingModel.status != "false"){
                                              ref.resetAll(notify: true);
+                                          }else{
+                                            ref.resetAllOnlyForScreensSwitch(notify: true);
                                           }
                                        });
                                   },

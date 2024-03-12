@@ -142,7 +142,7 @@ class _UserDetailsEnterScreenState extends State<UserDetailsEnterScreen> {
                         String userId = await ref.getUserId();
                         await UserServices.updateUserByID(userId: userId, name: _nameTextController.text, gender: genderSelected, email: _emailTextController.text);
                         if(!context.mounted) return;
-
+                       
                         await AuthenticationConroller.setUserDetails(context, userId);
                         if(!context.mounted) return;
                         

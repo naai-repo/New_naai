@@ -25,19 +25,48 @@ class ArtistServicesFilterProvider with ChangeNotifier {
    String _searchValue = "";
    String get searchValue => _searchValue;
 
+   List<ServiceDataModel> _orgServices = [];
+   List<ServiceDataModel> get orgServices => _orgServices;
+
    void setArtistDetails(SingleArtistScreenModel value){
        _artistDetials = value;
        _services = value.services ?? [];
+       List<ServiceDataModel> tempServices = [];
+       
+       _services.asMap().forEach((key, resService) {
+          //final artistServicesForPrices = _artistDetials.artistDetails?.data?.services ?? [];
+          final salonArtistServices = _artistDetials.salonDetails!.data!.artists!.singleWhere((element) => element.id == value.artistDetails!.data!.id).services;
+          final serviceItem = salonArtistServices!.singleWhere((element) => element.serviceId == resService.id);
+          
+          List<VariableService> variablesItem = [];
+
+          resService.variables!.asMap().forEach((hhd, varserv) {
+             final servForPrice = serviceItem.variables!.singleWhere((element) => element.variableId == varserv.id);
+             varserv = varserv.copyWith(variableCutPrice: servForPrice.cutPrice,variablePrice: double.tryParse(servForPrice.price.toString()));
+             variablesItem.add(varserv);
+          });
+          // serviceItem.variables!.asMap().forEach((idx, variableRes) {
+          //     final variable = resService.variables!.singleWhere((element) => element.id == variableRes.variableId);
+          //     variablesItem.add(variable.copyWith(variablePrice: variableRes.price,variableCutPrice: variableRes.cutPrice));
+          // });
+          tempServices.add(resService.copyWith(basePrice: serviceItem.price,cutPrice: serviceItem.cutPrice,variables: variablesItem));
+       });
+       
+       _services = tempServices;
+       _orgServices = tempServices;
+
+       
        for(var e in _services){
           if(!_categories.contains(e.category ?? "xxxx")) _categories.add(e.category?.toLowerCase() ?? "");
        }
        _selectedCategoryIndex.clear();
        _genderType = "none";
+       
        notifyListeners();
    }
    
    List<ServiceDataModel> getServices(){
-       final orgServices = _artistDetials.services ?? [];
+       final orgServices = _orgServices;
        if(_currentFilterActive <= 0 && _searchValue.isEmpty) return orgServices;
        
        // Gender Filter
@@ -45,11 +74,11 @@ class ArtistServicesFilterProvider with ChangeNotifier {
       if(_genderType != "none"){
          _services = _services.where((element) => element.targetGender == _genderType).toList();
       }
-      print("Servce ${_services.length}");
+      
 
       //Category Filter
       if(_selectedCategoryIndex.isNotEmpty){
-         _services = _services.where((element) {
+         _services = _services.where((element){
               if(_selectedCategoryIndex.contains(categories.indexOf(element.category?.toLowerCase() ?? ""))){
                 return true;
               }

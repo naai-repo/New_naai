@@ -116,6 +116,7 @@ class AuthenticationProvider with ChangeNotifier {
     }
 
     Future<void> setUserId(String value) async {
+        _userData = _userData.copyWith(id: value);
         var box = Hive.box('userBox');
         box.put('userId',value);
     }

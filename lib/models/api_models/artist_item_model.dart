@@ -155,7 +155,7 @@ class ArtistDataModel {
 
 class Service {
   final String? serviceId;
-  final dynamic? price;
+  final double? price;
   final String? id;
   final List<Variables>? variables;
   final double? cutPrice;
@@ -164,24 +164,25 @@ class Service {
     this.serviceId,
     this.price,
     this.id,
-    required this.variables,
-    this.cutPrice
+    this.variables,
+    this.cutPrice,
   });
+
 
 
   Service copyWith({
     String? serviceId,
-    dynamic? price,
+    double? price,
     String? id,
     List<Variables>? variables,
-    double? cutPrice
+    double? cutPrice,
   }) {
     return Service(
       serviceId: serviceId ?? this.serviceId,
       price: price ?? this.price,
       id: id ?? this.id,
       variables: variables ?? this.variables,
-      cutPrice:  cutPrice ?? this.cutPrice
+      cutPrice: cutPrice ?? this.cutPrice,
     );
   }
 
@@ -191,17 +192,17 @@ class Service {
       'price': price,
       'id': id,
       'variables': variables?.map((x) => x.toMap()).toList() ?? [],
-      'cutPrice' : cutPrice
+      'cutPrice': cutPrice,
     };
   }
 
   factory Service.fromMap(Map<String, dynamic> map) {
     return Service(
       serviceId: map['serviceId'] != null ? map['serviceId'] as String : null,
-      price: map['price'] != null ? map['price'] as dynamic : null,
+      price: map['price'] != null ? double.parse(map['price'].toString()) : null,
       id: map['id'] != null ? map['id'] as String : null,
       variables: map['variables'] != null ? List<Variables>.from((map['variables'] as List<dynamic>).map<Variables?>((x) => Variables.fromMap(x as Map<String,dynamic>),),) : null,
-      cutPrice: map['cutPrice'] != null ? double.tryParse(map['cutPrice'].toString()) : null
+      cutPrice: map['cutPrice'] != null ? double.parse(map['cutPrice'].toString()) : null,
     );
   }
 
@@ -211,10 +212,29 @@ class Service {
 
   @override
   String toString() {
-    return 'Service(serviceId: $serviceId, price: $price, id: $id, variables: $variables)';
+    return 'Service(serviceId: $serviceId, price: $price, id: $id, variables: $variables, cutPrice: $cutPrice)';
   }
 
+  @override
+  bool operator ==(covariant Service other) {
+    if (identical(this, other)) return true;
+  
+    return 
+      other.serviceId == serviceId &&
+      other.price == price &&
+      other.id == id &&
+      listEquals(other.variables, variables) &&
+      other.cutPrice == cutPrice;
+  }
 
+  @override
+  int get hashCode {
+    return serviceId.hashCode ^
+      price.hashCode ^
+      id.hashCode ^
+      variables.hashCode ^
+      cutPrice.hashCode;
+  }
 }
 
 class Variables {

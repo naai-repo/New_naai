@@ -124,6 +124,7 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
                         if(enteredOtp.isEmpty) return;
                         
                         Loading.showLoding(context);
+                        print("UserId :: ${userId}");
 
                         final response = await LoginController.verifyOtp(userId, otp);
 
@@ -133,7 +134,7 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
                           await ref.setIsGuest(false);
                           
                           final bool isNewUser = response.data.newUser ?? false;
-
+                          
                           print('IsNewUser: $isNewUser');
                           
                           if(!context.mounted) return;

@@ -96,7 +96,7 @@ class _MultipleStaffSelectState extends State<MultipleStaffSelect> {
                               String serviceName = ref.selectedServices[index].service?.serviceTitle ?? "Service Name";
                               String targetGender = ref.selectedServices[index].service?.targetGender ?? "male";
                               double amount = ref.selectedServices[index].service?.basePrice ?? 99999;
-                              
+                             
                               return Container(
                                 padding: EdgeInsets.all(15.w),
                                 decoration: BoxDecoration(
@@ -245,13 +245,12 @@ class _ChooseAStaffState extends State<ChooseAStaff> {
                              double rating = artists[idx].rating ?? 0;
                              bool isSelected = ref.isMultiSatffArtistSelected(widget.index,artists[idx].id ?? "");
                              final service = artists[idx].services?.singleWhere((element) => element.serviceId == selectedServiceId) ?? Service(variables: []);
-
                              double artistBasePrice = double.tryParse(service.price.toString()) ?? 9999;
                              //double artistCutPrice = double.tryParse(service.cutPrice.toString()) ?? 9999;
-                             print(artists[idx]);
+                            // print(artists[idx]);
                              
-                             print("Artist base p :: ${artistBasePrice}");
-                             print("Artist cut p :: ${service.cutPrice}");
+                            // print("Artist base p :: ${artistBasePrice}");
+                             //print("Artist cut p :: ${artistCutPrice}");
 
                              double artistExtaBasePrice = artistBasePrice - serviceBasePrice;
                              bool extraPriceWillShow = (serviceBasePrice != artistBasePrice);

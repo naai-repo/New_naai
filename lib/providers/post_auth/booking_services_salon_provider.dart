@@ -116,9 +116,6 @@ class BookingServicesSalonProvider with ChangeNotifier {
   }
 
   void resetAll({bool notify = false}){
-    resetFinalMultiStaffServices();
-    resetFinalSingleStaffArtist();
-
     _selectedArtistTimeSlot = ["00","00"];
     _bookingSelectedDate = DateTime(1999);
     _selectedStaffIndex = -1;
@@ -129,7 +126,22 @@ class BookingServicesSalonProvider with ChangeNotifier {
     _selectedServices.clear();
     _totalPrice = 0;
     _totalDiscountPrice = 0;
+    resetFinalMultiStaffServices();
+    resetFinalSingleStaffArtist();
+    calculatePrices();
     
+    if(notify) notifyListeners();
+  }
+
+  void resetAllOnlyForScreensSwitch({bool notify = false}){
+    _selectedArtistTimeSlot = ["00","00"];
+    _bookingSelectedDate = DateTime(1999);
+    _selectedStaffIndex = -1;
+    _confirmBookingModel = ConfirmBookingModel(status: "false");
+    _scheduleResponseData = ScheduleResponseModel(salonId: "0000");
+    resetFinalMultiStaffServices();
+    resetFinalSingleStaffArtist();
+    calculatePrices();
     if(notify) notifyListeners();
   }
 
@@ -154,7 +166,6 @@ class BookingServicesSalonProvider with ChangeNotifier {
       for(int i = 0;i < _selectedServices.length;i++){
            final currentService = _selectedServices[i];
     
-
            for(var s in (value.services ?? [])){
              if(currentService.service!.id == s.serviceId){
                 _finalSingleStaffSelectedServices[i] = ServicesArtistItemModel(
@@ -184,7 +195,58 @@ class BookingServicesSalonProvider with ChangeNotifier {
                   variable: (service?.variables?.isNotEmpty ?? false) ? service!.variables!.first : null
             );
       }
+      calculatePrices();
       notifyListeners();
+  }
+
+  void calculatePrices(){
+    final selectedServices = _selectedServices;
+    double basePrice = 0,cutPrice = 0;
+    print("${_selectedStaffIndex} ---${selectedServices.length}");
+
+    selectedServices.asMap().forEach((key,ress) {
+      final service = ress.service;
+       final serviceFromSalon = salonDetails.data!.services!.singleWhere((element) => element.id == service!.id);
+       
+       if(service?.variables?.isEmpty ?? true){
+           basePrice += serviceFromSalon.basePrice ?? 9999;
+           cutPrice += serviceFromSalon.cutPrice ?? 9999;
+       }else{
+           basePrice += service?.variables?.first.variablePrice ?? 9999;
+           cutPrice += service?.variables?.first.variableCutPrice ?? 9999;
+       }
+    });
+    
+    final finalSelectedServices = getSelectedServiceData();
+     print("Calculated Price :: ${cutPrice}-${basePrice}");
+    print("Final Selected Services ::: ${finalSelectedServices.length}");
+
+    if(finalSelectedServices.length == selectedServices.length){
+      final ServicesArtistItemModel isPermit = finalSelectedServices.singleWhere((element) => element.artist == "0000",orElse: () => ServicesArtistItemModel(artist: ""));
+      if(isPermit.artist!.isEmpty){
+          basePrice = 0;cutPrice = 0;
+      }
+      print("Permit Price :: ${isPermit.artist}");
+      finalSelectedServices.asMap().forEach((key,service) {
+        if(service.artist == "0000") return;
+
+        final artistServices = salonDetails.data!.artists!.singleWhere((element) => element.id == service.artist).services;
+        final serviceFromSalon = artistServices!.singleWhere((element) => element.serviceId == service.service);
+
+        if(service.variable == null){
+            basePrice += serviceFromSalon.price ?? 9999;
+            cutPrice += serviceFromSalon.cutPrice ?? 9999;
+        }else{
+            final variable = serviceFromSalon.variables!.singleWhere((element) => element.variableId == service.variable!.id);
+            basePrice += variable.price ?? 9999;
+            cutPrice += variable.cutPrice ?? 9999;
+        }
+      });
+    }
+    
+    print("Calculated Price :: ${cutPrice}-${basePrice}");
+    _totalPrice = cutPrice;
+    _totalDiscountPrice = basePrice;
   }
   
   bool checkIsSingleStaffSelected(){
@@ -249,13 +311,14 @@ class BookingServicesSalonProvider with ChangeNotifier {
 
     for(var e in _selectedServices){
       if(e.service!.id == value.id){
-          if(e.service?.variables?.isNotEmpty ?? false){
-             _totalPrice -= e.service?.variables?.first.variableCutPrice ?? 0;
-             _totalDiscountPrice -= e.service?.variables?.first.variablePrice ?? 0;
-          }else{
-             _totalPrice -= value.cutPrice ?? 0;
-             _totalDiscountPrice -= value.basePrice ?? 0;
-          }
+          // if(e.service?.variables?.isNotEmpty ?? false){
+          //    _totalPrice -= e.service?.variables?.first.variableCutPrice ?? 0;
+          //    _totalDiscountPrice -= e.service?.variables?.first.variablePrice ?? 0;
+          // }else{
+          //    _totalPrice -= value.cutPrice ?? 0;
+          //    _totalDiscountPrice -= value.basePrice ?? 0;
+          // }
+          calculatePrices();
           _selectedServices.remove(e);
           notifyListeners();
           return;
@@ -264,7 +327,7 @@ class BookingServicesSalonProvider with ChangeNotifier {
 
     List<ArtistDataModel> eligibleArtists = [];
     final artists = _salonDetails.data?.artists ?? [];
-
+    
     for(var e in artists){
         final services = e.services ?? [];
         for(var s in services){
@@ -278,14 +341,15 @@ class BookingServicesSalonProvider with ChangeNotifier {
       artists: eligibleArtists,
       service: value
     ));
-
-    if(value.variables?.isNotEmpty ?? false){
-      _totalPrice += value.variables?.first.variableCutPrice ?? 0;
-      _totalDiscountPrice += value.variables?.first.variablePrice ?? 0;
-    }else{
-      _totalPrice += value.cutPrice ?? 0;
-      _totalDiscountPrice += value.basePrice ?? 0;
-    }
+    
+    calculatePrices();
+    // if(value.variables?.isNotEmpty ?? false){
+    //   _totalPrice += value.variables?.first.variableCutPrice ?? 0;
+    //   _totalDiscountPrice += value.variables?.first.variablePrice ?? 0;
+    // }else{
+    //   _totalPrice += value.cutPrice ?? 0;
+    //   _totalDiscountPrice += value.basePrice ?? 0;
+    // }
 
     notifyListeners();
   }
@@ -293,17 +357,19 @@ class BookingServicesSalonProvider with ChangeNotifier {
   void removeService(ServiceDataModel value){
       _selectedServices.removeWhere((element) {
          if(element.service!.id == value.id){
-             if(element.service?.variables?.isNotEmpty ?? false){
-                  _totalPrice -= element.service?.variables?.first.variableCutPrice ?? 0;
-                  _totalDiscountPrice -= element.service?.variables?.first.variablePrice ?? 0;
-              }else{
-                  _totalPrice -= value.cutPrice ?? 0;
-                  _totalDiscountPrice -= value.basePrice ?? 0;
-              }
-              return true;
+            //  if(element.service?.variables?.isNotEmpty ?? false){
+            //       _totalPrice -= element.service?.variables?.first.variableCutPrice ?? 0;
+            //       _totalDiscountPrice -= element.service?.variables?.first.variablePrice ?? 0;
+            //   }else{
+            //       _totalPrice -= value.cutPrice ?? 0;
+            //       _totalDiscountPrice -= value.basePrice ?? 0;
+            //   }
+            return true;
          }
          return false;
       });
+      calculatePrices();
+
       notifyListeners();
   }
 
@@ -353,6 +419,7 @@ class BookingServicesSalonProvider with ChangeNotifier {
 
     serviceBasePrice = service.service?.basePrice ?? 9999;
     serviceCutPrice = service.service?.cutPrice ?? 9999;
+   // print(service.service);
 
     if(variableId.isNotEmpty && (service.service?.variables?.isNotEmpty ?? false)){
         final variable = service.service!.variables!.singleWhere((element) => element.id == variableId);
@@ -374,9 +441,8 @@ class BookingServicesSalonProvider with ChangeNotifier {
               final s = a.services!.singleWhere((element) => element.serviceId == serviceId);
               artistBasePrice = double.tryParse(s.price.toString()) ?? 9999;
               artistCutPrice = double.tryParse(s.cutPrice.toString()) ?? e.service!.cutPrice!;
-              print(s);
 
-              print("${artistBasePrice} -- ${double.tryParse(s.cutPrice.toString())} -- ${e.service!.cutPrice!}");
+              //print("${artistBasePrice} -- ${double.tryParse(s.cutPrice.toString())} -- ${e.service!.cutPrice!}");
 
               if(variableId.isNotEmpty){
                   final variable = s.variables!.singleWhere((element) => element.variableId == variableId);

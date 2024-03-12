@@ -53,16 +53,8 @@ class _SplashScreenState extends State<SplashScreen> {
             }
           }
     }
-
-     SystemChrome.setSystemUIOverlayStyle(
-      const SystemUiOverlayStyle(
-          statusBarIconBrightness: Brightness.light,
-          statusBarBrightness: Brightness.light,
-          systemNavigationBarColor: ColorsConstant.appColor,
-          statusBarColor: ColorsConstant.appColor
-      )
-    );
   }
+  
   void checkIfUserExists() async{
     Timer(const Duration(seconds: 2), () async {
       String? accessToken = await context.read<AuthenticationProvider>().getAccessToken();

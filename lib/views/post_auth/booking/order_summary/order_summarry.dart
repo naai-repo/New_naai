@@ -271,11 +271,11 @@ class OrderSummary extends StatelessWidget {
                                                      
 
                                                      double amount = serviceCutPrice;
+                                                     //double artistExtaBasePrice = artistBasePrice - serviceBasePrice;
                                                      double extraArtistPrice = artistCutPrice - serviceCutPrice;
                                                      bool extraPriceWillShow = (serviceCutPrice != artistCutPrice);
                                                      
-                                                     subTotal += extraArtistPrice;
-                                                     discount += extraArtistPrice - (artistBasePrice - serviceBasePrice);
+                                                    
 
                                                     return Container(
                                                       padding: EdgeInsets.all(5.w),

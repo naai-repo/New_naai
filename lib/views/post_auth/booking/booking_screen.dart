@@ -33,6 +33,14 @@ class _CreateBookingScreenState extends State<BookingScreen> {
   @override
   void initState() {
     super.initState();
+    // final ref = context.read<BookingServicesSalonProvider>();
+    // ref.resetAllOnlyForScreensSwitch();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    
   }
 
   @override

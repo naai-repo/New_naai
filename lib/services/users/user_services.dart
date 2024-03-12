@@ -55,9 +55,11 @@ class UserServices {
         "data" : {
             "name": name,
             "gender": gender,
-            "email" : email
+            "email" : email.isEmpty ? "" : email
         }
     };
+
+    print(requestData);
 
     try {
       dio.options.connectTimeout = const Duration(seconds: 10);
@@ -68,7 +70,7 @@ class UserServices {
           data: json.encode(requestData),
       );
      
-      
+      print(response.data);
       if (response.statusCode == 200) {
         final res = UpdateUserResponseModel.fromJson(jsonEncode(response.data).replaceAll("_id", "id"));
         return res;
