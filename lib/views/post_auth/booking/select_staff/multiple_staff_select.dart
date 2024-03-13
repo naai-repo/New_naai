@@ -96,6 +96,20 @@ class _MultipleStaffSelectState extends State<MultipleStaffSelect> {
                               String serviceName = ref.selectedServices[index].service?.serviceTitle ?? "Service Name";
                               String targetGender = ref.selectedServices[index].service?.targetGender ?? "male";
                               double amount = ref.selectedServices[index].service?.basePrice ?? 99999;
+                              final finalMultiSelectedServices = ref.getSelectedServiceData();
+                              double extraServiceBasePrice = 0;
+                              print("Extra Amount Calculations  ${index} -- ${finalMultiSelectedServices.length}");
+                           
+                              if(index < finalMultiSelectedServices.length){
+                                final multiServ = finalMultiSelectedServices[index];
+                                final multiArtist = ref.selectedServices[index].artists!.singleWhere((element) => element.id == multiServ.artist,orElse: () => ArtistDataModel(id: "0000"));
+                                if(multiArtist.id != "0000"){
+                                  final service = multiArtist.services?.singleWhere((element) => element.serviceId == multiServ.service) ?? Service(variables: []);
+                                  double selectedArtistBasePrice = double.tryParse(service.price.toString()) ?? 9999;
+                                  extraServiceBasePrice = selectedArtistBasePrice - amount;
+                                  print("${selectedArtistBasePrice} -- ${extraServiceBasePrice}");
+                                }
+                              }
                              
                               return Container(
                                 padding: EdgeInsets.all(15.w),
@@ -133,13 +147,27 @@ class _MultipleStaffSelectState extends State<MultipleStaffSelect> {
                                                 ]
                                               )),
                                               SizedBox(height: 10.h),
-                                              Text("Rs. $amount",
-                                                style: TextStyle(
-                                                      fontFamily: "Poppins",
-                                                      fontSize: 16.sp,
-                                                      fontWeight: FontWeight.w500
-                                                ),
-                                              ),
+                                              Text.rich(TextSpan(
+                                                children: [   
+                                                    TextSpan(text: "Rs. $amount",
+                                                     style: TextStyle(
+                                                            fontFamily: "Poppins",
+                                                            fontSize: 16.sp,
+                                                            fontWeight: FontWeight.w500
+                                                      )
+                                                    ),
+                                                    if(extraServiceBasePrice > 0) WidgetSpan(child: SizedBox(width: 5.w,)),
+
+                                                    if(extraServiceBasePrice > 0) TextSpan(
+                                                      text: "+ ${extraServiceBasePrice}",
+                                                      style: TextStyle(
+                                                        fontFamily: "Poppins",
+                                                        fontWeight: FontWeight.w500,
+                                                        color: ColorsConstant.appColor
+                                                      )
+                                                    )
+                                                ]
+                                              )),
                                             ],
                                           ),
                                       ),
@@ -246,6 +274,7 @@ class _ChooseAStaffState extends State<ChooseAStaff> {
                              bool isSelected = ref.isMultiSatffArtistSelected(widget.index,artists[idx].id ?? "");
                              final service = artists[idx].services?.singleWhere((element) => element.serviceId == selectedServiceId) ?? Service(variables: []);
                              double artistBasePrice = double.tryParse(service.price.toString()) ?? 9999;
+                             
                              //double artistCutPrice = double.tryParse(service.cutPrice.toString()) ?? 9999;
                             // print(artists[idx]);
                              

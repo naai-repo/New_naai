@@ -202,8 +202,7 @@ class BookingServicesSalonProvider with ChangeNotifier {
   void calculatePrices(){
     final selectedServices = _selectedServices;
     double basePrice = 0,cutPrice = 0;
-    print("${_selectedStaffIndex} ---${selectedServices.length}");
-
+    
     selectedServices.asMap().forEach((key,ress) {
       final service = ress.service;
        final serviceFromSalon = salonDetails.data!.services!.singleWhere((element) => element.id == service!.id);
@@ -218,30 +217,53 @@ class BookingServicesSalonProvider with ChangeNotifier {
     });
     
     final finalSelectedServices = getSelectedServiceData();
-     print("Calculated Price :: ${cutPrice}-${basePrice}");
+    print("Calculated Price :: ${cutPrice}-${basePrice}");
     print("Final Selected Services ::: ${finalSelectedServices.length}");
-
-    if(finalSelectedServices.length == selectedServices.length){
-      final ServicesArtistItemModel isPermit = finalSelectedServices.singleWhere((element) => element.artist == "0000",orElse: () => ServicesArtistItemModel(artist: ""));
-      if(isPermit.artist!.isEmpty){
-          basePrice = 0;cutPrice = 0;
-      }
-      print("Permit Price :: ${isPermit.artist}");
+    
+    double basePriceMulti = 0,cutPriceMulti = 0;
+    if(finalSelectedServices.isNotEmpty){
       finalSelectedServices.asMap().forEach((key,service) {
         if(service.artist == "0000") return;
 
+        print("Permit Price Inner :: ${service.artist}");
         final artistServices = salonDetails.data!.artists!.singleWhere((element) => element.id == service.artist).services;
         final serviceFromSalon = artistServices!.singleWhere((element) => element.serviceId == service.service);
 
         if(service.variable == null){
-            basePrice += serviceFromSalon.price ?? 9999;
-            cutPrice += serviceFromSalon.cutPrice ?? 9999;
+            basePriceMulti += serviceFromSalon.price ?? 9999;
+            cutPriceMulti += serviceFromSalon.cutPrice ?? 9999;
         }else{
             final variable = serviceFromSalon.variables!.singleWhere((element) => element.variableId == service.variable!.id);
-            basePrice += variable.price ?? 9999;
-            cutPrice += variable.cutPrice ?? 9999;
+            basePriceMulti += variable.price ?? 9999;
+            cutPriceMulti += variable.cutPrice ?? 9999;
         }
       });
+      print("Calculated Price :: ${basePriceMulti}-${cutPriceMulti}");
+      if(cutPriceMulti > 0 && basePriceMulti > 0){
+        basePrice = basePriceMulti;
+        cutPriceMulti = cutPriceMulti;
+      }
+    }else if(isFromArtistScreen){
+        selectedServices.asMap().forEach((key,service) {
+          print("Permit Price Inner Via Artist :: ${_singleStaffArtistSelected.id}");
+
+          final artistServices = salonDetails.data!.artists!.singleWhere((element) => element.id == _singleStaffArtistSelected.id).services;
+          final serviceFromSalon = artistServices!.singleWhere((element) => element.serviceId == service.service!.id);
+
+          if(service.service?.variables?.isEmpty ?? true){
+              basePriceMulti += serviceFromSalon.price ?? 9999;
+              cutPriceMulti += serviceFromSalon.cutPrice ?? 9999;
+          }else{
+              // final variable = serviceFromSalon.variables!.singleWhere((element) => element.variableId == service.service!.variables!.first.id);
+              // basePriceMulti += variable.price ?? 9999;
+              // cutPriceMulti += variable.cutPrice ?? 9999;
+          }
+        });
+        print("Calculated Price Via Artist :: ${basePriceMulti}-${cutPriceMulti}");
+        if(cutPriceMulti > 0 && basePriceMulti > 0){
+          basePrice = basePriceMulti;
+          cutPriceMulti = cutPriceMulti;
+        }
     }
     
     print("Calculated Price :: ${cutPrice}-${basePrice}");

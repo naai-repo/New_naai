@@ -47,6 +47,7 @@ class _SetHomeLocationScreenState extends State<SetLocationScreen> {
         },
         child: SafeArea(
           child: Scaffold(
+            resizeToAvoidBottomInset: false,
           //  backgroundColor: Colors.white,
             appBar: AppBar(
               backgroundColor: Colors.white,

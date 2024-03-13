@@ -39,7 +39,8 @@ Future<int> artistDetailsScreenFuture(BuildContext context,String artistId) asyn
     context.read<SingleArtistProvider>().setArtistDetails(value);
     context.read<BookingServicesSalonProvider>().setSalonDetails(value.salonDetails!);
     context.read<ArtistServicesFilterProvider>().setArtistDetails(value);
-
+    context.read<BookingServicesSalonProvider>().addFinalSingleStaffServices(value.artistDetails!.data!);
+    
     final String token = await context.read<AuthenticationProvider>().getAccessToken();
     final reviews = await ReviewsServices.getReviewsByArtistId(artistId: artistId,accessToken: token);
     if(!context.mounted) return 400;
