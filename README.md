@@ -1,7 +1,8 @@
 # naai
 
 A new Flutter project.
-
+- [Salon Page Test DeepLink](https://m.naai.in/salon/65e28c422ebce658ad29fdb1)
+- [Artist Page Test DeepLink](https://m.naai.in/artist/65e28fddff5505e3df266e4a)
 ## Getting Started
 
 This project is a starting point for a Flutter application.
