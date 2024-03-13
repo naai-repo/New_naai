@@ -139,8 +139,10 @@ class BookingServicesSalonProvider with ChangeNotifier {
     _selectedStaffIndex = -1;
     _confirmBookingModel = ConfirmBookingModel(status: "false");
     _scheduleResponseData = ScheduleResponseModel(salonId: "0000");
-    resetFinalMultiStaffServices();
-    resetFinalSingleStaffArtist();
+    _finalMultiStaffSelectedServices = [];
+    _finalSingleStaffSelectedServices = [];
+    // resetFinalMultiStaffServices();
+    // resetFinalSingleStaffArtist();
     calculatePrices();
     if(notify) notifyListeners();
   }
@@ -238,11 +240,13 @@ class BookingServicesSalonProvider with ChangeNotifier {
             cutPriceMulti += variable.cutPrice ?? 9999;
         }
       });
-      print("Calculated Price :: ${basePriceMulti}-${cutPriceMulti}");
+      
       if(cutPriceMulti > 0 && basePriceMulti > 0){
         basePrice = basePriceMulti;
-        cutPriceMulti = cutPriceMulti;
+        cutPrice = cutPriceMulti;
       }
+
+      print("Calculated Price Inner :: ${basePrice}-${cutPrice}");
     }else if(isFromArtistScreen){
         selectedServices.asMap().forEach((key,service) {
           print("Permit Price Inner Via Artist :: ${_singleStaffArtistSelected.id}");
@@ -254,19 +258,19 @@ class BookingServicesSalonProvider with ChangeNotifier {
               basePriceMulti += serviceFromSalon.price ?? 9999;
               cutPriceMulti += serviceFromSalon.cutPrice ?? 9999;
           }else{
-              // final variable = serviceFromSalon.variables!.singleWhere((element) => element.variableId == service.service!.variables!.first.id);
-              // basePriceMulti += variable.price ?? 9999;
-              // cutPriceMulti += variable.cutPrice ?? 9999;
+              final variable = serviceFromSalon.variables!.singleWhere((element) => element.variableId == service.service!.variables!.first.id);
+              basePriceMulti += variable.price ?? 9999;
+              cutPriceMulti += variable.cutPrice ?? 9999;
           }
         });
         print("Calculated Price Via Artist :: ${basePriceMulti}-${cutPriceMulti}");
         if(cutPriceMulti > 0 && basePriceMulti > 0){
           basePrice = basePriceMulti;
-          cutPriceMulti = cutPriceMulti;
+          cutPrice = cutPriceMulti;
         }
     }
     
-    print("Calculated Price :: ${cutPrice}-${basePrice}");
+    print("Calculated Price :: ${basePrice}-${cutPrice}");
     _totalPrice = cutPrice;
     _totalDiscountPrice = basePrice;
   }
@@ -322,9 +326,9 @@ class BookingServicesSalonProvider with ChangeNotifier {
       resetFinalMultiStaffServices();
   }
 
-  void setStaffIndex(int idx){
+  void setStaffIndex(int idx,{bool notify = true}){
      _selectedStaffIndex = idx;
-     notifyListeners();
+     if(notify) notifyListeners();
   }
   
   void addService(ServiceDataModel value,{bool isFromArtistScreen = false}){

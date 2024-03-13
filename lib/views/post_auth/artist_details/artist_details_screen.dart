@@ -290,7 +290,7 @@ class _BarberProfileScreenState extends State<ArtistDetailScreen> {
                                   (!isGuest) ?
                                   VariableWidthCta(
                                     onTap: () async {
-                                       context.read<BookingScreenChangeProvider>().setScreenIndex(1);
+                                       context.read<BookingScreenChangeProvider>().setScreenIndex(0);
                                        ref.addFinalSingleStaffServices(artistDetails.artistDetails?.data ?? ArtistDataModel(id: "0000"));
                                        Future.delayed(Durations.medium1,() async {
                                           await Navigator.of(context).push(MaterialPageRoute(builder: (_)=> const BookingScreen()));
@@ -299,7 +299,7 @@ class _BarberProfileScreenState extends State<ArtistDetailScreen> {
                                           if(ref.confirmBookingModel.status != "false"){
                                              ref.resetAll(notify: true);
                                           }else{
-                                            ref.resetAllOnlyForScreensSwitch(notify: true);
+                                             ref.resetAllOnlyForScreensSwitch(notify: true);
                                           }
                                        });
                                     },

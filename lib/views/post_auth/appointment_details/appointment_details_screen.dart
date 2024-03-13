@@ -25,6 +25,7 @@ class AppointMentDetailsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final services = bookingData.artistMapServices ?? [];
     double subTotal = bookingData.appointmentData?.amount ?? 9999;
+    double paymentAmount = bookingData.appointmentData?.paymentAmount ?? 9999;
 
     return SafeArea(
       child: Scaffold(
@@ -184,10 +185,23 @@ class AppointMentDetailsScreen extends StatelessWidget {
                         //  IconButton(onPressed: generateInvoice, icon: Icon(Icons.save_alt_outlined))
                         ],
                       ),
-                      SizedBox(height: 20.h),
+                      SizedBox(height: 10.h),
                       textInRow(
-                        textOne: StringConstant.subtotal,
+                        textOne: StringConstant.subtotal.toUpperCase(),
                         textTwo:'Rs ${subTotal.toString()}',
+                      ),
+                      SizedBox(height: 2.h),
+                      textInRow(
+                        textOne: "YOU SAVED",
+                        color: Colors.green,
+                        textTwo:'- Rs ${(subTotal - paymentAmount).toString()}',
+                      ),
+                      SizedBox(height: 10.h),
+                      textInRow(
+                        textOne: StringConstant.grandTotal,
+                        grandFontSize: 22.sp,
+                        textTwo:'Rs ${paymentAmount.toString()}',
+                        color: ColorsConstant.textDark
                       ),
                     ],
                   ),
@@ -277,7 +291,7 @@ class AppointMentDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget textInRow({required String textOne,required String textTwo}) {
+  Widget textInRow({required String textOne,required String textTwo,Color? color = null,double? grandFontSize = null}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -285,7 +299,7 @@ class AppointMentDetailsScreen extends StatelessWidget {
           child: Text(
             textOne,
             style: TextStyle(
-              fontSize: 16.sp,
+              fontSize: (grandFontSize != null) ? (grandFontSize-2) : 16.sp,
               color: ColorsConstant.textLight,
             ),
           ),
@@ -293,9 +307,9 @@ class AppointMentDetailsScreen extends StatelessWidget {
         Text(
           textTwo,
           style: TextStyle(
-            fontSize: 18.sp,
+            fontSize: (grandFontSize != null) ? (grandFontSize) : 18.sp,
             fontWeight: FontWeight.w500,
-            color: ColorsConstant.textDark,
+            color: (color != null) ? color : ColorsConstant.textLight,
           ),
         ),
       ],

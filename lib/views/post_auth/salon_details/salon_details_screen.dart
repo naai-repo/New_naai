@@ -715,15 +715,15 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
                   );
               },
               onTapIconTwo: ()  async {
-                final String salonShareUrl = "${StringConstant.artistShareLink}/${widget.salonDetails.id ?? ""}";
+                final String salonShareUrl = "${StringConstant.salonLink}/${widget.salonDetails.id ?? ""}";
                // Share.share(salonShareUrl, subject: 'Naai Salon');
                 final box = context.findRenderObject() as RenderBox?;
 
-                  await Share.share(
+                await Share.share(
                     salonShareUrl,
                     subject: "Naai Salon",
                     sharePositionOrigin: box!.localToGlobal(Offset.zero) & box.size,
-                  );
+                );
               },
               onTapIconThree: () async {
                  try {

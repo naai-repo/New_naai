@@ -24,13 +24,16 @@ class _SelectStaffState extends State<SelectStaff>{
 
   @override
   Widget build(BuildContext context) {
-
+    final ref = Provider.of<BookingServicesSalonProvider>(context,listen: false);
+    int serviceLength = ref.selectedServices.length;
+    if(serviceLength == 1 && !isFromArtistScreen) ref.setStaffIndex(1,notify: false);
+    
     return SizedBox(
       child: Column(
         children: [
-          const SingleStaffSelect(),
-          if(!isFromArtistScreen) SizedBox(height: 20.h),
-          if(!isFromArtistScreen) Row(
+          if(isFromArtistScreen || serviceLength > 1) const SingleStaffSelect(),
+          if(!isFromArtistScreen && serviceLength > 1) SizedBox(height: 20.h),
+          if(!isFromArtistScreen && serviceLength > 1) Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
@@ -55,7 +58,7 @@ class _SelectStaffState extends State<SelectStaff>{
               ),
             ],
           ),
-          if(!isFromArtistScreen)  SizedBox(height: 20.h),
+          if(!isFromArtistScreen && serviceLength > 1)  SizedBox(height: 20.h),
           if(!isFromArtistScreen) const MultipleStaffSelect()
         ],
       ),

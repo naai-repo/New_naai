@@ -20,14 +20,16 @@ class _MultipleStaffSelectState extends State<MultipleStaffSelect> {
   @override
   Widget build(BuildContext context){
     final ref = Provider.of<BookingServicesSalonProvider>(context,listen: true);
+    int serviceLength = ref.selectedServices.length;
     bool isSelected = (ref.selectedStaffIndex == 1);
-    String headingText = "Choose a Multple Staff";
+    String headingText =  (serviceLength > 1) ? "Choose a Multple Staff" : "Choose a Staff";
 
     return SizedBox(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if(serviceLength > 1)
            Text.rich(TextSpan(
              style: TextStyle(
               color:const Color(0xFF868686),
@@ -41,7 +43,7 @@ class _MultipleStaffSelectState extends State<MultipleStaffSelect> {
                   const TextSpan(text: "Multiple Staff for all Service")
              ]
            )),
-           SizedBox(height: 15.h),
+           if(serviceLength > 1) SizedBox(height: 15.h),
            Material(
               clipBehavior: Clip.hardEdge,
               borderRadius: BorderRadius.circular(10.r),
