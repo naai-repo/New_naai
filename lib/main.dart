@@ -15,7 +15,6 @@ import 'package:naai/providers/post_auth/single_salon_provider.dart';
 import 'package:naai/providers/post_auth/top_artists_provider.dart';
 import 'package:naai/providers/post_auth/top_salons_provider.dart';
 import 'package:naai/providers/pre_auth/auth_provider.dart';
-import 'package:naai/services/uni_deeplink_services/uni_deep_link_services.dart';
 import 'package:naai/utils/constants/colors_constant.dart';
 import 'package:naai/utils/routing/named_routes.dart';
 import 'package:naai/utils/routing/routing_functions.dart';
