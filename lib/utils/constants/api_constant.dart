@@ -2,7 +2,7 @@
 
 class UrlConstants{
 
-  static const baseUrl = "http://13.235.49.214:8800/";
+  static const baseUrl = "https://m.naai.in/";
 
   static const login =  '${baseUrl}customer/user/login';
   static const forgotPassword =  '${baseUrl}customer/user/forgotPassword';

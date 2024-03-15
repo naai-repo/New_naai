@@ -38,7 +38,7 @@ class _MultipleStaffSelectState extends State<MultipleStaffSelect> {
               fontWeight: FontWeight.w500
              ),
              children: [
-                  WidgetSpan(child: Icon(Icons.people,size: 20.sp,)),
+                  WidgetSpan(child: Icon(Icons.people,size: 20.sp)),
                   WidgetSpan(child: SizedBox(width: 10.w)),
                   const TextSpan(text: "Multiple Staff for all Service")
              ]

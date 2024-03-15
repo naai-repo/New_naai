@@ -32,6 +32,8 @@ Future<int> exploreFuture(BuildContext context) async {
     
     final refSalon = context.read<FilterSalonsProvider>();
     final refArtist = await context.read<FilterArtitsProvider>();
+    refSalon.resetFilter(notify: false);
+    refArtist.resetFilter(notify: false);
 
     // print("Exec Start ::: ${DateTime.now().second} - ${DateTime.now().millisecond}");
     // await Future.wait([

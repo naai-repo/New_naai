@@ -150,18 +150,22 @@ class ReviewContainer extends StatelessWidget {
                                    SizedBox(height: 10.h),
                                    Row(
                                       children: [
-                                        ...List.generate(5,
-                                              (i) => SvgPicture.asset(
-                                            ImagePathConstant
-                                                .starIcon,
-                                            color: i <
-                                                (int.parse(rating.toString()))
-                                                ? ColorsConstant
-                                                .appColor
-                                                : ColorsConstant
-                                                .greyStar,
-                                          ),
-                                        ),
+                                        ...List.generate(5,(index){
+                                            double starSize = 15.sp;
+                                            Color starColor = ColorsConstant.appColor;
+                                            
+                                            if(index >= rating){
+                                              return Icon(Icons.star_border,size: starSize,color: starColor);
+                                            }else if(index > rating - 1 && index < rating){
+                                              return Stack(
+                                                children: [
+                                                  Icon(Icons.star_half,size: starSize,color: starColor),
+                                                  Icon(Icons.star_border,size: starSize,color: starColor)
+                                                ],
+                                              );
+                                            }
+                                            return Icon(Icons.star,size: starSize,color: starColor);
+                                        }),
                                       ],
                                    ),
                                    SizedBox(height: 20.h),

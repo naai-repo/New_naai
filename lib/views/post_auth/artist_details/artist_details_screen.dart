@@ -22,7 +22,6 @@ import 'package:naai/utils/common_widgets/common_widgets.dart';
 import 'package:naai/utils/constants/colors_constant.dart';
 import 'package:naai/utils/constants/image_path_constant.dart';
 import 'package:naai/utils/constants/string_constant.dart';
-import 'package:naai/utils/routing/named_routes.dart';
 import 'package:naai/utils/utility_functions.dart';
 import 'package:naai/views/post_auth/booking/booking_screen.dart';
 import 'package:naai/views/post_auth/salon_details/contact_and_interaction_widget.dart';
@@ -458,22 +457,22 @@ class _BarberProfileScreenState extends State<ArtistDetailScreen> {
                     SizedBox(height: 10.h),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: List<Widget>.generate(
-                        5,
-                        (i) => (i >
-                                int.parse(rating.toStringAsFixed(0)) -
-                                    1)
-                            ? SvgPicture.asset(
-                                ImagePathConstant.starIcon,
-                                color: ColorsConstant.greyStar,
-                                height: 22.h,
-                              )
-                            : SvgPicture.asset(
-                                ImagePathConstant.starIcon,
-                                color: ColorsConstant.yellowStar,
-                                height: 22.h,
-                              ),
-                      ),
+                      children: List.generate(5,(index){
+                         double starSize = 25.sp;
+                        Color starColor = ColorsConstant.yellowStar;
+                        
+                        if(index >= rating){
+                          return Icon(Icons.star_border,size: starSize,color: starColor);
+                        }else if(index > rating - 1 && index < rating){
+                          return Stack(
+                            children: [
+                              Icon(Icons.star_half,size: starSize,color: starColor),
+                              Icon(Icons.star_border,size: starSize,color: starColor)
+                            ],
+                          );
+                        }
+                        return Icon(Icons.star,size: starSize,color: starColor);
+                      }),
                     ),
                   ],
                 ),

@@ -40,7 +40,7 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen>{
                               if(snapshot.hasData && snapshot.connectionState == ConnectionState.done){
                                  final upcurrBooking = [...snapshot.data!.upcommingBookings!,...snapshot.data!.currentBookings!];
                                  final prevBookings = snapshot.data?.prevBooking ?? [];
-
+                                
                                  return Column(
                                       mainAxisAlignment: MainAxisAlignment.start,
                                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -146,13 +146,14 @@ class PrevBookingsContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    List<BookingInfoItemModel> bookings = [...bookingInfoModel.upcommingBookings!, ...bookingInfoModel.currentBookings!];
+    List<BookingInfoItemModel> bookings = bookingInfoModel.prevBooking ?? [];
     bookings.sort((a, b) {
       final aa = DateTime.parse(a.appointmentData!.bookingDate!);
       final bb = DateTime.parse(b.appointmentData!.bookingDate!);
-      
       return bb.day - aa.day;
     });
+
+
 
     return SizedBox(
       child: Column(

@@ -551,21 +551,22 @@ class _SalonDetailsScreenState extends State<SalonDetailsScreen> {
                               Row(
                                 mainAxisAlignment:
                                 MainAxisAlignment.spaceBetween,
-                                children: List<Widget>.generate(5,(i) => (i >
-                                      int.parse(rating.toStringAsFixed(0)) -
-                                          1)
-                                      ? SvgPicture.asset(
-                                    ImagePathConstant.starIcon,
-                                    color:
-                                    ColorsConstant.greyStar,
-                                    height: 16.h,
-                                  )
-                                      : SvgPicture.asset(
-                                    ImagePathConstant.starIcon,
-                                    color:
-                                    ColorsConstant.yellowStar,
-                                    height: 16.h,
-                                  ),
+                                children: List.generate(5,(index) {
+                                    double starSize = 15.sp;
+                                    Color starColor = ColorsConstant.yellowStar;
+                                    
+                                    if(index >= rating){
+                                      return Icon(Icons.star_border,size: starSize,color: starColor);
+                                    }else if(index > rating - 1 && index < rating){
+                                      return Stack(
+                                        children: [
+                                          Icon(Icons.star_half,size: starSize,color: starColor),
+                                          Icon(Icons.star_border,size: starSize,color: starColor)
+                                        ],
+                                      );
+                                    }
+                                    return Icon(Icons.star,size: starSize,color: starColor);
+                                },
                                 ),
                               ),
                             ],

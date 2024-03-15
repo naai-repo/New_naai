@@ -48,11 +48,11 @@ class FilterArtitsProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  void resetFilter(){
+  void resetFilter({bool notify = true}){
     _selectedCategoryIndex = -1;
     _selectedDiscountIndex = -1;
     _selectedRatingIndex = -1;
-    notifyListeners();
+    if(notify) notifyListeners();
   }
 
   int isFilterSelected(){

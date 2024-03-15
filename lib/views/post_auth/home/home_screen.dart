@@ -1,6 +1,5 @@
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:naai/models/api_models/salon_item_model.dart';
@@ -35,11 +34,13 @@ Future<int> homeFuture(BuildContext context,String type) async {
 
     final refSalon = await context.read<FilterSalonsProvider>();
     final refArtist = await context.read<FilterArtitsProvider>();
+    refArtist.resetFilter(notify: false);
+    refSalon.resetFilter(notify: false);
 
     await Future.delayed(Durations.medium1);
     print("Exec Start ::: ${DateTime.now().second} - ${DateTime.now().millisecond}");
 
-     (() async {
+    (() async {
           final res = await SalonsServices.getTopSalons(coords: coords, page: refSalon.getPage, limit: refSalon.getLimit, type: "");
           if(context.mounted) context.read<TopSalonsProvider>().setTopSalons(res.data,clear: true);
      })();
@@ -98,16 +99,8 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final ref = Provider.of<LocationProvider>(context,listen: true);
-    
-    print(type);
+    UtilityFunctions.changeSystemBarReset();
 
-    SystemChrome.setSystemUIOverlayStyle(
-      const SystemUiOverlayStyle(
-          statusBarIconBrightness: Brightness.light,
-          systemNavigationBarColor: Colors.white),
-    );
-
-    
     return DefaultTabController(
       length: 2,
       initialIndex: (type == "male") ? 0 : 1,
@@ -734,12 +727,6 @@ class Stylist extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-            // TitleWithLine(
-            //   lineHeight: 25.h,
-            //   lineWidth: 5.w,
-            //   fontSize: 20.sp,
-            //   text: StringConstant.ourStylist.toUpperCase(),
-            // ),
 
             SizedBox(
               //height: 500.h,
@@ -748,7 +735,7 @@ class Stylist extends StatelessWidget {
                 shrinkWrap: true,
                 mainAxisSpacing: 10.h,
                 crossAxisSpacing: 10.w,
-                childAspectRatio: (1 /1.2),
+                childAspectRatio: (1/1.2),
                 scrollDirection: Axis.vertical,
                 physics: const ScrollPhysics(parent: ScrollPhysics()),
                 primary: true,
@@ -822,10 +809,18 @@ class Stylist extends StatelessWidget {
                                           physics: const NeverScrollableScrollPhysics(),
                                           padding: EdgeInsets.only(bottom: 50.w,top: 0,left: 0,right: 0),
                                           children: List.generate(5, (index) {
+                                              
                                               if(index >= rating){
                                                 return Icon(Icons.star_border,size: 20.w,color: Colors.white);
+                                              }else if(index > rating -1 && index < rating){
+                                                return Stack(
+                                                  children: [
+                                                    Icon(Icons.star_half,size: 20.w,color: Colors.white),
+                                                    Icon(Icons.star_border,size: 20.w,color: Colors.white)
+                                                  ],
+                                                );
                                               }
-                                              return Icon(Icons.star,size: 20.w,color: Colors.white,);
+                                              return Icon(Icons.star,size: 20.w,color: Colors.white);
                                           }),
                                         ),
                                        )
@@ -1011,7 +1006,4 @@ class TopStylistFilterContainer extends StatelessWidget {
     );
   }
 }
-
-
-
 
