@@ -229,6 +229,8 @@ class LocationController {
 
     if(permission == PermissionStatus.denied){
         permission = await location.requestPermission(); // 1st ask
+        print("Print First Ask Permission ${permission}");
+
         if(permission == PermissionStatus.denied){
             if(!context.mounted) return false;
 
@@ -247,6 +249,8 @@ class LocationController {
            }
         }
     }
+
+    print("Final Permission ${permission}");
 
     if(permission == PermissionStatus.granted){
       await ref.setDeniedLocationForever(false);
