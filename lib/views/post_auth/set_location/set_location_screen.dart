@@ -252,7 +252,7 @@ class _SetHomeLocationScreenState extends State<SetLocationScreen> {
                 onTap: () async {
                      try {
                       Loading.showLoding(context);
-                      final res = await LocationController.handelLocationPermissionUI(context);
+                      final res = await LocationController.handelLocationPermissionUI(context,(){});
                       
                       
                       if(res){
@@ -340,6 +340,7 @@ class _SetHomeLocationScreenState extends State<SetLocationScreen> {
                   fillColor: ColorsConstant.appColor, 
                   onTap: () async{
                      ref.setLatLng(latLng);
+                     ref.setIsPopUpShown(true);
                      Navigator.pop(context);
                      Navigator.pop(context);
                   }, 

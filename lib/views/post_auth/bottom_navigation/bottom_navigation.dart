@@ -1,5 +1,7 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:mapbox_gl/mapbox_gl.dart';
@@ -222,14 +224,38 @@ class LocationButtonsContainer extends StatefulWidget {
   State<LocationButtonsContainer> createState() => _LocationButtonState();
 }
 
-class _LocationButtonState extends State<LocationButtonsContainer>{
+class _LocationButtonState extends State<LocationButtonsContainer> with WidgetsBindingObserver{
   bool isLoading = false;
+  AppLifecycleState? _notification;
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    setState(() {
+      _notification = state;
+    });
+  }
+
+  AppLifecycleState getNotification(){
+    return _notification!;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final ref = Provider.of<LocationProvider>(context,listen: false);
     final refAuth = Provider.of<AuthenticationProvider>(context,listen: false);
-
+    
     return Column(
               children:[
                 Row(
@@ -247,36 +273,52 @@ class _LocationButtonState extends State<LocationButtonsContainer>{
                             if(isLoading) return;
 
                             try {
-                              await ref.setIsPopUpShown(true);
+
                               setState(() {
                                  isLoading = true;
                               });
                               
-                              final res = await LocationController.handelLocationPermissionUI(context);
-
+                              final res = await LocationController.handelLocationPermissionUI(context,getNotification);
+                              final bool isGuest = await refAuth.getIsGuest();
+                              
                               if(res){
                                 final latng = await LocationController.getLocationLatLng();
                                 await ref.setLatLng(latng);
-                                final bool isGuest = await refAuth.getIsGuest();
-
+                                await ref.setIsPopUpShown(true);
+                                
                                 if(!isGuest){
                                     String userId = await refAuth.getUserId();
                                     await UserServices.updateUserLocation(userId: userId, coords: [latng.latitude,latng.longitude]);
                                 }
+                                if(context.mounted) Navigator.pop(context);
                                 return;
                               }
+                             
+                             
+                              print("Location Permission Not Given !! ${_notification}");
+                              
+                              if(!isGuest) throw ErrorDescription("Not Enabled");
 
-                              throw ErrorDescription("Not Enabled");
+                              if(context.mounted) await Navigator.pushNamed(context, NamedRoutes.setHomeLocationRoute);
+                              bool isLocationSet = await ref.getIsPopUpShown();
+                              if(isLocationSet && context.mounted) Navigator.pop(context);
+                              
+                              if(!isLocationSet) throw ErrorDescription("Not Enabled");
                               
                             } catch (e) {
                               print("Error Location : ${e.toString()}");
 
-                              setState(() {
-                                 isLoading = false;
-                              });
+                              final bool isGuest = await refAuth.getIsGuest();
+                              if(!isGuest){
+                                  List<double> coord = refAuth.userData.location?.coordinates ?? [0,0];
+                                  print("Location Error Server Coords :: ${coord}");
+                                  await ref.setLatLng(LatLng(coord[0], coord[1]));
+                                  await ref.setIsPopUpShown(true);
+                                  Navigator.pop(context);
+                              }
+                              
 
                             }finally{
-                              if(context.mounted) Navigator.pop(context);
                               setState(() {
                                   isLoading = false;
                               });
@@ -313,9 +355,9 @@ class _LocationButtonState extends State<LocationButtonsContainer>{
                         onPressed: () async {
                           if(isLoading) return;
 
-                          await ref.setIsPopUpShown(true);
                           if(context.mounted) await Navigator.pushNamed(context, NamedRoutes.setHomeLocationRoute);
-                          if(context.mounted) Navigator.pop(context);
+                          bool isLocationSet = await ref.getIsPopUpShown();
+                          if(isLocationSet && context.mounted) Navigator.pop(context);
                         },
                         child:  Text(
                           "Enter your Location Manually",

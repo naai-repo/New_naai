@@ -11,7 +11,8 @@ class AuthenticationConroller {
   
   static Future<void> setUserDetails(BuildContext context,String userId) async {
     final res = await UserServices.getUserByID(userId: userId);
-  
+    print("Server Location Coordinates ::: ${res.data!.location!.coordinates}");
+    
     if(context.mounted) context.read<AuthenticationProvider>().setUserData(res.data!);
   }
 
